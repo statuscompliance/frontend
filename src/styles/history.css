@@ -1,0 +1,11 @@
+:root {
+    --doc-icon-color: #1e90ff;
+    --img-icon-color: #4cbb3d; 
+  }
+  
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --doc-icon-color: #9accff;
+      --img-icon-color: #8ccc84;  
+    }
+  }
