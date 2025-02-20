@@ -14,7 +14,7 @@ export default function AppLayout() {
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <SidebarTrigger className={`${isMobile ? 'self-end fixed' : 'self-start'}`}/>
+              <SidebarTrigger className={`${isMobile ? 'self-end fixed' : 'self-start'} hover:bg-sidebar-accent`}/>
             </TooltipTrigger>
             <TooltipContent>
               <p>Ctrl + b</p>

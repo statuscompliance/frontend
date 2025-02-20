@@ -25,13 +25,19 @@ h1 {
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;
-    background-color: #ffffff;
+    background-color: #ff9478;
+  }
+  a{
+    background-color: #ff9478;
   }
   a:hover {
-    color: #747bff;
+    background-color: #ffa18a;
   }
   button {
-    background-color: #f9f9f9;
+    background-color: #ff9478;
+  }
+  button:hover {
+    background-color: #ffa18a;
   }
 }
 
@@ -53,7 +59,7 @@ h1 {
     --accent-foreground: 240 5.9% 10%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 90%;
+    --border: 12 100% 69%;
     --input: 240 5.9% 90%;
     --ring: 240 10% 3.9%;
     --chart-1: 12 76% 61%;
@@ -62,14 +68,14 @@ h1 {
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-background: 12 100% 74%;
+    --sidebar-foreground: 0 0% 13%;
     --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-primary-foreground: 0 0% 13%;
+    --sidebar-accent: 12 100% 77%;
+    --sidebar-accent-foreground: 0 0% 13%;
+    --sidebar-border: 12 100% 74%;
+    --sidebar-ring: 12 100% 64%;
   }
   .dark {
     --background: 240 10% 3.9%;
