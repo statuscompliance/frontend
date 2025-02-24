@@ -26,14 +26,13 @@ const expandableNavItems = [
   {
     title: 'About Us',
     items: [
-      { title: 'Our Team', href: 'https://github.com/orgs/FIS2425/people' },
+      { title: 'Our Team', href: 'https://github.com/orgs/statuscompliance/people' },
     ]
   },
 ];
 
 const navItems = [
-  { title: 'Contact', href: 'https://github.com/orgs/FIS2425' },
-  { title: 'Terms', href: 'https://github.com/FIS2425/docs/wiki' },
+  { title: 'Contact', href: 'https://github.com/orgs/statuscompliance' },
 ];
 
 export function Header() {

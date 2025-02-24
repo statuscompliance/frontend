@@ -24,11 +24,7 @@ function App() {
               <Route index element={<Landing />} />
               <Route path="about" element={<About />} />
             </Route>
-            <Route path="/app" element={
-              // <ProtectedRoute>
-              <AppLayout />
-              // </ProtectedRoute>
-            }>
+            <Route path="/app" element={<AppLayout/>}>
               <Route index element={<Home />} />
               <Route path="catalogs" element={
                 <Catalogs/>

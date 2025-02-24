@@ -1,12 +1,12 @@
-import logo from '@/assets/status.jpeg';
+import logo from '@/assets/status.svg';
 
 export function Landing() {
 
   return (
     <div className="flex flex-col items-center mb-16">
       <div className="flex justify-around mt-16">
-        <a href="https://github.com/FIS2425" target="_blank">
-          <img src={logo} className="logohome size-auto" alt="STATUS logo" />
+        <a href="https://github.com/statuscompliance" target="_blank">
+          <img src={logo} className="statusImg size-24" alt="STATUS logo" />
         </a>
       </div>
       <div className="card flex flex-col justify-center items-center gap-y-3">

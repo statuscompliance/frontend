@@ -1,20 +1,15 @@
 #root {
   margin: 0 auto;
-  padding: 0 1rem;
+  padding: 0 2rem;
   text-align: center;
 }
 
-.logohome {
-  height: 15em;
-  padding: 0.5em;
+.statusImg {
   will-change: filter;
   transition: filter 300ms;
 }
-.logohome:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logohome.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.statusImg:hover {
+  filter: drop-shadow(0 0 8px #bf0a2e);
 }
 
 @keyframes logo-spin {

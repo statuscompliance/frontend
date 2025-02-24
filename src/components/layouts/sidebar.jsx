@@ -102,7 +102,7 @@ export function AppSidebar() {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem className="flex items-center justify-center">
-            <div className={`flex aspect-square items-center justify-center rounded-lg bg-sidebar-background text-sidebar-foreground ${open || isMobile ? 'size-20' : 'size-8'}`}>
+            <div className={`statusImg flex aspect-square items-center justify-center rounded-lg bg-sidebar-background text-sidebar-foreground ${open || isMobile ? 'size-20' : 'size-8'}`}>
               <img
                 src={logo}
                 alt="statusImg"

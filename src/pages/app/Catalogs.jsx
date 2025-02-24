@@ -17,10 +17,12 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Edit, Trash, MoreHorizontal, ChevronDown } from 'lucide-react';
+import { Edit, Trash, MoreHorizontal, ChevronDown, Plus } from 'lucide-react';
 import { CatalogForm } from '@/forms/catalog/forms';
 import { toast } from 'sonner';
+import { Link } from 'react-router-dom';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import Page from '@/pages/BasicPage.jsx';
 
 const mockCatalogs = [
   { id: '1', name: 'Security Controls', description: 'Basic security controls', controlsCount: 5 },
@@ -152,8 +154,9 @@ export function Catalogs() {
   });
 
   return (
-    <div className="w-[80%] h-[70%] space-y-4">
-      <div className="flex items-center justify-between">
+
+    <Page name="Catalogs" className="w-full h-full">
+      <div className="flex items-center justify-between gap-x-4">
         <Input
           placeholder="Search catalogs..."
           value={globalFilter ?? ''}
@@ -183,6 +186,11 @@ export function Catalogs() {
               })}
           </DropdownMenuContent>
         </DropdownMenu>
+        <Link href="/app/catalog/new">
+          <Button>
+            <Plus className="mr-2 h-4 w-4" /> Add New Catalog
+          </Button>
+        </Link>
       </div>
       <div className="rounded-md border">
         <Table>
@@ -231,6 +239,6 @@ export function Catalogs() {
           onCancel={() => setEditingCatalog(null)}
         />
       )}
-    </div>
+    </Page>
   );
 }
