@@ -21,6 +21,7 @@ import { Edit, Trash, MoreHorizontal, ChevronDown, Plus } from 'lucide-react';
 import { CatalogForm } from '@/forms/catalog/forms';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import Page from '@/pages/BasicPage.jsx';
 
@@ -68,6 +69,12 @@ export function Catalogs() {
     });
   };
 
+  const navigate = useNavigate();
+
+  const handleRowClick = useCallback((catalog) => {
+    navigate(`/app/catalogs/${catalog.id}`);
+  }, [navigate]);
+  
   const columns = useMemo(
     () => [
       {
@@ -91,7 +98,14 @@ export function Catalogs() {
       },
       columnHelper.accessor('name', {
         header: 'Catalog Name',
-        cell: (info) => info.getValue(),
+        cell: (info) => (
+          <span
+            className="cursor-pointer text-blue-600 hover:underline"
+            onClick={() => handleRowClick(info.row.original)}
+          >
+            {info.getValue()}
+          </span>
+        ),
       }),
       columnHelper.accessor('description', {
         header: 'Description',
@@ -131,7 +145,7 @@ export function Catalogs() {
         },
       },
     ],
-    [handleDelete, handleEdit]
+    [handleDelete, handleEdit, handleRowClick]
   );
 
   const table = useReactTable({
@@ -187,7 +201,7 @@ export function Catalogs() {
           </DropdownMenuContent>
         </DropdownMenu>
         <Link href="/app/catalog/new">
-          <Button>
+          <Button className="bg-sidebar-accent hover:bg-secondary hover:text-black">
             <Plus className="mr-2 h-4 w-4" /> Add New Catalog
           </Button>
         </Link>
