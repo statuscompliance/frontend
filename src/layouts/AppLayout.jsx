@@ -3,6 +3,7 @@ import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { AppSidebar } from '@/components/layouts/sidebar';
+import { Toaster } from '@/components/ui/sonner';
 
 export default function AppLayout() {
   const isMobile = useIsMobile();
@@ -24,6 +25,7 @@ export default function AppLayout() {
         <main className="flex-grow flex items-center justify-center">
           <Outlet />
         </main>
+        <Toaster closeButton />
       </div>
     </SidebarProvider>
   );

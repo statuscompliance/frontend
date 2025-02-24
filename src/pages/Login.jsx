@@ -1,8 +1,6 @@
-import { Bandage, Activity, Cross, HeartPulse, HandHeart, CalendarHeart, Syringe, Tablets, Stethoscope, Dna, Brain } from 'lucide-react';
 import { LoginForm } from '@/forms/auth/forms';
 import { loginSchema } from '@/forms/auth/schemas';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { GalleryVerticalEnd } from 'lucide-react';
 import logo from '@/assets/status.jpeg';
 import { login } from '@/services/auth';
 import { useState } from 'react';
@@ -12,20 +10,6 @@ import { useNavigate } from 'react-router';
 import { useAuth } from '@/hooks/use-auth';
 
 export function Login() {
-  const icons = {
-    Bandage,
-    Activity,
-    Cross,
-    HeartPulse,
-    HandHeart,
-    CalendarHeart,
-    Syringe,
-    Tablets,
-    Stethoscope,
-    Dna,
-    Brain,
-  };
-
   return (
     <div className="flex min-h-screen">
       <div className="w-full flex items-center justify-center p-8">

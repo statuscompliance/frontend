@@ -46,27 +46,27 @@ const data = [
       },
       {
         title: 'Catalogs',
-        url: '/catalogs',
+        url: '/app/catalogs',
         icon: FolderOpen,
       },
       {
         title: 'Dashboards',
-        url: '/dashboards',
+        url: '/app/dashboards',
         icon: ChartNoAxesCombined,
       },
       {
         title: 'Scopes',
-        url: '/scopes',
+        url: '/app/scopes',
         icon: Shapes,
       },
       {
         title: 'Mashups',
-        url: '/mashups',
+        url: '/app/mashups',
         icon: FileSliders,
       },
       {
         title: 'Editor',
-        url: '/editor',
+        url: '/app/editor',
         icon: Workflow,
       },
     ]
