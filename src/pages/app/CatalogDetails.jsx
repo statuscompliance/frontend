@@ -105,8 +105,11 @@ export function CatalogDetails() {
       columnHelper.accessor('name', {
         header: 'Name',
         cell: (info) => (
-          <Link to={`/app/catalogs/${params.id}/controls/${info.row.original.id}`} className="text-blue-600 hover:underline">
-            {info.getValue()}
+          <Link
+            to={`/app/catalogs/${params.id}/controls/${info.row.original.id}`}
+            className="text-blue-600 hover:underline"
+          >
+            {typeof info.getValue() === 'string' ? info.getValue() : 'View Details'}
           </Link>
         ),
       }),

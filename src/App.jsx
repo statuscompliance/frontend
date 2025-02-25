@@ -29,12 +29,16 @@ function App() {
             </Route>
             <Route path="/app" element={<AppLayout/>}>
               <Route index element={<Home />} />
-              <Route path="catalogs" element={
-                <Catalogs/>
-              } />
-              <Route path="catalogs/:id" element={<CatalogDetails />} />
-              <Route path="catalogs/:id/controls/:controlId" element={<ControlDetails />} />
+              <Route path="catalogs" >
+                <Route index element={<Catalogs />} />
+                <Route path=":id">
+                  <Route index element={<CatalogDetails />} />
+                  <Route path="controls/:controlId" element={<ControlDetails />} />
+                </Route>
+              </Route>
               <Route path="scopes" element={<Scopes />} />
+              {/* <Route path="catalogs/:id/controls/:controlId" element={<ControlDetails />} />
+               */}
             </Route>
             { /* Routes here have no layout ON PURPOSE */}
             <Route path="/login" element={<Login />} />
