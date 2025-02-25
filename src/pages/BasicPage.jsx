@@ -51,7 +51,7 @@ export default function Page({ children }) {
                 <React.Fragment key={crumb.href}>
                   {index > 0 && <BreadcrumbSeparator />}
                   <BreadcrumbItem>
-                    {crumb.isLast ? (
+                    {crumb.isLast || crumb.href === '' ? (
                       <BreadcrumbPage>{crumb.name}</BreadcrumbPage>
                     ) : (
                       <BreadcrumbLink>

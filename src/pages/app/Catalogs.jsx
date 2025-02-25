@@ -201,7 +201,7 @@ export function Catalogs() {
           </DropdownMenuContent>
         </DropdownMenu>
         <Link href="/app/catalog/new">
-          <Button className="bg-sidebar-accent hover:bg-secondary hover:text-black">
+          <Button className="bg-sidebar-accent hover:bg-secondary hover:text-sidebar-accent border-2 border-sidebar-accent">
             <Plus className="mr-2 h-4 w-4" /> Add New Catalog
           </Button>
         </Link>
