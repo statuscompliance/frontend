@@ -14,6 +14,9 @@ function generateBreadcrumbs(path) {
     const isLast = index === segments.length - 1;
 
     const name = segment.toLowerCase() === 'app' ? 'Home' : segment.charAt(0).toUpperCase() + segment.slice(1);
+    if (name === 'Controls') {
+      return { name, href: '', isLast };
+    }
 
     return { name, href, isLast };
   }).filter(crumb => crumb.name !== 'Home' || crumb.isLast); // Avoid "Home" unless it's the last segment

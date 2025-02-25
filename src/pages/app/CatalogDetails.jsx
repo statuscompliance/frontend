@@ -22,9 +22,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Edit, Trash } from 'lucide-react';
+import { toast } from 'sonner';
 
 const columnHelper = createColumnHelper();
+
+
 
 const mockControls = [
   {
@@ -57,6 +60,10 @@ export function CatalogDetails() {
   const [catalog, setCatalog] = useState(null);
   const [controls, setControls] = useState([]);
   const [globalFilter, setGlobalFilter] = useState('');
+  const [columnVisibility, setColumnVisibility] = useState({
+    params: false,
+  });
+  const [selectedControls, setSelectedControls] = useState({});
 
   useEffect(() => {
     // In a real application, you would fetch the catalog and its controls here
@@ -76,9 +83,32 @@ export function CatalogDetails() {
 
   const columns = useMemo(
     () => [
+      {
+        id: 'select',
+        header: ({ table }) => (
+          <Checkbox
+            checked={table.getIsAllPageRowsSelected()}
+            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+            aria-label="Select all"
+          />
+        ),
+        cell: ({ row }) => (
+          <Checkbox
+            checked={row.getIsSelected()}
+            onCheckedChange={(value) => row.toggleSelected(!!value)}
+            aria-label="Select row"
+          />
+        ),
+        enableSorting: false,
+        enableHiding: false,
+      },
       columnHelper.accessor('name', {
         header: 'Name',
-        cell: (info) => info.getValue(),
+        cell: (info) => (
+          <Link to={`/app/catalogs/${params.id}/controls/${info.row.original.id}`} className="text-blue-600 hover:underline">
+            {info.getValue()}
+          </Link>
+        ),
       }),
       columnHelper.accessor('description', {
         header: 'Description',
@@ -102,7 +132,16 @@ export function CatalogDetails() {
       }),
       columnHelper.accessor('params', {
         header: 'Parameters',
-        cell: (info) => JSON.stringify(info.getValue()),
+        cell: (info) => (
+          <div className="flex flex-wrap gap-1">
+            {Object.entries(info.getValue()).map(([key, value]) => (
+              <Badge key={key} variant="outline">
+                {key}: {value}
+              </Badge>
+            ))}
+          </div>
+        ),
+        meta: { hideByDefault: true },
       }),
       columnHelper.accessor('scopes', {
         header: 'Scopes',
@@ -114,10 +153,10 @@ export function CatalogDetails() {
               </Badge>
             ))}
           </div>
-        ),
+        )
       }),
     ],
-    [],
+    [params.id],
   );
 
   const table = useReactTable({
@@ -125,11 +164,15 @@ export function CatalogDetails() {
     columns,
     state: {
       globalFilter,
+      columnVisibility,
+      rowSelection: selectedControls,
     },
+    onRowSelectionChange: setSelectedControls,
     onGlobalFilterChange: setGlobalFilter,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
+    onColumnVisibilityChange: setColumnVisibility,
     initialState: {
       pagination: {
         pageSize: 10,
@@ -137,12 +180,25 @@ export function CatalogDetails() {
     },
   });
 
+  const handleEditCatalog = () => {
+    // Implement edit functionality for catalog
+    toast.info('Edit catalog functionality not implemented yet.');
+  };
+
+  const handleDeleteControls = () => {
+    const selectedIds = Object.keys(selectedControls);
+    // Implement delete functionality for selected controls
+    toast.success(`Deleted ${selectedIds.length} controls`);
+    setControls(controls.filter((control) => !selectedIds.includes(control.id)));
+    setSelectedControls({});
+  };
+
   if (!catalog) {
     return <div>Loading...</div>;
   }
 
   return (
-    <Page name="Controls" className="container mx-auto p-4 space-y-6">
+    <Page className="container mx-auto p-4 space-y-6">
       <Card className="text-left p-4">
         <div className="grid grid-cols-2 gap-4 items-start">
           <div>
@@ -164,7 +220,11 @@ export function CatalogDetails() {
               </a>
             </CardContent>
           </div>
-          <div className="flex justify-end items-start p-4">
+          <div className="flex flex-wrap p-4 justify-end space-x-2">
+            <Button className="max-w-fit" variant="outline" onClick={handleEditCatalog}>
+              <Edit className="mr-2 h-4 w-4" />
+              Edit
+            </Button>
             <Link to="/app/catalogs">
               <Button variant="outline">Back to Catalogs</Button>
             </Link>
@@ -174,12 +234,21 @@ export function CatalogDetails() {
 
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-          <Input
-            placeholder="Search controls..."
-            value={globalFilter ?? ''}
-            onChange={(e) => setGlobalFilter(e.target.value)}
-            className="max-w-sm"
-          />
+          <div className="flex space-x-2">
+            <Input
+              placeholder="Search controls..."
+              value={globalFilter ?? ''}
+              onChange={(e) => setGlobalFilter(e.target.value)}
+              className="max-w-sm"
+            />
+            <Button
+              className="bg-sidebar-accent hover:bg-secondary hover:text-sidebar-accent border-sidebar-accent border-2"
+              onClick={handleDeleteControls}
+              disabled={Object.keys(selectedControls).length === 0}
+            >
+              <Trash className="h-4 w-4" />
+            </Button>
+          </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="ml-auto">
@@ -218,7 +287,7 @@ export function CatalogDetails() {
                 </TableRow>
               ))}
             </TableHeader>
-            <TableBody>
+            <TableBody className="text-left">
               {table.getRowModel().rows?.length ? (
                 table.getRowModel().rows.map((row) => (
                   <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
