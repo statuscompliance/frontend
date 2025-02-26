@@ -11,6 +11,7 @@ import { Catalogs } from '@/pages/app/Catalogs';
 import { CatalogDetails } from '@/pages/app/CatalogDetails';
 import { ControlDetails } from '@/pages/app/ControlDetails';
 import { Scopes } from '@/pages/app/Scopes';
+import { Dashboards } from '@/pages/app/Dashboards';
 import MainLayout from '@/layouts/MainLayout';
 import AppLayout from '@/layouts/AppLayout';
 import { AuthProvider, ProtectedRoute } from '@/components/auth-provider';
@@ -36,6 +37,7 @@ function App() {
                   <Route path="controls/:controlId" element={<ControlDetails />} />
                 </Route>
               </Route>
+              <Route path="dashboards" element={<Dashboards />} />
               <Route path="scopes" element={<Scopes />} />
             </Route>
             { /* Routes here have no layout ON PURPOSE */}
