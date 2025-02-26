@@ -37,8 +37,6 @@ function App() {
                 </Route>
               </Route>
               <Route path="scopes" element={<Scopes />} />
-              {/* <Route path="catalogs/:id/controls/:controlId" element={<ControlDetails />} />
-               */}
             </Route>
             { /* Routes here have no layout ON PURPOSE */}
             <Route path="/login" element={<Login />} />

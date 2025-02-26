@@ -13,12 +13,14 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Edit, ExternalLink, CircleCheck, CircleX, ChevronDown } from 'lucide-react';
+import { Edit, ExternalLink, CircleCheck, CircleX, ChevronDown, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Checkbox } from '@/components/ui/checkbox';
 import Page from '@/pages/BasicPage.jsx';
+import { ScopeSetForm } from '@/forms/scopeSet/form';
+import { ControlForm } from '@/forms/control/form';
 
 const columnHelper = createColumnHelper();
 
@@ -35,15 +37,46 @@ const mockControl = {
 };
 
 const mockEvidences = [
-  { id: 'fbc4c50a-c21a-45f3-87af-27116ac8d56c', key: 'AND operation', value: [true, true], result: true },
+  { 
+    id: 'fbc4c50a-c21a-45f3-87af-27116ac8d56c', 
+    key: 'AND operation', 
+    value: [true, true], 
+    result: true,
+    from: '2023-06-01T08:00:00',
+    to: '2023-06-01T17:30:00'
+  },
   {
     id: '2cfd4036-22c7-4533-babf-b339f2237acb',
     key: 'url',
     value: 'https://github.com/statuscompliance/infrastructure/blob/examples/files/receipts/payment81001.pdf',
     result: true,
+    from: '2023-06-02T09:15:00',
+    to: '2023-06-02T19:45:00'
   },
-  { id: '3', key: 'password_length', value: 10, result: true },
-  { id: '4', key: 'special_char_present', value: false, result: false },
+  { 
+    id: '3', 
+    key: 'password_length', 
+    value: 10, 
+    result: true,
+    from: '2023-06-03T07:30:00',
+    to: '2023-06-03T16:00:00'
+  },
+  { 
+    id: '4', 
+    key: 'special_char_present', 
+    value: false, 
+    result: false,
+    from: '2023-06-04T10:00:00',
+    to: '2023-06-04T18:30:00'
+  },
+];
+
+// Mock scopes data
+const mockAvailableScopes = [
+  { id: 'env-1', name: 'environment' },
+  { id: 'crit-1', name: 'criticality' },
+  { id: 'region-1', name: 'region' },
+  { id: 'cloud-1', name: 'cloud-provider' },
 ];
 
 export function ControlDetails() {
@@ -51,6 +84,11 @@ export function ControlDetails() {
   const [control, setControl] = useState(null);
   const [evidences, setEvidences] = useState([]);
   const [globalFilter, setGlobalFilter] = useState('');
+  const [editingControl, setEditingControl] = useState(false);
+  const [editingScopes, setEditingScopes] = useState(false);
+  // For dynamic scope display during editing
+  const [tempScopes, setTempScopes] = useState({});
+
   useEffect(() => {
     // In a real application, you would fetch the control and its evidences here
     // For this example, we'll use mock data
@@ -60,11 +98,19 @@ export function ControlDetails() {
     }
   }, [params.controlId]);
 
+  // Initialize temp scopes when starting to edit
+  useEffect(() => {
+    if (editingScopes && control) {
+      setTempScopes({ ...control.scopes });
+    }
+  }, [editingScopes, control]);
+
   const columns = useMemo(
     () => [
       columnHelper.accessor('key', {
         header: 'Key',
         cell: (info) => info.getValue(),
+        size: 150, // Fixed width for key column
       }),
       columnHelper.accessor('value', {
         header: 'Value',
@@ -76,17 +122,36 @@ export function ControlDetails() {
             return JSON.stringify(value);
           } else if (typeof value === 'string' && value.startsWith('http')) {
             return (
-              <a href={value} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                {value}
-              </a>
+              <Link 
+                to={value} 
+                className="text-blue-600 hover:underline flex items-center"
+              >
+                Evidence link <ExternalLink className="ml-1 h-4 w-4" />
+              </Link>
             );
           }
-          return JSON.stringify(value);
+          return (
+            <div className="max-w-[300px] break-words">
+              {JSON.stringify(value)}
+            </div>
+          );
         },
+        size: 300, // Allow more space for value contents
+      }),
+      columnHelper.accessor('from', {
+        header: 'From',
+        cell: (info) => format(new Date(info.getValue()), 'yyyy-MM-dd HH:mm'),
+        size: 120, // Fixed width for date columns
+      }),
+      columnHelper.accessor('to', {
+        header: 'To',
+        cell: (info) => format(new Date(info.getValue()), 'yyyy-MM-dd HH:mm'),
+        size: 120, // Fixed width for date columns
       }),
       columnHelper.accessor('result', {
         header: 'Result',
         cell: (info) => (info.getValue() ? <CircleCheck className="size-4 text-green-500" /> : <CircleX className="size-4 text-red-500" />),
+        size: 80, // Smaller width for the result column
       }),
     ],
     [],
@@ -110,13 +175,62 @@ export function ControlDetails() {
   });
 
   const handleEditControl = () => {
-    // Implement edit functionality for control
-    toast.info('Edit control functionality not implemented yet.');
+    setEditingControl(true);
   };
 
   const handleEditScopes = () => {
-    // Implement edit functionality for scopes
-    toast.info('Edit scopes functionality not implemented yet.');
+    setEditingScopes(true);
+  };
+
+  const handleControlSubmit = (data) => {
+    // In a real application, you would update the control data here
+    console.log('Updating control:', data);
+    setControl({
+      ...control,
+      ...data,
+    });
+    toast.success('Control updated successfully');
+    setEditingControl(false);
+  };
+
+  const handleScopeSetSubmit = (data) => {
+    // In a real application, you would update the control's scopes here
+    console.log('Updating scopes:', data);
+    
+    // Convert the scope array to an object for the control
+    const updatedScopes = {};
+    data.scopes.forEach(scope => {
+      updatedScopes[scope.name] = scope.value;
+    });
+    
+    setControl({
+      ...control,
+      scopes: updatedScopes,
+    });
+    
+    // Clear temp scopes
+    setTempScopes({});
+    
+    toast.success('Scopes updated successfully');
+    setEditingScopes(false);
+  };
+
+  const handleRemoveScope = (scopeName) => {
+    if (editingScopes) {
+      // In editing mode, update temp scopes
+      const updatedTempScopes = { ...tempScopes };
+      delete updatedTempScopes[scopeName];
+      setTempScopes(updatedTempScopes);
+    } else {
+      // Not in editing mode, update control directly
+      const updatedScopes = { ...control.scopes };
+      delete updatedScopes[scopeName];
+      setControl({
+        ...control,
+        scopes: updatedScopes,
+      });
+      toast.success(`Scope "${scopeName}" removed`);
+    }
   };
 
   if (!control) {
@@ -126,39 +240,79 @@ export function ControlDetails() {
   return (
     <Page className="container mx-auto p-4 space-y-6">
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardHeader className="flex flex-row items-center justify-start space-y-0 space-x-2 pb-2">
           <CardTitle>{control.name}</CardTitle>
-          <Button variant="outline" size="sm" onClick={handleEditControl}>
-            <Edit className="mr-2 h-4 w-4" />
-            Edit
+          <Button variant="outline" size="sm" onClick={editingControl ? () => setEditingControl(false) : handleEditControl}>
+            {editingControl ? (
+              <X className="h-4 w-4" />
+            ) : (
+              <Edit className="h-4 w-4" />
+            )}
           </Button>
         </CardHeader>
         <CardContent className="text-left">
-          <p className="text-gray-600 mb-2">{control.description}</p>
-          <p className="text-sm">Period: {control.period}</p>
-          <p className="text-sm">
-            Duration: {format(new Date(control.startDate), 'yyyy-MM-dd')} to{' '}
-            {format(new Date(control.endDate), 'yyyy-MM-dd')}
-          </p>
-          <p className="text-sm">Mashup ID: {control.mashupId}</p>
-          <Link to={`/app/mashup/${control.mashupId}`} className="text-blue-600 hover:underline flex items-center">
-            View Node-RED Flow <ExternalLink className="ml-1 h-4 w-4" />
-          </Link>
+          {editingControl ? (
+            <ControlForm 
+              onSubmit={handleControlSubmit} 
+              onCancel={() => setEditingControl(false)} 
+              defaultValues={{
+                ...control,
+                // Format dates if needed
+                startDate: control.startDate,
+                endDate: control.endDate,
+              }}
+            />
+          ) : (
+            <>
+              <p className="text-gray-600 mb-2">{control.description}</p>
+              <p className="text-sm">Period: {control.period}</p>
+              <p className="text-sm">
+                Duration: {format(new Date(control.startDate), 'yyyy-MM-dd')} to{' '}
+                {format(new Date(control.endDate), 'yyyy-MM-dd')}
+              </p>
+              <p className="text-sm">Mashup ID: {control.mashupId}</p>
+              <Link to={`/app/mashup/${control.mashupId}`} className="text-blue-600 hover:underline flex items-center">
+                View Node-RED Flow <ExternalLink className="ml-1 h-4 w-4" />
+              </Link>
+            </>
+          )}
+
           <div className="mt-4">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-start space-x-2">
               <h3 className="text-lg font-semibold">Scopes</h3>
-              <Button variant="outline" size="sm" onClick={handleEditScopes}>
-                <Edit className="mr-2 h-4 w-4" />
-                Edit Scopes
+              <Button variant="outline" size="sm" onClick={editingScopes ? () => setEditingScopes(false) : handleEditScopes}>
+                {editingScopes ? (
+                  <X className="h-4 w-4" />
+                ) : (
+                  <Edit className="h-4 w-4" />
+                )}
               </Button>
             </div>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {Object.entries(control.scopes).map(([key, value]) => (
-                <Badge key={key} variant="outline">
-                  {key}: {value}
-                </Badge>
-              ))}
-            </div>
+            
+            {editingScopes ? (
+              <ScopeSetForm 
+                onSubmit={handleScopeSetSubmit}
+                onCancel={() => setEditingScopes(false)}
+                controls={[control]}
+                scopes={mockAvailableScopes}
+                defaultValues={{
+                  controlId: control.id,
+                  scopes: Object.entries(control.scopes).map(([name, value]) => ({
+                    id: mockAvailableScopes.find(s => s.name === name)?.id || name,
+                    name,
+                    value,
+                  }))
+                }}
+              />
+            ) : (
+              <div className="flex flex-wrap gap-2 py-4">
+                {Object.entries(control.scopes).map(([key, value]) => (
+                  <Badge key={key} variant="outline" className="px-2 py-1">
+                    <span>{key}: {value}</span>
+                  </Badge>
+                ))}
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -196,13 +350,17 @@ export function ControlDetails() {
           </div>
         </div>
 
-        <div className="rounded-md border">
-          <Table>
+        <div className="rounded-md border overflow-x-auto">
+          <Table className="w-full table-auto">
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
-                    <TableHead key={header.id}>
+                    <TableHead 
+                      key={header.id}
+                      className="whitespace-nowrap"
+                      style={{ width: header.column.columnDef.size ? `${header.column.columnDef.size}px` : 'auto' }}
+                    >
                       {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                     </TableHead>
                   ))}
@@ -214,7 +372,18 @@ export function ControlDetails() {
                 table.getRowModel().rows.map((row) => (
                   <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
                     {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
+                      <TableCell 
+                        key={cell.id}
+                        className="align-top"
+                        style={{ 
+                          width: cell.column.columnDef.size ? `${cell.column.columnDef.size}px` : 'auto',
+                          maxWidth: cell.column.columnDef.size ? `${cell.column.columnDef.size}px` : 'auto',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis'
+                        }}
+                      >
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
                     ))}
                   </TableRow>
                 ))
