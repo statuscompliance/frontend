@@ -1,36 +1,48 @@
-import { client } from '@/api/axiosClient';
+import { apiClient } from '@/api/apiClient';
 
-export function login({ email, password }) {
-  return client.post(
-    '/login',
-    { email, password }
-  );
+/**
+ * Registers a new user
+ * @param {object} userData - User data
+ * @param {string} userData.username - Username
+ * @param {string} userData.password - Password
+ * @param {string} userData.email - Email
+ * @returns {Promise} - Promise with the response
+ */
+export function signUp({ username, password, email }) {
+  return apiClient.post('/users/signUp', { username, password, email });
 }
 
-export function logout() {
-  return client.post('/logout');
+/**
+ * Logs in with a registered user
+ * @param {object} credentials - User credentials
+ * @param {string} credentials.username - Username
+ * @param {string} credentials.password - Password
+ * @returns {Promise} - Promise with the response
+ */
+export function signIn({ username, password }) {
+  return apiClient.post('/users/signIn', { username, password });
 }
 
-export function enable2FA() {
-  return client.post(
-    'users/enable-2fa',
-  );
+/**
+ * Logs out the user
+ * @returns {Promise} - Promise with the response
+ */
+export function signOut() {
+  return apiClient.post('/users/signOut');
 }
 
-export function verify2FA(userId, { totpToken }) {
-  return client.post(
-    'users/verify-2fa',
-    { userId, totpToken }
-  );
+/**
+ * Gets the authenticated user's authority
+ * @returns {Promise} - Promise with the response
+ */
+export function getUserAuthority() {
+  return apiClient.get('/users/auth/');
 }
 
-export function changePassword({ currentPassword, newPassword }) {
-  return client.post(
-    '/users/change-password',
-    { currentPassword, newPassword }
-  );
-}
-
-export function getUserData(userId) {
-  return client.get(`/users/${userId}`).then(response => response.data);
+/**
+ * Refreshes the access token
+ * @returns {Promise} - Promise with the response
+ */
+export function refreshToken() {
+  return apiClient.get('/api/refresh');
 }
