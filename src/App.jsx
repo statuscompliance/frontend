@@ -29,9 +29,16 @@ function App() {
               <Route index element={<Landing />} />
               <Route path="about" element={<About />} />
             </Route>
-            <Route path="/app" element={<AppLayout/>}>
+            <Route
+              path="/app"
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AppLayout />
+                </ProtectedRoute>
+              }
+            >
               <Route index element={<Home />} />
-              <Route path="catalogs" >
+              <Route path="catalogs">
                 <Route index element={<Catalogs />} />
                 <Route path=":id">
                   <Route index element={<CatalogDetails />} />
@@ -42,7 +49,7 @@ function App() {
               <Route path="scopes" element={<Scopes />} />
               <Route path="editor" element={<Editor />} />
             </Route>
-            { /* Routes here have no layout ON PURPOSE */}
+            { /* Routes here have no layout ON PURPOSE */ }
             <Route path="/login" element={<Login />} />
             <Route path="/logout" element={<Logout />} />
             <Route path="/verify-2fa" element={<Verify2FA />} />

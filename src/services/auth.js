@@ -28,7 +28,7 @@ export function signIn({ username, password }) {
  * @returns {Promise} - Promise with the response
  */
 export function signOut() {
-  return apiClient.post('/users/signOut');
+  return apiClient.get('/users/signOut');
 }
 
 /**

@@ -9,7 +9,6 @@ export const AuthProvider = ({ children }) => {
 
   const authenticate = async (user) => {
     setIsAuthenticated(true);
-    user.userId = user._id;
     setUserData(user);
     localStorage.setItem('userData', JSON.stringify(user)); // Save user data
   };
@@ -39,7 +38,7 @@ export const ProtectedRoute = ({ children, allowedRoles }) => {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
-  const hasAccess = allowedRoles == undefined || allowedRoles.some((role) => userData.roles.includes(role));
+  const hasAccess = allowedRoles == undefined || allowedRoles.some((role) => role === userData?.authority?.toLowerCase());
   if (!hasAccess) {
     return <Navigate to="/unauthorized" replace />;
   }

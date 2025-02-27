@@ -16,11 +16,12 @@ export function CustomDialog({
   children,
   open,
   onOpenChange,
+  classNameOverride,
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
-        <Button variant={triggerText === 'Add Scope' ? 'default' : 'outline'}>
+        <Button className={classNameOverride}variant={triggerText === 'Add Scope' ? 'default' : 'outline'}>
           {triggerIcon}
           {triggerText}
         </Button>

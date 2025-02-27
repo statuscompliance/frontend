@@ -1,7 +1,7 @@
 import { Verify2FAForm } from '@/forms/auth/forms';
 import { verify2FASchema } from '@/forms/auth/schemas';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { verify2FA } from '@/services/auth';
+// import { verify2FA } from '@/services/auth';
 import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -36,33 +36,33 @@ function Verify2FACard() {
 
   function onSubmit(values) {
     setIsLoading(true);
-    verify2FA(userId, values)
-      .then(async (response) => {
-        if (response.status === 200 && response.data.message === 'Login successful') {
-          const { message: _, ...userData } = response.data;
-          await authenticate(userData);
-          navigate('/app');
-        }
-      })
-      .catch((err) => {
-        if (err.response) {
-          const { status, data } = err.response;
+    // verify2FA(userId, values)
+    //   .then(async (response) => {
+    //     if (response.status === 200 && response.data.message === 'Login successful') {
+    //       const { message: _, ...userData } = response.data;
+    //       await authenticate(userData);
+    //       navigate('/app');
+    //     }
+    //   })
+    //   .catch((err) => {
+    //     if (err.response) {
+    //       const { status, data } = err.response;
 
-          if (status === 403) {
-            setError(data.message || '2FA session expired or invalid');
-          } else if (status === 400) {
-            setError(data.message || 'Invalid 2FA token');
-          } else {
-            setError('An error occurred. Please try again later.');
-          }
-        } else {
-          setError('Network error. Please try again later.');
-        }
-        console.error(err);
-      })
-      .finally(() => {
-        setIsLoading(false);
-      });
+    //       if (status === 403) {
+    //         setError(data.message || '2FA session expired or invalid');
+    //       } else if (status === 400) {
+    //         setError(data.message || 'Invalid 2FA token');
+    //       } else {
+    //         setError('An error occurred. Please try again later.');
+    //       }
+    //     } else {
+    //       setError('Network error. Please try again later.');
+    //     }
+    //     console.error(err);
+    //   })
+    //   .finally(() => {
+    //     setIsLoading(false);
+    //   });
   }
 
   return (

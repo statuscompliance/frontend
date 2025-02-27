@@ -20,13 +20,13 @@ export function LoginForm({ form, onSubmit, isLoading, error }) {
         {error && <FormMessage className="flex flex-col items-start text-base">{error}</FormMessage>}
         <FormField
           control={form.control}
-          name="email"
+          name="username"
           rules={{ required: true }}
           render={({ field }) => (
             <FormItem className="flex flex-col items-start">
-              <FormLabel className="text-base font-large">Email</FormLabel>
+              <FormLabel className="text-base font-large">Username</FormLabel>
               <FormControl>
-                <Input placeholder="email@example.com" {...field} />
+                <Input placeholder="username" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -164,5 +164,3 @@ export function PasswordChangeForm({ form, onSubmit, isLoading, error }) {
     </Form>
   );
 }
-
-

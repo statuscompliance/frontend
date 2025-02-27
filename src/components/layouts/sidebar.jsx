@@ -244,16 +244,14 @@ function FooterItem({ item, ...props }) {
 }
 
 function FooterButton() {
-  // const { userData } = useAuth();
+  const { userData } = useAuth();
   return (
     <div className="grid flex-1 text-left text-sm leading-tight">
       <span className="truncate font-semibold">
-        {/* {userData && userData.email} */}
-        example@us.es
+        {userData && userData.email}
       </span>
       <span className="truncate text-xs">
-        {/* {userData && userData.roles.join(', ')} */}
-        ADMIN
+        {userData && userData.authority}
       </span>
     </div>
   );

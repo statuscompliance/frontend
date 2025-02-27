@@ -135,6 +135,7 @@ export function Scopes() {
           </div>
           <div className="flex justify-end space-x-2">
             <CustomDialog
+              classNameOverride="bg-white hover:bg-secondary text-primary"
               title={editingScope ? 'Edit Scope' : 'Add New Scope'}
               description={editingScope ? 'Edit the scope details below.' : 'Enter the details for the new scope.'}
               triggerText="Add Scope"
@@ -148,6 +149,7 @@ export function Scopes() {
               />
             </CustomDialog>
             <CustomDialog
+              classNameOverride="bg-sidebar-accent hover:bg-secondary hover:text-sidebar-accent border-sidebar-accent border-2 text-white"
               title="Add New Scope Set"
               description="Link scopes to a control."
               triggerText="Add Scope Set"

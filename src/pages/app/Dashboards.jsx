@@ -53,7 +53,7 @@ export function Dashboards() {
             placeholder="Filter dashboards and folders..."
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            className="max-w-sm"
+            className="max-w-sm min-w-[350px]"
           />
           <Select value={filterBy} onValueChange={setFilterBy}>
             <SelectTrigger className="w-[180px]">
