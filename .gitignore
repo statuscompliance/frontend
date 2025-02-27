@@ -3,5 +3,10 @@ node_modules
 .DS_Store
 
 .env*
+!.env.example
 
 docker-deploy.yml
+
+assistants.js
+configurations.js
+threads.js
