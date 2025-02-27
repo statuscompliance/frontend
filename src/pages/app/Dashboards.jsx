@@ -13,7 +13,7 @@ export function Dashboards() {
   const [isDashboardFormOpen, setIsDashboardFormOpen] = useState(false);
   const [isFolderFormOpen, setIsFolderFormOpen] = useState(false);
   const [filter, setFilter] = useState('');
-  const [sortBy, setSortBy] = useState('name');
+  const [filterBy, setFilterBy] = useState('all');
 
   const handleAddDashboard = () => {
     setIsDashboardFormOpen(true);
@@ -47,36 +47,35 @@ export function Dashboards() {
 
   return (
     <Page>
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-semibold">Dashboards</h2>
-        <div className="space-x-2">
-          <Button onClick={handleAddFolder}>
+      <div className="flex justify-between items-center space-x-4 mb-4">
+        <div className='flex items-center space-x-2'>
+          <Input
+            placeholder="Filter dashboards and folders..."
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="max-w-sm"
+          />
+          <Select value={filterBy} onValueChange={setFilterBy}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Show" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Items</SelectItem>
+              <SelectItem value="dashboards">Dashboards Only</SelectItem>
+              <SelectItem value="folders">Folders Only</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex items-center space-x-2">
+          <Button variant="outline" onClick={handleAddFolder}>
             <FolderPlus className="mr-2 h-4 w-4" /> Add Folder
           </Button>
-          <Button onClick={handleAddDashboard}>
+          <Button className="bg-sidebar-accent text-white hover:bg-secondary hover:text-sidebar-accent border-2 border-sidebar-accent" variant="outline" onClick={handleAddDashboard}>
             <Plus className="mr-2 h-4 w-4" /> Add Dashboard
           </Button>
         </div>
       </div>
-      <div className="flex space-x-4 mb-4">
-        <Input
-          placeholder="Filter dashboards and folders..."
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          className="max-w-sm"
-        />
-        <Select value={sortBy} onValueChange={setSortBy}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Sort by" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="name">Name</SelectItem>
-            <SelectItem value="created">Date Created</SelectItem>
-            <SelectItem value="modified">Date Modified</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      <DashboardList filter={filter} sortBy={sortBy} />
+      <DashboardList filter={filter} filterBy={filterBy} />
       {isDashboardFormOpen && (
         <DashboardForm onClose={handleDashboardFormClose} onSubmit={handleDashboardFormSubmit} />
       )}
