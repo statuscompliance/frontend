@@ -106,7 +106,7 @@ export function AppSidebar() {
               <img
                 src={logo}
                 alt="statusImg"
-                className
+                className=""
               />
             </div>
           </SidebarMenuItem>

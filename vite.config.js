@@ -10,5 +10,5 @@ export default defineConfig({
       /* global __dirname */
       '@': path.resolve(__dirname, './src'),
     },
-  },
+  }
 });
