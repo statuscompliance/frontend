@@ -1,72 +1,93 @@
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { catalogSchema } from '@/forms/catalog/schemas';
+import { Label } from '@/components/ui/label';
+import { Loader2 } from 'lucide-react';
 
-export function CatalogForm({ catalog, onSuccess, onCancel }) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const form = useForm({
-    resolver: zodResolver(catalogSchema),
-    defaultValues: catalog || { name: '', description: '' },
+export function CatalogForm({ catalog = {}, onSubmit, isSubmitting, errors = {} }) {
+  const [formData, setFormData] = useState({
+    name: '',
+    description: ''
   });
 
-  const onSubmit = async (data) => {
-    setIsSubmitting(true);
-    try {
-      // Here you would typically make an API call to create or update the catalog
-      // For demonstration, we'll just simulate an API call with a timeout
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      onSuccess({ id: catalog?.id || 'new-id', ...data });
-    } catch (error) {
-      console.error('Error submitting catalog:', error);
-    } finally {
-      setIsSubmitting(false);
+  useEffect(() => {
+    if (catalog) {
+      setFormData({
+        name: catalog.name || '',
+        description: catalog.description || ''
+      });
     }
+  }, [catalog]);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSubmit(formData);
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <FormField
-          control={form.control}
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="space-y-2">
+        <Label htmlFor="name" className="text-base font-medium">
+          Catalog Name
+        </Label>
+        <Input
+          id="name"
           name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Name</FormLabel>
-              <FormControl>
-                <Input placeholder="Enter catalog name" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+          placeholder="Enter catalog name"
+          value={formData.name}
+          onChange={handleChange}
+          className={errors.name ? 'border-red-500' : ''}
+          disabled={isSubmitting}
         />
-        <FormField
-          control={form.control}
+        {errors.name && (
+          <p className="text-red-500 text-sm mt-1">{errors.name}</p>
+        )}
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="description" className="text-base font-medium">
+          Description
+        </Label>
+        <Textarea
+          id="description"
           name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Description</FormLabel>
-              <FormControl>
-                <Textarea placeholder="Enter catalog description" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+          placeholder="Enter catalog description"
+          value={formData.description}
+          onChange={handleChange}
+          rows={4}
+          className={errors.description ? 'border-red-500' : ''}
+          disabled={isSubmitting}
         />
-        <div className="flex justify-end space-x-4">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
-          </Button>
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? 'Submitting...' : catalog ? 'Update Catalog' : 'Add Catalog'}
-          </Button>
-        </div>
-      </form>
-    </Form>
+        {errors.description && (
+          <p className="text-red-500 text-sm mt-1">{errors.description}</p>
+        )}
+      </div>
+      
+      <div className="flex justify-end pt-4">
+        <Button 
+          type="submit" 
+          disabled={isSubmitting}
+          className="min-w-[120px]"
+        >
+          {isSubmitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            'Continue'
+          )}
+        </Button>
+      </div>
+    </form>
   );
 }
