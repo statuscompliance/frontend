@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
@@ -14,40 +14,56 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { toast } from 'sonner';
 import { Edit, Trash, Plus } from 'lucide-react';
 import { ScopeForm } from '@/forms/scope/form';
-import { ScopeSetForm } from '@/forms/scopeSet/form';
 import { CustomDialog } from '@/components/custom-dialog';
 import { Badge } from '@/components/ui/badge';
 import Page from '@/pages/BasicPage.jsx';
+import { 
+  getAllScopes, 
+  createScope, 
+  updateScope, 
+  deleteScope
+} from '@/services/scopes';
 
 const columnHelper = createColumnHelper();
 
-const mockScopes = [
-  { id: '1', name: 'country', description: 'Country of operation', type: 'string', default: 'USA' },
-  { id: '2', name: 'business_unit', description: 'Business unit', type: 'string', default: 'IT' },
-  { id: '3', name: 'risk_level', description: 'Risk level', type: 'number', default: '1' },
-];
-
-const mockControls = [
-  { id: '1', name: 'Password Strength' },
-  { id: '2', name: 'Data Encryption' },
-  { id: '3', name: 'Access Control' },
-];
-
 export function Scopes() {
-  const [scopes, setScopes] = useState(mockScopes);
+  const [scopes, setScopes] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [globalFilter, setGlobalFilter] = useState('');
   const [isAddScopeOpen, setIsAddScopeOpen] = useState(false);
-  const [isAddScopeSetOpen, setIsAddScopeSetOpen] = useState(false);
   const [editingScope, setEditingScope] = useState(null);
+
+  // Fetch all scopes on component mount
+  useEffect(() => {
+    const fetchScopes = async () => {
+      try {
+        const response = await getAllScopes();
+        setScopes(response);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching scopes:', error);
+        toast.error('Failed to fetch scopes');
+        setLoading(false);
+      }
+    };
+
+    fetchScopes();
+  }, []);
   
   const handleEditScope = useCallback((scope) => {
     setEditingScope(scope);
     setIsAddScopeOpen(true);
   }, []);
   
-  const handleDeleteScope = useCallback((id) => {
-    setScopes((prevScopes) => prevScopes.filter((scope) => scope.id !== id));
-    toast.success('Scope deleted successfully');
+  const handleDeleteScope = useCallback(async (id) => {
+    try {
+      await deleteScope(id);
+      setScopes((prevScopes) => prevScopes.filter((scope) => scope.id !== id));
+      toast.success('Scope deleted successfully');
+    } catch (error) {
+      console.error('Error deleting scope:', error);
+      toast.error('Failed to delete scope');
+    }
   }, []);
   
   const columns = useMemo(
@@ -105,24 +121,29 @@ export function Scopes() {
     getPaginationRowModel: getPaginationRowModel(),
   });
 
-  const handleAddScope = (data) => {
-    const newScope = { id: Date.now().toString(), ...data };
-    setScopes([...scopes, newScope]);
-    setIsAddScopeOpen(false);
-    toast.success('Scope added successfully');
+  const handleAddScope = async (data) => {
+    try {
+      const response = await createScope(data);
+      setScopes([...scopes, response]);
+      setIsAddScopeOpen(false);
+      toast.success('Scope added successfully');
+    } catch (error) {
+      console.error('Error adding scope:', error);
+      toast.error('Failed to add scope');
+    }
   };
 
-  const handleUpdateScope = (data) => {
-    setScopes(scopes.map((scope) => (scope.id === editingScope?.id ? { ...scope, ...data } : scope)));
-    setIsAddScopeOpen(false);
-    setEditingScope(null);
-    toast.success('Scope updated successfully');
-  };
-
-  const handleAddScopeSet = (data) => {
-    console.log('Scope Set added:', data);
-    setIsAddScopeSetOpen(false);
-    toast.success('Scope Set added successfully');
+  const handleUpdateScope = async (data) => {
+    try {
+      const response = await updateScope(editingScope.id, data);
+      setScopes(scopes.map((scope) => (scope.id === editingScope.id ? response : scope)));
+      setIsAddScopeOpen(false);
+      setEditingScope(null);
+      toast.success('Scope updated successfully');
+    } catch (error) {
+      console.error('Error updating scope:', error);
+      toast.error('Failed to update scope');
+    }
   };
 
   return (
@@ -147,17 +168,6 @@ export function Scopes() {
                 onSubmit={editingScope ? handleUpdateScope : handleAddScope}
                 initialValues={editingScope || undefined}
               />
-            </CustomDialog>
-            <CustomDialog
-              classNameOverride="bg-sidebar-accent hover:bg-secondary hover:text-sidebar-accent border-sidebar-accent border-2 text-white"
-              title="Add New Scope Set"
-              description="Link scopes to a control."
-              triggerText="Add Scope Set"
-              triggerIcon={<Plus className="mr-2 h-4 w-4" />}
-              open={isAddScopeSetOpen}
-              onOpenChange={setIsAddScopeSetOpen}
-            >
-              <ScopeSetForm onSubmit={handleAddScopeSet} controls={mockControls} scopes={scopes} />
             </CustomDialog>
           </div>
         </CardHeader>
@@ -184,7 +194,13 @@ export function Scopes() {
                 ))}
               </TableHeader>
               <TableBody className="text-left">
-                {table.getRowModel().rows?.length ? (
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={columns.length} className="h-24 text-center">
+                      Loading...
+                    </TableCell>
+                  </TableRow>
+                ) : table.getRowModel().rows?.length ? (
                   table.getRowModel().rows.map((row) => (
                     <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
                       {row.getVisibleCells().map((cell) => (
