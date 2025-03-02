@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import {
   useReactTable,
   getCoreRowModel,
@@ -81,6 +81,8 @@ const mockAvailableScopes = [
 
 export function ControlDetails() {
   const params = useParams();
+  const location = useLocation();
+  const catalogData = location.state?.catalogData;
   const [control, setControl] = useState(null);
   const [evidences, setEvidences] = useState([]);
   const [globalFilter, setGlobalFilter] = useState('');
@@ -215,7 +217,7 @@ export function ControlDetails() {
     setEditingScopes(false);
   };
 
-  const handleRemoveScope = (scopeName) => {
+  const _handleRemoveScope = (scopeName) => {
     if (editingScopes) {
       // In editing mode, update temp scopes
       const updatedTempScopes = { ...tempScopes };
@@ -238,7 +240,10 @@ export function ControlDetails() {
   }
 
   return (
-    <Page className="container mx-auto p-4 space-y-6">
+    <Page 
+      className="container mx-auto p-4 space-y-6" 
+      catalogData={catalogData} // Pasamos los datos de catálogo al componente Page
+    >
       <Card>
         <CardHeader className="flex flex-row items-center justify-start space-y-0 space-x-2 pb-2">
           <CardTitle>{control.name}</CardTitle>

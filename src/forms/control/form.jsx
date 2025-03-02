@@ -50,6 +50,11 @@ export function ControlForm({ onSubmit, onCancel, defaultValues }) {
     }
   };
 
+  // Function to prevent event propagation to parent dialog
+  const stopPropagation = (e) => {
+    e.stopPropagation();
+  };
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -122,6 +127,8 @@ export function ControlForm({ onSubmit, onCancel, defaultValues }) {
                           'w-full pl-3 text-left font-normal',
                           !field.value && 'text-muted-foreground'
                         )}
+                        onClick={stopPropagation} // Prevent event propagation
+                        type="button" // Ensure it's not submitting the form
                       >
                         {field.value ? (
                           format(parseDate(field.value), 'PPP')
@@ -132,7 +139,7 @@ export function ControlForm({ onSubmit, onCancel, defaultValues }) {
                       </Button>
                     </FormControl>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
+                  <PopoverContent className="w-auto p-0" align="start" onClick={stopPropagation}>
                     <Calendar
                       mode="single"
                       selected={field.value ? parseDate(field.value) : undefined}
@@ -161,6 +168,8 @@ export function ControlForm({ onSubmit, onCancel, defaultValues }) {
                           'w-full pl-3 text-left font-normal',
                           !field.value && 'text-muted-foreground'
                         )}
+                        onClick={stopPropagation} // Prevent event propagation
+                        type="button" // Ensure it's not submitting the form
                       >
                         {field.value ? (
                           format(parseDate(field.value), 'PPP')
@@ -171,7 +180,7 @@ export function ControlForm({ onSubmit, onCancel, defaultValues }) {
                       </Button>
                     </FormControl>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
+                  <PopoverContent className="w-auto p-0" align="start" onClick={stopPropagation}>
                     <Calendar
                       mode="single"
                       selected={field.value ? parseDate(field.value) : undefined}
@@ -201,12 +210,12 @@ export function ControlForm({ onSubmit, onCancel, defaultValues }) {
         />
 
         <div className="flex justify-end space-x-2 pt-4">
-          <Button variant="outline" onClick={onCancel}>
-            <X size="4"/>
+          <Button variant="outline" onClick={onCancel} type="button">
+            <X className="mr-2 h-4 w-4"/>
             Cancel
           </Button>
           <Button type="submit">
-            <Check size="4"/>
+            <Check className="mr-2 h-4 w-4"/>
             Save
           </Button>
         </div>

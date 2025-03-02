@@ -129,7 +129,7 @@ export function Catalogs() {
   };
   
   const handleRowClick = useCallback((catalog) => {
-    navigate(`/app/catalogs/${catalog.id}`);
+    navigate(`/app/catalogs/${catalog.id}`, { state: { catalogData: catalog } });
   }, [navigate]);
   
   const formatDate = (dateString) => {

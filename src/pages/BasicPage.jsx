@@ -6,26 +6,52 @@ import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/comp
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Link, useLocation } from 'react-router-dom';
 
-function generateBreadcrumbs(path) {
+// Nueva función para generar breadcrumbs que puede recibir datos adicionales
+function generateBreadcrumbs(path, additionalData = {}) {
   const segments = path.split('/').filter(Boolean);
-
+  
   return segments.map((segment, index) => {
     const href = '/' + segments.slice(0, index + 1).join('/');
     const isLast = index === segments.length - 1;
-
-    const name = segment.toLowerCase() === 'app' ? 'Home' : segment.charAt(0).toUpperCase() + segment.slice(1);
-    if (name === 'Controls') {
-      return { name, href: '', isLast };
+    
+    // Detectar si es un ID de catálogo y si tenemos datos para él
+    const isCatalogId = segments[index-1] === 'catalogs' && !isNaN(segment);
+    const catalogData = isCatalogId && additionalData.catalogData ? additionalData.catalogData : null;
+    
+    let name = segment;
+    
+    // Normalizar nombres de segmentos
+    if (segment.toLowerCase() === 'app') {
+      name = 'Home';
+    } else if (catalogData && isCatalogId) {
+      name = catalogData.name || segment;
+    } else if (segment === 'controls' || segments[index-2] === 'controls') {
+      // Para la parte de controls en la ruta
+      return { name: 'Control Details', href: '', isLast: true, state: additionalData };
+    } else {
+      name = segment.charAt(0).toUpperCase() + segment.slice(1);
     }
 
-    return { name, href, isLast };
-  }).filter(crumb => crumb.name !== 'Home' || crumb.isLast); // Avoid "Home" unless it's the last segment
+    return { 
+      name, 
+      href, 
+      isLast,
+      // Pasar los datos adicionales en el estado para rutas relevantes
+      state: (segments[index-1] === 'catalogs' || segments[index] === 'catalogs') ? additionalData : null
+    };
+  }).filter(crumb => crumb.name !== 'Home' || crumb.isLast);
 }
 
-export default function Page({ children }) {
+export default function Page({ children, ...props }) {
   const isMobile = useIsMobile();
   const location = useLocation();
-  const breadcrumbs = generateBreadcrumbs(location.pathname);
+  
+  // Recibir datos de catálogo pasados como props
+  const catalogData = props.catalogData || location.state?.catalogData;
+  const additionalData = { catalogData };
+  
+  // Generar breadcrumbs con los datos adicionales
+  const breadcrumbs = generateBreadcrumbs(location.pathname, additionalData);
 
   return (
     <div className="h-full space-y-8">
@@ -48,14 +74,16 @@ export default function Page({ children }) {
           <Breadcrumb>
             <BreadcrumbList>
               {breadcrumbs.map((crumb, index) => (
-                <React.Fragment key={crumb.href}>
+                <React.Fragment key={crumb.href || index}>
                   {index > 0 && <BreadcrumbSeparator />}
                   <BreadcrumbItem>
                     {crumb.isLast || crumb.href === '' ? (
                       <BreadcrumbPage>{crumb.name}</BreadcrumbPage>
                     ) : (
                       <BreadcrumbLink>
-                        <Link to={crumb.href}>{crumb.name}</Link>
+                        <Link to={crumb.href} state={crumb.state}>
+                          {crumb.name}
+                        </Link>
                       </BreadcrumbLink>
                     )}
                   </BreadcrumbItem>
