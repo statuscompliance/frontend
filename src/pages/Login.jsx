@@ -48,6 +48,7 @@ function LoginCard() {
     signIn(values)
       .then(async (response) => {
         const { message: _, ...userData } = response;
+        localStorage.setItem('token', response.nodeRedToken);
         await authenticate(userData);
         navigate('/app');
       })
