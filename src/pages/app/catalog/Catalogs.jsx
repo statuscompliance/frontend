@@ -21,7 +21,7 @@ import { Edit, Trash, MoreHorizontal, ChevronDown, Plus, Loader2, ExternalLink }
 import { toast } from 'sonner';
 import { Link, useNavigate } from 'react-router-dom';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import Page from '@/pages/BasicPage.jsx';
+import Page from '@/components/basic-page.jsx';
 import { 
   getAllCatalogs,
   updateCatalog,

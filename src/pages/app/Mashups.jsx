@@ -20,7 +20,7 @@ import {
 import { Edit, Trash, MoreHorizontal, ChevronDown, Loader2, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import Page from '@/pages/BasicPage.jsx';
+import Page from '@/components/basic-page.jsx';
 import { 
   getAllApiFlows
 } from '@/services/mashups';

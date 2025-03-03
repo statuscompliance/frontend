@@ -1,5 +1,5 @@
 // import { useAuth } from '@/hooks/use-auth';
-import Page from '@/pages/BasicPage.jsx';
+import Page from '@/components/basic-page.jsx';
 
 export function Home() {
   // const { userData } = useAuth();

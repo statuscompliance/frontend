@@ -16,7 +16,7 @@ import { Edit, Trash, Plus } from 'lucide-react';
 import { ScopeForm } from '@/forms/scope/form';
 import { CustomDialog } from '@/components/custom-dialog';
 import { Badge } from '@/components/ui/badge';
-import Page from '@/pages/BasicPage.jsx';
+import Page from '@/components/basic-page.jsx';
 import { 
   getAllScopes, 
   createScope, 

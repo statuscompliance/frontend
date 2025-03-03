@@ -14,7 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
-import Page from '@/pages/BasicPage.jsx';
+import Page from '@/components/basic-page.jsx';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   DropdownMenu,
@@ -128,7 +128,10 @@ export function CatalogDetails() {
           <Link
             to={`/app/catalogs/${params.id}/controls/${info.row.original.id}`}
             className="text-blue-600 hover:underline"
-            state={{ catalogData: catalog }}
+            state={{ 
+              catalogData: catalog,
+              control: info.row.original // Pasar el objeto completo del control en el estado
+            }}
           >
             {typeof info.getValue() === 'string' ? info.getValue() : 'View Details'}
           </Link>
@@ -181,7 +184,7 @@ export function CatalogDetails() {
       }),
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [params.id],
+    [params.id, catalog],  // Añadido catalog como dependencia
   );
 
   const table = useReactTable({

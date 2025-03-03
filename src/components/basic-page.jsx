@@ -6,7 +6,6 @@ import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/comp
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Link, useLocation } from 'react-router-dom';
 
-// Nueva función para generar breadcrumbs que puede recibir datos adicionales
 function generateBreadcrumbs(path, additionalData = {}) {
   const segments = path.split('/').filter(Boolean);
   
@@ -14,19 +13,26 @@ function generateBreadcrumbs(path, additionalData = {}) {
     const href = '/' + segments.slice(0, index + 1).join('/');
     const isLast = index === segments.length - 1;
     
-    // Detectar si es un ID de catálogo y si tenemos datos para él
+    // Detect if it's a catalog ID and if we have data for it
     const isCatalogId = segments[index-1] === 'catalogs' && !isNaN(segment);
     const catalogData = isCatalogId && additionalData.catalogData ? additionalData.catalogData : null;
     
+    // Detect if we are in the control details view
+    const isControlView = segments[index-1] === 'controls' && additionalData.control;
+    
     let name = segment;
     
-    // Normalizar nombres de segmentos
+    // Normalize segment names
     if (segment.toLowerCase() === 'app') {
       name = 'Home';
     } else if (catalogData && isCatalogId) {
       name = catalogData.name || segment;
-    } else if (segment === 'controls' || segments[index-2] === 'controls') {
-      // Para la parte de controls en la ruta
+    } else if (segment === 'controls') {
+      const catalogHref = '/' + segments.slice(0, index).join('/');
+      return { name: 'Controls', href: catalogHref, isLast, state: additionalData };
+    } else if (isControlView) {
+      return { name: additionalData.control.name || 'Control Details', href: '', isLast: true, state: additionalData };
+    } else if (segments[index-2] === 'controls') {
       return { name: 'Control Details', href: '', isLast: true, state: additionalData };
     } else {
       name = segment.charAt(0).toUpperCase() + segment.slice(1);
@@ -36,7 +42,7 @@ function generateBreadcrumbs(path, additionalData = {}) {
       name, 
       href, 
       isLast,
-      // Pasar los datos adicionales en el estado para rutas relevantes
+      // Pass additional data in the state for relevant routes
       state: (segments[index-1] === 'catalogs' || segments[index] === 'catalogs') ? additionalData : null
     };
   }).filter(crumb => crumb.name !== 'Home' || crumb.isLast);
@@ -46,11 +52,12 @@ export default function Page({ children, ...props }) {
   const isMobile = useIsMobile();
   const location = useLocation();
   
-  // Recibir datos de catálogo pasados como props
+  // Receive catalog and control data passed as props
   const catalogData = props.catalogData || location.state?.catalogData;
-  const additionalData = { catalogData };
+  const controlData = props.control || location.state?.control;
+  const additionalData = { catalogData, control: controlData };
   
-  // Generar breadcrumbs con los datos adicionales
+  // Generate breadcrumbs with additional data
   const breadcrumbs = generateBreadcrumbs(location.pathname, additionalData);
 
   return (

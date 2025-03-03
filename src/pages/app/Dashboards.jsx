@@ -7,7 +7,7 @@ import { FolderForm } from '@/forms/folder/form';
 import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import Page from '@/pages/BasicPage.jsx';
+import Page from '@/components/basic-page.jsx';
 
 export function Dashboards() {
   const [isDashboardFormOpen, setIsDashboardFormOpen] = useState(false);
