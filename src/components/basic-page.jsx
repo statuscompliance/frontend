@@ -43,7 +43,8 @@ function generateBreadcrumbs(path, additionalData = {}) {
       href, 
       isLast,
       // Pass additional data in the state for relevant routes
-      state: (segments[index-1] === 'catalogs' || segments[index] === 'catalogs') ? additionalData : null
+      state: (segments[index-1] === 'catalogs' || segments[index] === 'catalogs') ? additionalData : null,
+      uniqueKey: segments.slice(0, index + 1).join('/')
     };
   }).filter(crumb => crumb.name !== 'Home' || crumb.isLast);
 }
@@ -81,13 +82,13 @@ export default function Page({ children, ...props }) {
           <Breadcrumb>
             <BreadcrumbList>
               {breadcrumbs.map((crumb, index) => (
-                <React.Fragment key={crumb.href || index}>
+                <React.Fragment key={`${index}-${crumb.uniqueKey || crumb.href || crumb.name}`}>
                   {index > 0 && <BreadcrumbSeparator />}
                   <BreadcrumbItem>
                     {crumb.isLast || crumb.href === '' ? (
                       <BreadcrumbPage>{crumb.name}</BreadcrumbPage>
                     ) : (
-                      <BreadcrumbLink>
+                      <BreadcrumbLink asChild>
                         <Link to={crumb.href} state={crumb.state}>
                           {crumb.name}
                         </Link>
