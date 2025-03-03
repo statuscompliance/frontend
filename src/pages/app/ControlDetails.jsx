@@ -18,23 +18,11 @@ import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Checkbox } from '@/components/ui/checkbox';
-import Page from '@/pages/BasicPage.jsx';
+import Page from '@/components/basic-page.jsx';
 import { ScopeSetForm } from '@/forms/scopeSet/form';
 import { ControlForm } from '@/forms/control/form';
 
 const columnHelper = createColumnHelper();
-
-const mockControl = {
-  id: '1',
-  name: 'Password Strength',
-  description: 'Ensure password meets complexity requirements',
-  period: 'DAILY',
-  startDate: '2023-01-01',
-  endDate: '2023-12-31',
-  mashupId: 'abc123',
-  params: { minLength: 8, requireSpecialChar: true },
-  scopes: { environment: 'production', criticality: 'high' },
-};
 
 const mockEvidences = [
   { 
@@ -82,23 +70,44 @@ const mockAvailableScopes = [
 export function ControlDetails() {
   const params = useParams();
   const location = useLocation();
+  
+  // Use control data from the state if available
+  const controlData = location.state?.control;
   const catalogData = location.state?.catalogData;
+  
   const [control, setControl] = useState(null);
   const [evidences, setEvidences] = useState([]);
   const [globalFilter, setGlobalFilter] = useState('');
   const [editingControl, setEditingControl] = useState(false);
   const [editingScopes, setEditingScopes] = useState(false);
-  // For dynamic scope display during editing
+
+  // Temporal scopes for editing
   const [tempScopes, setTempScopes] = useState({});
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // In a real application, you would fetch the control and its evidences here
-    // For this example, we'll use mock data
-    if (params.controlId) {
-      setControl(mockControl);
+    // Load control data from the state if available
+    if (controlData) {
+      setControl(controlData);
       setEvidences(mockEvidences);
+      setLoading(false);
+    } else if (params.controlId) {
+      // Fallback to loading control data by ID
+      setControl({
+        id: params.controlId,
+        name: 'Control cargado por ID',
+        description: 'Este control se cargó usando el ID de la URL',
+        period: 'DAILY',
+        startDate: '2023-01-01',
+        endDate: '2023-12-31',
+        mashupId: 'abc123',
+        params: { minLength: 8, requireSpecialChar: true },
+        scopes: { environment: 'production', criticality: 'high' },
+      });
+      setEvidences(mockEvidences);
+      setLoading(false);
     }
-  }, [params.controlId]);
+  }, [params.controlId, controlData]);
 
   // Initialize temp scopes when starting to edit
   useEffect(() => {
@@ -235,8 +244,30 @@ export function ControlDetails() {
     }
   };
 
+  if (loading) {
+    return (
+      <Page 
+        className="container mx-auto p-4 space-y-6" 
+        catalogData={catalogData}
+      >
+        <div className="flex justify-center items-center h-64">
+          <p>Loading control details...</p>
+        </div>
+      </Page>
+    );
+  }
+
   if (!control) {
-    return <div>Loading...</div>;
+    return (
+      <Page 
+        className="container mx-auto p-4 space-y-6" 
+        catalogData={catalogData}
+      >
+        <div className="flex justify-center items-center h-64">
+          <p>No control data found.</p>
+        </div>
+      </Page>
+    );
   }
 
   return (
@@ -262,7 +293,7 @@ export function ControlDetails() {
               onCancel={() => setEditingControl(false)} 
               defaultValues={{
                 ...control,
-                // Format dates if needed
+                // Formatear fechas si es necesario
                 startDate: control.startDate,
                 endDate: control.endDate,
               }}
