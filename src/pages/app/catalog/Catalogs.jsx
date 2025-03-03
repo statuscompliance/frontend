@@ -172,7 +172,7 @@ export function Catalogs() {
       }),
       columnHelper.accessor('description', {
         header: 'Description',
-        cell: (info) => info.getValue(),
+        cell: (info) => info.getValue() || 'No description',
       }),
       columnHelper.accessor('startDate', {
         header: 'Start Date',
@@ -182,7 +182,7 @@ export function Catalogs() {
         header: 'End Date',
         cell: (info) => formatDate(info.getValue()),
       }),
-      columnHelper.accessor('Dashboard', {
+      columnHelper.accessor('dashboard_id', {
         header: 'Dashboard',
         cell: (info) => {
           const dashboardId = info.getValue();
@@ -279,7 +279,7 @@ export function Catalogs() {
                       checked={column.getIsVisible()}
                       onCheckedChange={(value) => column.toggleVisibility(!!value)}
                     />
-                    <span className="ml-2">{column.id}</span>
+                    <span className="ml-2">{column.id === 'dashboard_id' ? 'Dashboard' : column.id}</span>
                   </DropdownMenuItem>
                 );
               })}
