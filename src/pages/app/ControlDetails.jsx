@@ -306,8 +306,7 @@ export function ControlDetails() {
                 Duration: {format(new Date(control.startDate), 'yyyy-MM-dd')} to{' '}
                 {format(new Date(control.endDate), 'yyyy-MM-dd')}
               </p>
-              <p className="text-sm">Mashup ID: {control.mashupId}</p>
-              <Link to={`/app/mashup/${control.mashupId}`} className="text-blue-600 hover:underline flex items-center">
+              <Link to={`${import.meta.env.VITE_NODE_RED_URL}#/flow/${control.mashupId}`} className="text-blue-600 hover:underline flex items-center">
                 View Node-RED Flow <ExternalLink className="ml-1 h-4 w-4" />
               </Link>
             </>
@@ -343,7 +342,7 @@ export function ControlDetails() {
             ) : (
               <div className="flex flex-wrap gap-2 py-4">
                 {Object.entries(control.scopes).map(([key, value]) => (
-                  <Badge key={key} variant="outline" className="px-2 py-1">
+                  <Badge key={key} variant="outline" className={`px-2 py-1 ${editingScopes? 'bg-secondary' : ''}`}>
                     <span>{key}: {value}</span>
                   </Badge>
                 ))}

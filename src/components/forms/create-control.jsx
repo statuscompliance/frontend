@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
 import { createControl } from '@/services/controls';
-import { getAllScopes } from '@/services/scopes';
+import { getAllScopes, createScopeSet } from '@/services/scopes';
+import { getAllApiFlows } from '@/services/mashups';
+import { PlusCircle, X } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 export function ControlForm({ catalogId, onClose, onSuccess }) {
   const [formData, setFormData] = useState({
@@ -21,9 +24,10 @@ export function ControlForm({ catalogId, onClose, onSuccess }) {
     scopes: {}
   });
   const [loading, setLoading] = useState(false);
-  const [_availableScopes, setAvailableScopes] = useState([]);
+  const [availableScopes, setAvailableScopes] = useState([]);
+  const [availableMashups, setAvailableMashups] = useState([]);
+  const [selectedScope, setSelectedScope] = useState('');
   const [scopeValue, setScopeValue] = useState('');
-  const [scopeKey, setScopeKey] = useState('');
   const [paramKey, setParamKey] = useState('');
   const [paramValue, setParamValue] = useState('');
 
@@ -32,22 +36,37 @@ export function ControlForm({ catalogId, onClose, onSuccess }) {
     const fetchScopes = async () => {
       try {
         const response = await getAllScopes();
-        setAvailableScopes(response.data);
+        setAvailableScopes(response);
       } catch (error) {
         console.error('Error fetching scopes:', error);
         toast.error('Failed to fetch available scopes');
       }
     };
 
+    // Fetch available mashups for the dropdown
+    const fetchMashups = async () => {
+      try {
+        const response = await getAllApiFlows();
+        setAvailableMashups(response.data);
+      } catch (error) {
+        console.error('Error fetching mashups:', error);
+        toast.error('Failed to fetch available mashups');
+      }
+    };
+
     fetchScopes();
+    fetchMashups();
   }, []);
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type } = e.target;
     setFormData({
       ...formData,
       [name]: value
     });
+    if (type === 'date') {
+      e.target.blur();
+    }
   };
 
   const handleSelectChange = (value, fieldName) => {
@@ -55,18 +74,35 @@ export function ControlForm({ catalogId, onClose, onSuccess }) {
       ...formData,
       [fieldName]: value
     });
+
+    // Si el campo es mashupId, busca la URL del mashup y añádela como parámetro "endpoint"
+    if (fieldName === 'mashupId') {
+      const selectedMashup = availableMashups.find(mashup => mashup.id === value);
+      
+      if (selectedMashup && selectedMashup.url) {
+        // Agrega o actualiza el parámetro "endpoint" con la URL del mashup
+        setFormData(prevData => ({
+          ...prevData,
+          [fieldName]: value,
+          params: {
+            ...prevData.params,
+            endpoint: selectedMashup.url
+          }
+        }));
+      }
+    }
   };
 
   const addScope = () => {
-    if (scopeKey && scopeValue) {
+    if (selectedScope && scopeValue) {
       setFormData({
         ...formData,
         scopes: {
           ...formData.scopes,
-          [scopeKey]: scopeValue
+          [selectedScope]: scopeValue
         }
       });
-      setScopeKey('');
+      setSelectedScope('');
       setScopeValue('');
     }
   };
@@ -108,17 +144,29 @@ export function ControlForm({ catalogId, onClose, onSuccess }) {
     setLoading(true);
 
     try {
+      // First create the control
       const controlData = {
         ...formData,
         catalogId
       };
       
-      await createControl(controlData);
-      toast.success('Control created successfully');
+      const createdControl = await createControl(controlData);
+      
+      // Then create the scope set using the control ID
+      if (Object.keys(formData.scopes).length > 0) {
+        const scopeSetData = {
+          controlId: createdControl.id,
+          scopes: formData.scopes
+        };
+        
+        await createScopeSet(scopeSetData);
+      }
+      
+      toast.success('Control created successfully with associated scopes');
       onSuccess();
     } catch (error) {
-      console.error('Error creating control:', error);
-      toast.error('Failed to create control');
+      console.error('Error creating control and scopes:', error);
+      toast.error('Failed to create control and associate scopes');
     } finally {
       setLoading(false);
     }
@@ -153,7 +201,6 @@ export function ControlForm({ catalogId, onClose, onSuccess }) {
                   <SelectItem value="DAILY">Daily</SelectItem>
                   <SelectItem value="WEEKLY">Weekly</SelectItem>
                   <SelectItem value="MONTHLY">Monthly</SelectItem>
-                  <SelectItem value="QUARTERLY">Quarterly</SelectItem>
                   <SelectItem value="YEARLY">Yearly</SelectItem>
                 </SelectContent>
               </Select>
@@ -198,14 +245,19 @@ export function ControlForm({ catalogId, onClose, onSuccess }) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="mashupId">Mashup ID</Label>
-            <Input
-              id="mashupId"
-              name="mashupId"
-              placeholder="Mashup ID"
-              value={formData.mashupId}
-              onChange={handleInputChange}
-            />
+            <Label htmlFor="mashupId">Mashup</Label>
+            <Select name="mashupId" value={formData.mashupId} onValueChange={(value) => handleSelectChange(value, 'mashupId')}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select mashup" />
+              </SelectTrigger>
+              <SelectContent className="max-h-60 overflow-y-auto">
+                {availableMashups.map((mashup) => (
+                  <SelectItem className="hover:cursor-pointer" key={mashup.id} value={mashup.id}>
+                    {mashup.label || mashup.name} {mashup.url && `(${mashup.url})`}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
@@ -221,23 +273,29 @@ export function ControlForm({ catalogId, onClose, onSuccess }) {
                 value={paramValue}
                 onChange={(e) => setParamValue(e.target.value)}
               />
-              <Button type="button" onClick={addParam}>Add</Button>
+              <div className="flex items-center">
+                <div
+                  onClick={addParam}
+                  className="p-1 transition-all cursor-pointer hover:bg-secondary hover:rounded-full"
+                >
+                  <PlusCircle size="22" />
+                </div>
+              </div>
             </div>
             <div className="mt-2 flex flex-wrap gap-2">
               {Object.entries(formData.params).map(([key, value]) => (
-                <div key={key} className="flex items-center bg-gray-100 rounded-md p-1">
-                  <span className="text-sm">
-                    {key}: {value}
-                  </span>
-                  <Button 
-                    type="button" 
-                    size="sm" 
-                    variant="ghost" 
-                    className="h-6 w-6 p-0 ml-1" 
-                    onClick={() => removeParam(key)}
-                  >
-                    ×
-                  </Button>
+                <div key={key} className="flex items-center bg-gray-100 rounded-md">
+                  <Badge key={key} variant="outline" className="px-2 py-1">
+                    <span>{key}: {value}</span>
+                    <div 
+                      role="button" 
+                      tabIndex="0" 
+                      className="flex cursor-pointer ml-1 text-center items-center" 
+                      onClick={() => removeParam(key)}
+                    >
+                      <X size="14" />
+                    </div>
+                  </Badge>
                 </div>
               ))}
             </div>
@@ -246,44 +304,63 @@ export function ControlForm({ catalogId, onClose, onSuccess }) {
           <div className="space-y-2">
             <Label>Scopes</Label>
             <div className="flex space-x-2">
-              <Input
-                placeholder="Scope name"
-                value={scopeKey}
-                onChange={(e) => setScopeKey(e.target.value)}
-              />
+              <Select value={selectedScope} onValueChange={setSelectedScope}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select scope" />
+                </SelectTrigger>
+                <SelectContent className="max-h-60 overflow-y-auto">
+                  {availableScopes.map((scope) => (
+                    <SelectItem className="hover:cursor-pointer" key={scope.id} value={scope.name}>
+                      {scope.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <Input
                 placeholder="Scope value"
                 value={scopeValue}
                 onChange={(e) => setScopeValue(e.target.value)}
               />
-              <Button type="button" onClick={addScope}>Add</Button>
+              <div className="flex items-center">
+                <div
+                  onClick={addScope}
+                  className="p-1 transition-all cursor-pointer hover:bg-secondary hover:rounded-full"
+                >
+                  <PlusCircle size="22" />
+                </div>
+              </div>
             </div>
             <div className="mt-2 flex flex-wrap gap-2">
               {Object.entries(formData.scopes).map(([key, value]) => (
-                <div key={key} className="flex items-center bg-gray-100 rounded-md p-1">
-                  <span className="text-sm">
-                    {key}: {value}
-                  </span>
-                  <Button 
-                    type="button" 
-                    size="sm" 
-                    variant="ghost" 
-                    className="h-6 w-6 p-0 ml-1" 
-                    onClick={() => removeScope(key)}
-                  >
-                    ×
-                  </Button>
+                <div key={key} className="flex items-center bg-gray-100 rounded-md">
+                  <Badge key={key} variant="outline" className="px-2 py-1">
+                    <span>{key}: {value}</span>
+                    <div 
+                      role="button" 
+                      tabIndex="0" 
+                      className="flex cursor-pointer ml-1 text-center items-center" 
+                      onClick={() => removeScope(key)}
+                    >
+                      <X size="14" />
+                    </div>
+                  </Badge>
                 </div>
               ))}
             </div>
           </div>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
+          <DialogFooter className="flex justify-end space-x-2">
+            <Button
+              onClick={onClose}
+              variant="outline"
+            >
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Creating...' : 'Create Control'}
+            <Button
+              onClick={handleSubmit}
+              type="submit"
+            >
+              {loading ? 'Creating...' : 'Save'}
             </Button>
           </DialogFooter>
         </form>

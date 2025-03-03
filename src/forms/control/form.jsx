@@ -102,7 +102,6 @@ export function ControlForm({ onSubmit, onCancel, defaultValues }) {
                   <SelectItem value="DAILY">Daily</SelectItem>
                   <SelectItem value="WEEKLY">Weekly</SelectItem>
                   <SelectItem value="MONTHLY">Monthly</SelectItem>
-                  <SelectItem value="QUARTERLY">Quarterly</SelectItem>
                   <SelectItem value="YEARLY">Yearly</SelectItem>
                 </SelectContent>
               </Select>

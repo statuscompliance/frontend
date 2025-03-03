@@ -101,7 +101,7 @@ export function ScopeSetForm({ onSubmit, controls, scopes, defaultValues, onCanc
 
         <div className="flex flex-wrap gap-2 mt-2">
           {fields.map((field) => (
-            <Badge key={field.id} variant="outline" className="px-2 py-1 flex items-center gap-1">
+            <Badge key={field.id} variant="outline" className="px-2 py-1 flex items-center gap-1 bg-secondary">
               <span>
                 {field.name}: {field.value}
               </span>

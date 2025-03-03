@@ -22,7 +22,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ChevronDown, Edit, Trash, Plus } from 'lucide-react';
+import { ChevronDown, Edit, Trash, Plus, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { getControlsByCatalogId, deleteControl } from '@/services/controls';
 import { getScopeSetsByControlId } from '@/services/scopes';
@@ -35,11 +35,13 @@ export function CatalogDetails() {
   const location = useLocation();
   const initialCatalogData = location.state?.catalogData || null;
   const [catalog, setCatalog] = useState(initialCatalogData);
+  const [editingCatalog, setEditingCatalog] = useState(false);
   const [_controls, setControls] = useState([]);
   const [controlsWithScopes, setControlsWithScopes] = useState([]);
   const [globalFilter, setGlobalFilter] = useState('');
   const [columnVisibility, setColumnVisibility] = useState({
     params: false,
+    mashupId: false,
   });
   const [selectedControls, setSelectedControls] = useState({});
   const [loading, setLoading] = useState(true);
@@ -156,6 +158,7 @@ export function CatalogDetails() {
       columnHelper.accessor('mashupId', {
         header: 'Mashup ID',
         cell: (info) => info.getValue(),
+        meta: { hideByDefault: true },
       }),
       columnHelper.accessor('params', {
         header: 'Parameters',
@@ -214,18 +217,21 @@ export function CatalogDetails() {
   };
 
   const handleDeleteControls = async () => {
-    const selectedIds = Object.keys(selectedControls);
     try {
-      // Delete selected controls one by one
-      await Promise.all(selectedIds.map(id => deleteControl(id)));
-      toast.success(`Deleted ${selectedIds.length} controls successfully`);
-      fetchControls(); // Refresh the controls list
+      const selectedRows = table.getSelectedRowModel().rows;
+      const selectedControlIds = selectedRows.map(row => row.original.id);
+      for (const controlId of selectedControlIds) {
+        await deleteControl(controlId);
+      }
+      await fetchControls(); 
+      toast.success(`Deleted ${selectedControlIds.length} controls successfully`);
       setSelectedControls({});
     } catch (error) {
       console.error('Error deleting controls:', error);
       toast.error('Failed to delete some controls');
     }
   };
+  
 
   const handleAddControl = () => {
     setShowControlForm(true);
@@ -234,7 +240,6 @@ export function CatalogDetails() {
   const handleControlFormSubmit = () => {
     setShowControlForm(false);
     fetchControls(); // Refresh controls after adding
-    toast.success('Control added successfully');
   };
 
   const handleControlFormCancel = () => {
@@ -248,10 +253,18 @@ export function CatalogDetails() {
   return (
     <Page className="container mx-auto p-4 space-y-6">
       <Card className="text-left p-4">
+        
         <div className="grid grid-cols-2 gap-4 items-start">
           <div>
-            <CardHeader>
-              <CardTitle>{catalog?.name || 'Loading...'}</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-start space-y-0 space-x-2 pb-2">
+              <CardTitle>{catalog?.name}</CardTitle>
+              <Button variant="outline" size="sm" onClick={editingCatalog ? () => setEditingCatalog(false) : handleEditCatalog}>
+                {editingCatalog ? (
+                  <X className="h-4 w-4" />
+                ) : (
+                  <Edit className="h-4 w-4" />
+                )}
+              </Button>
             </CardHeader>
             <CardContent>
               <p className="text-gray-600 mb-2">{catalog?.description || ''}</p>
@@ -271,13 +284,6 @@ export function CatalogDetails() {
             </CardContent>
           </div>
           <div className="flex flex-wrap p-4 justify-end space-x-2">
-            <Button className="max-w-fit" variant="outline" onClick={handleEditCatalog}>
-              <Edit className="mr-2 h-4 w-4" />
-              Edit
-            </Button>
-            <Link to="/app/catalogs">
-              <Button variant="outline">Back to Catalogs</Button>
-            </Link>
           </div>
         </div>
       </Card>
