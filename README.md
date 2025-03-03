@@ -73,14 +73,9 @@ npm run preview
 ```
 
 ## Project Structure
-
-Below is an overview of the project’s folder structure.
-
-### Root Level Directories
 Below is the rewritten markdown content with basic explanations for each folder:
 
-## Root Level Directories
-
+### Root Level Directories
 This project is organized into several directories that separate configuration files, source code, and public assets:
 ```bash
 .
