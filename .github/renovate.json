@@ -73,7 +73,7 @@
     ""
   ],
   "baseBranches": [
-    "develop"
+    "main"
   ],
   "extends": [
     "mergeConfidence:age-confidence-badges"
