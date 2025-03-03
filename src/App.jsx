@@ -11,6 +11,7 @@ import { Catalogs } from '@/pages/app/catalog/Catalogs';
 import { CatalogDetails } from '@/pages/app/catalog/CatalogDetails';
 import { ControlDetails } from '@/pages/app/ControlDetails';
 import { CatalogWizard } from './pages/app/catalog/CatalogWizard.jsx';
+import { Mashups } from '@/pages/app/Mashups';
 import { Scopes } from '@/pages/app/Scopes';
 import { Dashboards } from '@/pages/app/Dashboards';
 import { Editor } from '@/pages/app/Editor';
@@ -49,6 +50,7 @@ function App() {
               </Route>
               <Route path="dashboards" element={<Dashboards />} />
               <Route path="scopes" element={<Scopes />} />
+              <Route path="mashups" element={<Mashups />} />
               <Route path="editor" element={<Editor />} />
             </Route>
             { /* Routes here have no layout ON PURPOSE */ }
