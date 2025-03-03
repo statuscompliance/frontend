@@ -28,6 +28,7 @@ export function signIn({ username, password }) {
  * @returns {Promise} - Promise with the response
  */
 export function signOut() {
+  window.location.href = '/';
   return apiClient.get('/users/signOut');
 }
 

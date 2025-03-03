@@ -118,6 +118,11 @@ export function ControlDetails() {
 
   const columns = useMemo(
     () => [
+      columnHelper.accessor('result', {
+        header: 'Result',
+        cell: (info) => (info.getValue() ? <CircleCheck className="size-4 text-green-500" /> : <CircleX className="size-4 text-red-500" />),
+        size: 80, // Smaller width for the result column
+      }),
       columnHelper.accessor('key', {
         header: 'Key',
         cell: (info) => info.getValue(),
@@ -158,11 +163,6 @@ export function ControlDetails() {
         header: 'To',
         cell: (info) => format(new Date(info.getValue()), 'yyyy-MM-dd HH:mm'),
         size: 120, // Fixed width for date columns
-      }),
-      columnHelper.accessor('result', {
-        header: 'Result',
-        cell: (info) => (info.getValue() ? <CircleCheck className="size-4 text-green-500" /> : <CircleX className="size-4 text-red-500" />),
-        size: 80, // Smaller width for the result column
       }),
     ],
     [],

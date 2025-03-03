@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import logo from '@/assets/status.jpeg';
+import logo from '@/assets/status.svg';
 import { Link } from 'react-router';
 import { Menu, ChevronDown } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
@@ -39,15 +39,10 @@ export function Header() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
-    <header className="fixed top-0 left-0 w-full bg-background/35 border-b border-background/20 backdrop-filter backdrop-blur-lg">
+    <header className="fixed top-0 left-0 w-full bg-background/65 border-b border-background/20 backdrop-filter backdrop-blur-lg z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
-          <div className="flex">
-            <div className="flex-shrink-0 flex items-center">
-              <img src={logo} className="h-10 w-10" alt="Status logo" />
-              <span className="ml-2 text-xl font-bold text-primary">STATUS</span>
-            </div>
-          </div>
+          <img src={logo} className="ml-8 h-14 w-14" alt="Status logo" />
           <div className="hidden sm:ml-6 sm:flex sm:items-center">
             <nav className="flex">
               {expandableNavItems.map((item) =>
@@ -73,7 +68,7 @@ export function Header() {
                 <Link
                   key={item.title}
                   to={item.href}
-                  className="text-primary hover:bg-secondary/75 hover:text-primary px-3 py-2 rounded-md text-sm font-medium"
+                  className="text-primary hover:bg-secondary/35 hover:text-primary px-3 py-2 rounded-md text-sm font-medium"
                 >
                   {item.title}
                 </Link>
@@ -81,7 +76,7 @@ export function Header() {
               )}
             </nav>
             <div className="ml-6">
-              <Button asChild>
+              <Button variant="destructive" asChild>
                 <Link to="/login">Login</Link>
               </Button>
             </div>
