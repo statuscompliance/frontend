@@ -3,6 +3,7 @@ import dashboardsService from './dashboards';
 import datasourcesService from './datasources';
 import foldersService from './folders';
 import queriesService from './queries';
+import searchService from './search';
 
 /**
  * Grafana services organized by categories
@@ -12,7 +13,8 @@ export const grafanaService = {
   dashboards: dashboardsService,
   datasources: datasourcesService,
   folders: foldersService,
-  queries: queriesService
+  queries: queriesService,
+  search: searchService
 };
 
 export {
@@ -20,7 +22,8 @@ export {
   dashboardsService,
   datasourcesService,
   foldersService,
-  queriesService
+  queriesService,
+  searchService
 };
 
 export default grafanaService;

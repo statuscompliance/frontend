@@ -5,19 +5,34 @@ import { apiClient } from '@/api/apiClient';
  */
 export const foldersService = {
   /**
-   * Gets all Grafana folders
-   * @returns {Promise} - Promise with the list of folders
+   * Gets all folders from Grafana
+   * @returns {Promise} - Promise with the folders
    */
   getAll: () => {
     return apiClient.get('/grafana/folder');
   },
 
   /**
+   * Gets a specific folder by UID
+   * @param {string} uid - Folder UID
+   * @returns {Promise} - Promise with the folder
+   */
+  getById: (uid) => {
+    return apiClient.get('/grafana/search', { dashboardUIDs: [uid] });
+  },
+
+  /**
+   * Gets all items from a specific folder
+   * @param {string} uid - Folder UID
+   * @returns {Promise} - Promise with the folder
+   */
+  getItems: (uid) => {
+    return apiClient.get('/grafana/search', { folderUIDs: [uid] });
+  },
+
+  /**
    * Creates a new folder in Grafana
    * @param {object} data - Folder data
-   * @param {string} data.title - Folder title
-   * @param {string} data.parentUid - UID of the parent folder (optional)
-   * @param {string} data.description - Folder description (optional)
    * @returns {Promise} - Promise with the created folder
    */
   create: (data) => {
@@ -25,21 +40,22 @@ export const foldersService = {
   },
 
   /**
-   * Gets a folder by Grafana UID
+   * Updates a specific folder in Grafana
    * @param {string} uid - Folder UID
-   * @returns {Promise} - Promise with the folder
+   * @param {object} data - Updated folder data
+   * @returns {Promise} - Promise with the updated folder
    */
-  getById: (uid) => {
-    return apiClient.get(`/grafana/folder/${uid}`);
+  update: (uid, data) => {
+    return apiClient.put(`/grafana/folder/${uid}`, data);
   },
 
   /**
-   * Gets dashboards for a specific folder by UID
+   * Deletes a specific folder in Grafana
    * @param {string} uid - Folder UID
-   * @returns {Promise} - Promise with the list of dashboards
+   * @returns {Promise} - Promise with the response
    */
-  getDashboards: (uid) => {
-    return apiClient.get(`/grafana/folder/${uid}/dashboard`);
+  delete: (uid) => {
+    return apiClient.delete(`/grafana/folder/${uid}`);
   }
 };
 

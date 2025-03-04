@@ -14,11 +14,12 @@ import { CatalogWizard } from './pages/app/catalog/CatalogWizard.jsx';
 import { Mashups } from '@/pages/app/Mashups';
 import { Scopes } from '@/pages/app/Scopes';
 import { Dashboards } from '@/pages/app/Dashboards';
+import { DashboardDetails } from '@/pages/app/dashboard/DashboardDetails';
+import { FolderDetails } from '@/pages/app/dashboard/FolderDetails';
 import { Editor } from '@/pages/app/Editor';
 import MainLayout from '@/layouts/MainLayout';
 import AppLayout from '@/layouts/AppLayout';
 import { AuthProvider, ProtectedRoute } from '@/components/auth-provider';
-
 
 function App() {
   return (
@@ -48,7 +49,11 @@ function App() {
                   <Route path="controls/:controlId" element={<ControlDetails />} />
                 </Route>
               </Route>
-              <Route path="dashboards" element={<Dashboards />} />
+              <Route path="dashboards">
+                <Route index element={<Dashboards />} />
+                <Route path=":id" element={<DashboardDetails />} />
+                <Route path="folders/:id" element={<FolderDetails />} />
+              </Route>
               <Route path="scopes" element={<Scopes />} />
               <Route path="mashups" element={<Mashups />} />
               <Route path="editor" element={<Editor />} />

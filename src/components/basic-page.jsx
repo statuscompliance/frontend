@@ -10,7 +10,7 @@ function generateBreadcrumbs(path, additionalData = {}) {
   const segments = path.split('/').filter(Boolean);
   
   return segments.map((segment, index) => {
-    const href = '/' + segments.slice(0, index + 1).join('/');
+    let href = '/' + segments.slice(0, index + 1).join('/');
     const isLast = index === segments.length - 1;
     
     // Detect if it's a catalog ID and if we have data for it
@@ -20,7 +20,12 @@ function generateBreadcrumbs(path, additionalData = {}) {
     // Detect if we are in the control details view
     const isControlView = segments[index-1] === 'controls' && additionalData.control;
     
+    // Detect if we are in folders or dashboards view
+    const isFolder = segments[index-1] === 'folders';
+    const isDashboard = segments[index-1] === 'dashboards' && segments[index] !== 'folders';
+    
     let name = segment;
+    let isClickable = !isLast;
     
     // Normalize segment names
     if (segment.toLowerCase() === 'app') {
@@ -34,6 +39,13 @@ function generateBreadcrumbs(path, additionalData = {}) {
       return { name: additionalData.control.name || 'Control Details', href: '', isLast: true, state: additionalData };
     } else if (segments[index-2] === 'controls') {
       return { name: 'Control Details', href: '', isLast: true, state: additionalData };
+    } else if (segments[index] === 'folders') {
+      return { name: 'Folders', href: '', isLast: true, state: additionalData };
+    } else if (isFolder) {
+      name = additionalData.folderData?.title || 'Folder';
+      isClickable = false;
+    } else if (isDashboard) {
+      name = additionalData.dashboardData?.title || 'Dashboard';
     } else {
       name = segment.charAt(0).toUpperCase() + segment.slice(1);
     }
@@ -42,8 +54,8 @@ function generateBreadcrumbs(path, additionalData = {}) {
       name, 
       href, 
       isLast,
-      // Pass additional data in the state for relevant routes
-      state: (segments[index-1] === 'catalogs' || segments[index] === 'catalogs') ? additionalData : null,
+      isClickable,
+      state: (segments[index-1] === 'catalogs' || segments[index] === 'catalogs' || isFolder || isDashboard) ? additionalData : null,
       uniqueKey: segments.slice(0, index + 1).join('/')
     };
   }).filter(crumb => crumb.name !== 'Home' || crumb.isLast);
@@ -53,12 +65,12 @@ export default function Page({ children, ...props }) {
   const isMobile = useIsMobile();
   const location = useLocation();
   
-  // Receive catalog and control data passed as props
   const catalogData = props.catalogData || location.state?.catalogData;
   const controlData = props.control || location.state?.control;
-  const additionalData = { catalogData, control: controlData };
+  const folderData = props.folder || location.state?.folder;
+  const dashboardData = props.dashboard || location.state?.dashboard;
+  const additionalData = { catalogData, control: controlData, folderData, dashboardData };
   
-  // Generate breadcrumbs with additional data
   const breadcrumbs = generateBreadcrumbs(location.pathname, additionalData);
 
   return (
@@ -85,7 +97,7 @@ export default function Page({ children, ...props }) {
                 <React.Fragment key={`${index}-${crumb.uniqueKey || crumb.href || crumb.name}`}>
                   {index > 0 && <BreadcrumbSeparator />}
                   <BreadcrumbItem>
-                    {crumb.isLast || crumb.href === '' ? (
+                    {crumb.isLast || !crumb.isClickable || crumb.href === '' ? (
                       <BreadcrumbPage>{crumb.name}</BreadcrumbPage>
                     ) : (
                       <BreadcrumbLink asChild>

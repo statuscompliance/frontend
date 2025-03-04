@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Plus, FolderPlus, Trash } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Plus, FolderPlus, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DashboardList } from '@/components/dashboards/dashboard-list';
 import { DashboardForm } from '@/forms/dashboard/form';
@@ -12,10 +12,13 @@ import Page from '@/components/basic-page.jsx';
 import { foldersService } from '@/services/grafana/folders';
 import { dashboardsService } from '@/services/grafana/dashboards';
 import { searchService } from '@/services/grafana/search';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Skeleton } from '@/components/ui/skeleton';
 
-
-export function Dashboards() {
+export function FolderDetails() {
+  const { id } = useParams();
   const navigate = useNavigate();
+  const [folder, setFolder] = useState(null);
   const [isDashboardFormOpen, setIsDashboardFormOpen] = useState(false);
   const [isFolderFormOpen, setIsFolderFormOpen] = useState(false);
   const [filter, setFilter] = useState('');
@@ -24,26 +27,41 @@ export function Dashboards() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const dashboardListRef = useRef(null);
-  const [selectedItemsCount, setSelectedItemsCount] = useState(0);
 
+
+  
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchFolder = async () => {
+      async function getNestedItems(folderId) {
+        const items = await foldersService.getItems(folderId);
+        let allItems = items || [];
+        for (const item of items || []) {
+          if (item.folderUid) {
+            const nestedItems = await foldersService.getItems(item.uid);
+            allItems = allItems.concat(nestedItems);
+          }
+        }
+        const uniqueItems = Array.from(new Map(allItems.map(item => [item.uid, item])).values());
+        return uniqueItems;
+      }
       try {
         setLoading(true);
-        const response = await searchService.search({});
-        setItems(response.data || response);
+        const folderResponse = await foldersService.getById(id);
+        setFolder(Array.isArray(folderResponse) ? folderResponse[0] : folderResponse);
+        const itemResponses = await getNestedItems(id);
+        setItems(itemResponses || []);
         setError(null);
       } catch (err) {
-        console.error('Error loading Grafana items:', err);
-        setError('Error loading dashboards and folders. Please try again later.');
-        toast.error('Failed to load dashboards and folders');
+        console.error('Error loading folder:', err);
+        setError('Failed to load folder contents');
+        toast.error('Error loading folder contents');
       } finally {
         setLoading(false);
       }
     };
-
-    fetchData();
-  }, []);
+    
+    fetchFolder();
+  }, [id]);
 
   const handleAddDashboard = () => {
     setIsDashboardFormOpen(true);
@@ -61,13 +79,20 @@ export function Dashboards() {
     setIsFolderFormOpen(false);
   };
 
+  const handleBack = () => {
+    navigate('/app/dashboards');
+  };
+
   const handleDashboardFormSubmit = async (data) => {
     try {
-      setLoading(true);
-      await dashboardsService.create(data);
+      // Set the folder ID for the new dashboard
+      const dashboardData = { ...data, folderUid: id };
       
-      // Recargar datos para mostrar el nuevo dashboard
-      const searchResponse = await searchService.search({});
+      setLoading(true);
+      await dashboardsService.create(dashboardData);
+      
+      // Reload items to show the new dashboard
+      const searchResponse = await searchService.search({ folderUid: id });
       setItems(searchResponse.data || searchResponse);
       
       toast.success('Your new dashboard has been successfully created.');
@@ -82,10 +107,13 @@ export function Dashboards() {
 
   const handleFolderFormSubmit = async (data) => {
     try {
-      setLoading(true);
-      await foldersService.create(data);
+      // Set the parent folder
+      const folderData = { ...data, parentFolderUid: id };
       
-      const searchResponse = await searchService.search({});
+      setLoading(true);
+      await foldersService.create(folderData);
+      
+      const searchResponse = await searchService.search({ folderUid: id });
       setItems(searchResponse.data || searchResponse);
       
       toast.success('Your new folder has been successfully created.');
@@ -110,8 +138,8 @@ export function Dashboards() {
         }
       }
 
-      // Recargar datos
-      const searchResponse = await searchService.search({});
+      // Reload items
+      const searchResponse = await searchService.search({ folderUid: id });
       setItems(searchResponse.data || searchResponse);
       
       toast.success('Selected items have been deleted.');
@@ -123,20 +151,6 @@ export function Dashboards() {
     }
   };
 
-  useEffect(() => {
-    if (!foldersService.delete) {
-      foldersService.delete = (uid) => {
-        // Call the API to delete the folder
-      };
-    }
-  }, []);
-
-  const getFoldersForForm = () => {
-    const folders = items.filter(item => item.type === 'dash-folder');
-    
-    return folders.sort((a, b) => a.title.localeCompare(b.title));
-  };
-
   const handleItemClick = (item) => {
     if (item.type === 'dash-folder') {
       navigate(`/app/dashboards/folders/${item.uid}`);
@@ -145,12 +159,48 @@ export function Dashboards() {
     }
   };
 
-  const handleSelectionChange = (count) => {
-    setSelectedItemsCount(count);
-  };
+  if (loading && !folder) {
+    return (
+      <Page>
+        <div className="flex items-center mb-6">
+          <Button variant="ghost" onClick={handleBack} className="mr-4">
+            <ArrowLeft className="h-4 w-4 mr-2" /> Back
+          </Button>
+          <Skeleton className="h-8 w-64" />
+        </div>
+        <div className="grid gap-6">
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-[400px] w-full" />
+        </div>
+      </Page>
+    );
+  }
+
+  if (error || !folder) {
+    return (
+      <Page>
+        <Button variant="ghost" onClick={handleBack} className="mb-4">
+          <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboards
+        </Button>
+        <Alert variant="destructive">
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>
+            {error || "Couldn't load folder details"}
+          </AlertDescription>
+        </Alert>
+      </Page>
+    );
+  }
 
   return (
-    <Page>
+    <Page folder={folder}>
+      <div className="flex items-center mb-6">
+        <div>
+          <h1 className="text-2xl font-bold">{folder.title}</h1>
+          {folder.description && <p className="text-muted-foreground">{folder.description}</p>}
+        </div>
+      </div>
+
       <div className="flex justify-between items-center space-x-4 mb-4">
         <div className='flex items-center space-x-2'>
           <Input
@@ -171,11 +221,12 @@ export function Dashboards() {
           </Select>
         </div>
         <div className="flex items-center space-x-2">
-          <Button variant="destructive" 
+          <Button
+            className="bg-sidebar-accent hover:bg-secondary hover:text-sidebar-accent border-sidebar-accent border-2"
             onClick={() => dashboardListRef.current?.deleteSelected()}
-            disabled={loading || selectedItemsCount === 0}
+            disabled={loading}
           >
-            <Trash className="h-4 w-4 mr-2" /> Delete
+            Delete Selected
           </Button>
           <Button 
             variant="outline" 
@@ -203,22 +254,23 @@ export function Dashboards() {
         loading={loading}
         onDeleteSelected={handleDeleteSelected}
         onItemClick={handleItemClick}
-        onSelectionChange={handleSelectionChange}
       />
       {isDashboardFormOpen && (
         <DashboardForm 
           onClose={handleDashboardFormClose} 
           onSubmit={handleDashboardFormSubmit} 
-          folders={getFoldersForForm()}
+          defaultFolderUid={id}
         />
       )}
       {isFolderFormOpen && (
         <FolderForm 
           onClose={handleFolderFormClose} 
           onSubmit={handleFolderFormSubmit}
-          folders={getFoldersForForm()} 
+          defaultParentFolderUid={id}
         />
       )}
     </Page>
   );
 }
+
+export default FolderDetails;
