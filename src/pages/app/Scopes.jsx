@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Edit, Trash, Plus } from 'lucide-react';
+import { Edit, Trash, Plus, ChevronDown } from 'lucide-react';
 import { ScopeForm } from '@/forms/scope/form';
 import { CustomDialog } from '@/components/custom-dialog';
 import { Badge } from '@/components/ui/badge';
@@ -23,6 +23,14 @@ import {
   updateScope, 
   deleteScope
 } from '@/services/scopes';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { useAuth } from '@/hooks/use-auth';
 
 const columnHelper = createColumnHelper();
 
@@ -32,6 +40,13 @@ export function Scopes() {
   const [globalFilter, setGlobalFilter] = useState('');
   const [isAddScopeOpen, setIsAddScopeOpen] = useState(false);
   const [editingScope, setEditingScope] = useState(null);
+  const [columnVisibility, setColumnVisibility] = useState({
+    type: false,
+    default: false,
+    actions: false,
+  });
+  const [selectedScopes, setSelectedScopes] = useState({});
+  const { userData } = useAuth();
 
   // Fetch all scopes on component mount
   useEffect(() => {
@@ -55,19 +70,29 @@ export function Scopes() {
     setIsAddScopeOpen(true);
   }, []);
   
-  const handleDeleteScope = useCallback(async (id) => {
-    try {
-      await deleteScope(id);
-      setScopes((prevScopes) => prevScopes.filter((scope) => scope.id !== id));
-      toast.success('Scope deleted successfully');
-    } catch (error) {
-      console.error('Error deleting scope:', error);
-      toast.error('Failed to delete scope');
-    }
-  }, []);
-  
   const columns = useMemo(
     () => [
+      {
+        id: 'select',
+        header: ({ table }) => (
+          <Checkbox
+            checked={table.getIsAllPageRowsSelected()}
+            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+            aria-label="Select all"
+            userRole={userData.authority}
+          />
+        ),
+        cell: ({ row }) => (
+          <Checkbox
+            checked={row.getIsSelected()}
+            onCheckedChange={(value) => row.toggleSelected(!!value)}
+            aria-label="Select row"
+            userRole={userData.authority}
+          />
+        ),
+        enableSorting: false,
+        enableHiding: false,
+      },
       columnHelper.accessor('name', {
         header: 'Name',
         cell: (info) => {
@@ -87,26 +112,27 @@ export function Scopes() {
             {info.getValue()}
           </Badge>
         ),
+        meta: { hideByDefault: true },
       }),
       columnHelper.accessor('default', {
         header: 'Default Value',
         cell: (info) => info.getValue(),
+        meta: { hideByDefault: true },
       }),
       {
         id: 'actions',
+        header: 'Actions',
         cell: ({ row }) => (
           <div className="flex space-x-2">
             <Button variant="outline" size="sm" onClick={() => handleEditScope(row.original)}>
               <Edit className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="sm" onClick={() => handleDeleteScope(row.original.id)}>
-              <Trash className="h-4 w-4" />
-            </Button>
           </div>
         ),
+        meta: { hideByDefault: true },
       },
     ],
-    [handleEditScope, handleDeleteScope]
+    [handleEditScope, userData.authority]
   );
 
   const table = useReactTable({
@@ -114,8 +140,12 @@ export function Scopes() {
     columns,
     state: {
       globalFilter,
+      columnVisibility,
+      rowSelection: selectedScopes,
     },
+    onRowSelectionChange: setSelectedScopes,
     onGlobalFilterChange: setGlobalFilter,
+    onColumnVisibilityChange: setColumnVisibility,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -146,6 +176,24 @@ export function Scopes() {
     }
   };
 
+  const handleDeleteSelectedScopes = async () => {
+    try {
+      const selectedRows = table.getSelectedRowModel().rows;
+      const selectedScopeIds = selectedRows.map(row => row.original.id);
+      
+      for (const scopeId of selectedScopeIds) {
+        await deleteScope(scopeId);
+      }
+      
+      setScopes(prevScopes => prevScopes.filter(scope => !selectedScopeIds.includes(scope.id)));
+      setSelectedScopes({});
+      toast.success(`Deleted ${selectedScopeIds.length} scopes successfully`);
+    } catch (error) {
+      console.error('Error deleting scopes:', error);
+      toast.error('Failed to delete some scopes');
+    }
+  };
+
   return (
     <Page className="container mx-auto p-4 space-y-6">
       <Card>
@@ -163,6 +211,7 @@ export function Scopes() {
               triggerIcon={<Plus className="mr-2 h-4 w-4" />}
               open={isAddScopeOpen}
               onOpenChange={setIsAddScopeOpen}
+              userRole={userData.authority}
             >
               <ScopeForm
                 onSubmit={editingScope ? handleUpdateScope : handleAddScope}
@@ -172,13 +221,46 @@ export function Scopes() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center py-4">
-            <Input
-              placeholder="Search scopes..."
-              value={globalFilter || ''}
-              onChange={(e) => setGlobalFilter(e.target.value)}
-              className="max-w-sm"
-            />
+          <div className="flex items-center justify-between py-4">
+            <div className="flex space-x-2">
+              <Input
+                placeholder="Search scopes..."
+                value={globalFilter || ''}
+                onChange={(e) => setGlobalFilter(e.target.value)}
+                className="max-w-sm"
+              />
+              <Button
+                className="bg-sidebar-accent hover:bg-secondary hover:text-sidebar-accent border-sidebar-accent border-2"
+                onClick={handleDeleteSelectedScopes}
+                disabled={Object.keys(selectedScopes).length === 0}
+                userRole={userData.authority}
+              >
+                <Trash className="h-4 w-4" />
+              </Button>
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  Columns <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {table
+                  .getAllColumns()
+                  .filter((column) => column.getCanHide())
+                  .map((column) => {
+                    return (
+                      <DropdownMenuItem key={column.id} className="capitalize">
+                        <Checkbox
+                          checked={column.getIsVisible()}
+                          onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                        />
+                        <span className="ml-2">{column.id}</span>
+                      </DropdownMenuItem>
+                    );
+                  })}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
           <div className="rounded-md border">
             <Table>
