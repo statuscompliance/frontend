@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 
-export const DashboardList = forwardRef(({ filter, filterBy, items = [], loading, onDeleteSelected, onItemClick, onSelectionChange }, ref) => {
+export const DashboardList = forwardRef(({ filter, filterBy, items = [], loading, onDeleteSelected, onItemClick, onSelectionChange, userRole }, ref) => {
   const [expandedFolders, setExpandedFolders] = useState([]);
   const [selectedItems, setSelectedItems] = useState([]);
 
@@ -142,6 +142,7 @@ export const DashboardList = forwardRef(({ filter, filterBy, items = [], loading
             <Checkbox
               checked={isSelected}
               onCheckedChange={(checked) => handleSelect(folder, checked)}
+              userRole={userRole}
             />
           </div>
           <div className="flex items-center w-full">
@@ -160,7 +161,7 @@ export const DashboardList = forwardRef(({ filter, filterBy, items = [], loading
             {/* Botón principal de la carpeta */}
             <Button 
               variant="ghost" 
-              className="w-full justify-start hover:bg-secondary hover:text-primary hover:underline" 
+              className="w-full justify-start hover:bg-secondary hover:text-primary hover:underline mr-8" 
               onClick={() => handleItemClick(folder)}
             >
               <Folder className="mr-2 h-4 w-4" />
@@ -187,6 +188,7 @@ export const DashboardList = forwardRef(({ filter, filterBy, items = [], loading
                       <Checkbox
                         checked={selectedItems.some(selected => selected.uid === dashboard.uid)}
                         onCheckedChange={(checked) => handleSelect(dashboard, checked)}
+                        userRole={userRole}
                       />
                     </div>
                     <div className="flex items-center w-full">
@@ -194,7 +196,7 @@ export const DashboardList = forwardRef(({ filter, filterBy, items = [], loading
                       <div className="w-8"></div>
                       <Button 
                         variant="ghost" 
-                        className="w-full justify-start hover:bg-secondary hover:text-primary hover:underline"
+                        className="w-full justify-start hover:bg-secondary hover:text-primary hover:underline mr-8"
                         onClick={() => handleItemClick(dashboard)}
                       >
                         <LayoutDashboard className="mr-1 h-4 w-4" />
@@ -234,6 +236,7 @@ export const DashboardList = forwardRef(({ filter, filterBy, items = [], loading
               <Checkbox
                 checked={selectedItems.some(selected => selected.uid === item.uid)}
                 onCheckedChange={(checked) => handleSelect(item, checked)}
+                userRole={userRole}
               />
             </div>
             <div className="flex items-center w-full">
@@ -241,7 +244,7 @@ export const DashboardList = forwardRef(({ filter, filterBy, items = [], loading
               <div className="w-8"></div>
               <Button 
                 variant="ghost" 
-                className="w-full justify-start hover:bg-secondary hover:text-primary hover:underline"
+                className="w-full justify-start hover:bg-secondary hover:text-primary hover:underline mr-8"
                 onClick={() => handleItemClick(item)}
               >
                 <LayoutDashboard className="mr-2 h-4 w-4" />

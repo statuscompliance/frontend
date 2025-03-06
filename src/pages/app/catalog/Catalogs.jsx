@@ -39,6 +39,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { CatalogForm } from '@/forms/catalog/forms';
+import { useAuth } from '@/hooks/use-auth';
 
 const columnHelper = createColumnHelper();
 
@@ -52,6 +53,7 @@ export function Catalogs() {
   const [rowSelection, setRowSelection] = useState({});
   const [formErrors, setFormErrors] = useState({});
   const navigate = useNavigate();
+  const { userData } = useAuth();
 
   // Fetch catalogs on component mount
   useEffect(() => {
@@ -147,6 +149,7 @@ export function Catalogs() {
             checked={table.getIsAllPageRowsSelected()}
             onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
             aria-label="Select all"
+            userRole={userData.authority}
           />
         ),
         cell: ({ row }) => (
@@ -154,6 +157,7 @@ export function Catalogs() {
             checked={row.getIsSelected()}
             onCheckedChange={(value) => row.toggleSelected(!!value)}
             aria-label="Select row"
+            userRole={userData.authority}
           />
         ),
         enableSorting: false,
@@ -204,7 +208,7 @@ export function Catalogs() {
         id: 'actions',
         cell: ({ row }) => {
           const catalog = row.original;
-          return (
+          return userData.authority === 'USER' ? null : (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="h-8 w-8 p-0">
@@ -231,7 +235,7 @@ export function Catalogs() {
         },
       },
     ],
-    [handleDeleteConfirm, handleEdit, handleRowClick]
+    [handleDeleteConfirm, handleEdit, handleRowClick, userData.authority]
   );
 
   const table = useReactTable({
@@ -288,6 +292,7 @@ export function Catalogs() {
         <Button 
           className="bg-sidebar-accent hover:bg-secondary hover:text-sidebar-accent border-2 border-sidebar-accent"
           onClick={handleNew}
+          userRole={userData.authority}
         >
           <Plus className="mr-2 h-4 w-4" /> Add New Catalog
         </Button>

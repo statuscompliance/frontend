@@ -12,6 +12,7 @@ import Page from '@/components/basic-page.jsx';
 import { foldersService } from '@/services/grafana/folders';
 import { dashboardsService } from '@/services/grafana/dashboards';
 import { searchService } from '@/services/grafana/search';
+import { useAuth } from '@/hooks/use-auth';
 
 
 export function Dashboards() {
@@ -25,6 +26,8 @@ export function Dashboards() {
   const [error, setError] = useState(null);
   const dashboardListRef = useRef(null);
   const [selectedItemsCount, setSelectedItemsCount] = useState(0);
+  const { userData } = useAuth();
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -174,6 +177,7 @@ export function Dashboards() {
           <Button variant="destructive" 
             onClick={() => dashboardListRef.current?.deleteSelected()}
             disabled={loading || selectedItemsCount === 0}
+            userRole={userData.authority}
           >
             <Trash className="h-4 w-4 mr-2" /> Delete
           </Button>
@@ -181,6 +185,7 @@ export function Dashboards() {
             variant="outline" 
             onClick={handleAddFolder}
             disabled={loading}
+            userRole={userData.authority}
           >
             <FolderPlus className="mr-2 h-4 w-4" /> Add Folder
           </Button>
@@ -189,6 +194,7 @@ export function Dashboards() {
             variant="outline" 
             onClick={handleAddDashboard}
             disabled={loading}
+            userRole={userData.authority}
           >
             <Plus className="mr-2 h-4 w-4" /> Add Dashboard
           </Button>
@@ -204,6 +210,7 @@ export function Dashboards() {
         onDeleteSelected={handleDeleteSelected}
         onItemClick={handleItemClick}
         onSelectionChange={handleSelectionChange}
+        userRole={userData.authority}
       />
       {isDashboardFormOpen && (
         <DashboardForm 

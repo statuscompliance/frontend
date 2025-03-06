@@ -34,6 +34,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { useAuth } from '@/hooks/use-auth';
 
 const columnHelper = createColumnHelper();
 
@@ -48,6 +49,7 @@ export function Mashups() {
     id: false,
     url: false,
   });
+  const { userData } = useAuth();
 
   // Fetch flows on component mount
   useEffect(() => {
@@ -104,6 +106,7 @@ export function Mashups() {
             checked={table.getIsAllPageRowsSelected()}
             onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
             aria-label="Select all"
+            userRole={userData.authority}
           />
         ),
         cell: ({ row }) => (
@@ -111,6 +114,7 @@ export function Mashups() {
             checked={row.getIsSelected()}
             onCheckedChange={(value) => row.toggleSelected(!!value)}
             aria-label="Select row"
+            userRole={userData.authority}
           />
         ),
         enableSorting: false,
@@ -148,7 +152,7 @@ export function Mashups() {
         id: 'actions',
         cell: ({ row }) => {
           const flow = row.original;
-          return (
+          return userData.authority === 'USER' ? null : (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="h-8 w-8 p-0">
@@ -175,7 +179,7 @@ export function Mashups() {
         },
       },
     ],
-    [handleDeleteConfirm, handleRowClick]
+    [handleDeleteConfirm, handleRowClick, userData.authority]
   );
 
   const table = useReactTable({

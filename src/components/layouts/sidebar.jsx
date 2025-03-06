@@ -68,6 +68,7 @@ const data = [
         title: 'Editor',
         url: '/app/editor',
         icon: Workflow,
+        roles: ['admin', 'developer'],
       },
     ]
   },
@@ -121,7 +122,9 @@ export function AppSidebar() {
             <SidebarGroupContent>
               <SidebarMenu className="space-y-4 sm:space-y-2">
                 {group.items.map((item) => (
-                  (item.roles && item.roles.some(r => userData.roles.includes(r)) || item.roles == undefined) && (
+                  (item.roles && item.roles.some(r => 
+                    r === userData.authority.toLowerCase()
+                  ) || item.roles == undefined) && (
                     item.items ? (
                       <CollapsibleItem key={item.title} item={item} />
                     ) : (
@@ -243,6 +246,17 @@ function FooterItem({ item, ...props }) {
   );
 }
 
+function getAuthorityLabel(authority) {
+  switch (authority) {
+  case 'USER':
+    return 'Manager';
+  case 'DEVELOPER':
+    return 'Technician';
+  default:
+    return authority;
+  }
+}
+
 function FooterButton() {
   const { userData } = useAuth();
   return (
@@ -251,7 +265,7 @@ function FooterButton() {
         {userData && userData.email}
       </span>
       <span className="truncate text-xs">
-        {userData && userData.authority}
+        {userData && getAuthorityLabel(userData.authority)}
       </span>
     </div>
   );

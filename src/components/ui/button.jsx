@@ -40,7 +40,11 @@ const buttonVariants = cva(
   }
 )
 
-const Button = React.forwardRef(({ className, variant, size, positioning, asChild = false, ...props }, ref) => {
+const Button = React.forwardRef(({ className, variant, size, positioning, asChild = false, userRole, ...props }, ref) => {
+  if (userRole === 'USER') {
+    return null;
+  }
+  
   const Comp = asChild ? Slot : "button"
   return (
     (<Comp

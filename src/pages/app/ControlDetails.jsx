@@ -21,6 +21,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import Page from '@/components/basic-page.jsx';
 import { ScopeSetForm } from '@/forms/scopeSet/form';
 import { ControlForm } from '@/forms/control/form';
+import { useAuth } from '@/hooks/use-auth';
 
 const columnHelper = createColumnHelper();
 
@@ -70,6 +71,7 @@ const mockAvailableScopes = [
 export function ControlDetails() {
   const params = useParams();
   const location = useLocation();
+  const { userData } = useAuth();
   
   // Use control data from the state if available
   const controlData = location.state?.control;
@@ -195,7 +197,6 @@ export function ControlDetails() {
 
   const handleControlSubmit = (data) => {
     // In a real application, you would update the control data here
-    console.log('Updating control:', data);
     setControl({
       ...control,
       ...data,
@@ -206,7 +207,6 @@ export function ControlDetails() {
 
   const handleScopeSetSubmit = (data) => {
     // In a real application, you would update the control's scopes here
-    console.log('Updating scopes:', data);
     
     // Convert the scope array to an object for the control
     const updatedScopes = {};
@@ -278,7 +278,7 @@ export function ControlDetails() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-start space-y-0 space-x-2 pb-2">
           <CardTitle>{control.name}</CardTitle>
-          <Button variant="outline" size="sm" onClick={editingControl ? () => setEditingControl(false) : handleEditControl}>
+          <Button variant="outline" size="sm" onClick={editingControl ? () => setEditingControl(false) : handleEditControl} userRole={userData.authority}>
             {editingControl ? (
               <X className="h-4 w-4" />
             ) : (
@@ -315,7 +315,7 @@ export function ControlDetails() {
           <div className="mt-4">
             <div className="flex items-center justify-start space-x-2">
               <h3 className="text-lg font-semibold">Scopes</h3>
-              <Button variant="outline" size="sm" onClick={editingScopes ? () => setEditingScopes(false) : handleEditScopes}>
+              <Button variant="outline" size="sm" onClick={editingScopes ? () => setEditingScopes(false) : handleEditScopes} userRole={userData.authority}>
                 {editingScopes ? (
                   <X className="h-4 w-4" />
                 ) : (
