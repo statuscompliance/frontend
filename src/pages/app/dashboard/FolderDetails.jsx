@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Plus, FolderPlus, ArrowLeft } from 'lucide-react';
+import { Plus, FolderPlus, ArrowLeft, Trash } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DashboardList } from '@/components/dashboards/dashboard-list';
 import { DashboardForm } from '@/forms/dashboard/form';
@@ -221,12 +221,10 @@ export function FolderDetails() {
           </Select>
         </div>
         <div className="flex items-center space-x-2">
-          <Button
-            className="bg-sidebar-accent hover:bg-secondary hover:text-sidebar-accent border-sidebar-accent border-2"
+          <Button variant="destructive" 
             onClick={() => dashboardListRef.current?.deleteSelected()}
-            disabled={loading}
-          >
-            Delete Selected
+            disabled={loading}>
+            <Trash className="h-4 w-4 mr-2" /> Delete
           </Button>
           <Button 
             variant="outline" 
