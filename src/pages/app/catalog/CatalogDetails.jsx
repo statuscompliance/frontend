@@ -22,11 +22,36 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ChevronDown, Edit, Trash, Plus, X } from 'lucide-react';
+import { 
+  ChevronDown, 
+  Edit, 
+  Trash, 
+  Plus, 
+  X, 
+  CircleCheck, 
+  CircleX, 
+  Filter,
+  Calendar as CalendarIcon
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { getControlsByCatalogId, deleteControl } from '@/services/controls';
 import { getScopeSetsByControlId } from '@/services/scopes';
 import { ControlForm } from '@/components/forms/create-control';
+import { useAuth } from '@/hooks/use-auth';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Calendar } from '@/components/ui/calendar';
+import { format as formatDate } from 'date-fns';
 
 const columnHelper = createColumnHelper();
 
@@ -46,6 +71,16 @@ export function CatalogDetails() {
   const [selectedControls, setSelectedControls] = useState({});
   const [loading, setLoading] = useState(true);
   const [showControlForm, setShowControlForm] = useState(false);
+  const { userData } = useAuth();
+  
+  // Nuevos estados para filtros avanzados
+  const [selectedScopeKey, setSelectedScopeKey] = useState('all');
+  const [selectedScopeValue, setSelectedScopeValue] = useState('all');
+  const [startDateFilter, setStartDateFilter] = useState(null);
+  const [endDateFilter, setEndDateFilter] = useState(null);
+  const [availableScopeKeys, setAvailableScopeKeys] = useState([]);
+  const [availableScopeValues, setAvailableScopeValues] = useState([]);
+  const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     if (params.id) {
@@ -64,10 +99,40 @@ export function CatalogDetails() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id, catalog]);
 
+  useEffect(() => {
+    // Extraer todas las claves y valores de scopes posibles
+    if (controlsWithScopes.length > 0) {
+      const scopeKeys = new Set();
+      const scopeValuesByKey = {};
+      
+      controlsWithScopes.forEach(control => {
+        if (control.scopes && Object.keys(control.scopes).length > 0) {
+          Object.entries(control.scopes).forEach(([key, value]) => {
+            scopeKeys.add(key);
+            
+            if (!scopeValuesByKey[key]) {
+              scopeValuesByKey[key] = new Set();
+            }
+            scopeValuesByKey[key].add(value);
+          });
+        }
+      });
+      
+      setAvailableScopeKeys(Array.from(scopeKeys));
+      
+      if (selectedScopeKey && scopeValuesByKey[selectedScopeKey]) {
+        setAvailableScopeValues(Array.from(scopeValuesByKey[selectedScopeKey]));
+      } else {
+        setAvailableScopeValues([]);
+      }
+    }
+  }, [controlsWithScopes, selectedScopeKey]);
+
   const fetchControls = async () => {
     setLoading(true);
     try {
       const response = await getControlsByCatalogId(params.id);
+      response.forEach(control => control.result = control.name.includes('i'));
       setControls(response);
       fetchScopesForControls(response);
     } catch (error) {
@@ -103,6 +168,52 @@ export function CatalogDetails() {
     }
   };
 
+  // Función para aplicar filtros avanzados
+  const applyAdvancedFilters = (data) => {
+    return data.filter(control => {
+      // Filtrar por scope si se seleccionó uno
+      if (selectedScopeKey !== 'all' && selectedScopeValue !== 'all') {
+        if (!control.scopes || 
+            !control.scopes[selectedScopeKey] || 
+            control.scopes[selectedScopeKey] !== selectedScopeValue) {
+          return false;
+        }
+      }
+      
+      // Filtrar por fecha de inicio
+      if (startDateFilter) {
+        const controlStartDate = new Date(control.startDate);
+        const filterDate = new Date(startDateFilter);
+        if (controlStartDate < filterDate) {
+          return false;
+        }
+      }
+      
+      // Filtrar por fecha de finalización (opcional)
+      if (endDateFilter) {
+        const controlEndDate = new Date(control.endDate);
+        const filterDate = new Date(endDateFilter);
+        if (controlEndDate > filterDate) {
+          return false;
+        }
+      }
+      
+      return true;
+    });
+  };
+
+  const filteredData = useMemo(() => {
+    return applyAdvancedFilters(controlsWithScopes);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [controlsWithScopes, selectedScopeKey, selectedScopeValue, startDateFilter, endDateFilter]);
+
+  const handleResetFilters = () => {
+    setSelectedScopeKey('all');
+    setSelectedScopeValue('all');
+    setStartDateFilter(null);
+    setEndDateFilter(null);
+  };
+
   const columns = useMemo(
     () => [
       {
@@ -112,6 +223,7 @@ export function CatalogDetails() {
             checked={table.getIsAllPageRowsSelected()}
             onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
             aria-label="Select all"
+            userRole={userData.authority}
           />
         ),
         cell: ({ row }) => (
@@ -119,11 +231,21 @@ export function CatalogDetails() {
             checked={row.getIsSelected()}
             onCheckedChange={(value) => row.toggleSelected(!!value)}
             aria-label="Select row"
+            userRole={userData.authority}
           />
         ),
         enableSorting: false,
         enableHiding: false,
       },
+      columnHelper.accessor('result', {
+        header: 'Result',
+        cell: (info) => {
+          const value = info.getValue();
+          return value ? <CircleCheck className="size-4 text-green-500" /> : <CircleX className="size-4 text-red-500" />
+          ;
+        }, //TODO: Add this info to each control
+        size: 80,
+      }),
       columnHelper.accessor('name', {
         header: 'Name',
         cell: (info) => (
@@ -191,7 +313,7 @@ export function CatalogDetails() {
   );
 
   const table = useReactTable({
-    data: controlsWithScopes,
+    data: filteredData,
     columns,
     state: {
       globalFilter,
@@ -258,7 +380,7 @@ export function CatalogDetails() {
           <div>
             <CardHeader className="flex flex-row items-center justify-start space-y-0 space-x-2 pb-2">
               <CardTitle>{catalog?.name}</CardTitle>
-              <Button variant="outline" size="sm" onClick={editingCatalog ? () => setEditingCatalog(false) : handleEditCatalog}>
+              <Button variant="outline" size="sm" onClick={editingCatalog ? () => setEditingCatalog(false) : handleEditCatalog} userRole={userData.authority}>
                 {editingCatalog ? (
                   <X className="h-4 w-4" />
                 ) : (
@@ -297,10 +419,119 @@ export function CatalogDetails() {
               onChange={(e) => setGlobalFilter(e.target.value)}
               className="max-w-sm"
             />
+
+            {/* Nuevo botón para mostrar/ocultar filtros avanzados */}
+            <Popover open={showFilters} onOpenChange={setShowFilters}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="flex items-center">
+                  <Filter className="h-4 w-4 mr-2" />
+                  Advanced Filters
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-4 space-y-4">
+                <h4 className="font-medium">Filter Controls</h4>
+                <div className="space-y-2">
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium">Scope Key</label>
+                    <Select value={selectedScopeKey} onValueChange={setSelectedScopeKey}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select scope key" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Any</SelectItem>
+                        {availableScopeKeys.map(key => (
+                          <SelectItem key={key} value={key}>
+                            {key}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium">Scope Value</label>
+                    <Select 
+                      value={selectedScopeValue} 
+                      onValueChange={setSelectedScopeValue}
+                      disabled={selectedScopeKey === 'all'}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select scope value" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Any</SelectItem>
+                        {availableScopeValues.map(value => (
+                          <SelectItem key={value} value={value}>
+                            {value}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium">Start Date From</label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full justify-start text-left font-normal"
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {startDateFilter ? formatDate(startDateFilter, 'PPP') : 'Pick a date'}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={startDateFilter}
+                          onSelect={setStartDateFilter}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium">End Date To (Optional)</label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full justify-start text-left font-normal"
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {endDateFilter ? formatDate(endDateFilter, 'PPP') : 'Pick a date'}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={endDateFilter}
+                          onSelect={setEndDateFilter}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </div>
+                
+                <div className="flex justify-between">
+                  <Button variant="outline" size="sm" onClick={handleResetFilters}>
+                    Reset Filters
+                  </Button>
+                  <Button size="sm" onClick={() => setShowFilters(false)}>
+                    Apply Filters
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
+
             <Button
               className="bg-sidebar-accent hover:bg-secondary hover:text-sidebar-accent border-sidebar-accent border-2"
               onClick={handleDeleteControls}
               disabled={Object.keys(selectedControls).length === 0}
+              userRole={userData.authority}
             >
               <Trash className="h-4 w-4" />
             </Button>
@@ -329,11 +560,36 @@ export function CatalogDetails() {
                   })}
               </DropdownMenuContent>
             </DropdownMenu>
-            <Button className="bg-sidebar-accent hover:bg-secondary hover:text-sidebar-accent border-2 border-sidebar-accent" onClick={handleAddControl}>
+            <Button className="bg-sidebar-accent hover:bg-secondary hover:text-sidebar-accent border-2 border-sidebar-accent" onClick={handleAddControl} userRole={userData.authority}>
               <Plus className="mr-2 h-4 w-4" /> Add New Control
             </Button>
           </div>
         </div>
+
+        {/* Mostrar indicadores de filtros activos */}
+        {(selectedScopeKey !== 'all' || startDateFilter || endDateFilter) && (
+          <div className="flex flex-wrap gap-2 my-2">
+            <div className="text-sm font-medium">Active filters:</div>
+            {selectedScopeKey !== 'all' && selectedScopeValue !== 'all' && (
+              <Badge variant="secondary" className="flex items-center gap-1">
+                {selectedScopeKey}: {selectedScopeValue}
+                <X className="h-3 w-3 cursor-pointer" onClick={() => { setSelectedScopeKey('all'); setSelectedScopeValue('all'); }} />
+              </Badge>
+            )}
+            {startDateFilter && (
+              <Badge variant="secondary" className="flex items-center gap-1">
+                From: {formatDate(startDateFilter, 'yyyy-MM-dd')}
+                <X className="h-3 w-3 cursor-pointer" onClick={() => setStartDateFilter(null)} />
+              </Badge>
+            )}
+            {endDateFilter && (
+              <Badge variant="secondary" className="flex items-center gap-1">
+                To: {formatDate(endDateFilter, 'yyyy-MM-dd')}
+                <X className="h-3 w-3 cursor-pointer" onClick={() => setEndDateFilter(null)} />
+              </Badge>
+            )}
+          </div>
+        )}
 
         {loading ? (
           <div className="flex justify-center items-center h-64">
