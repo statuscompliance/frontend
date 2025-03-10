@@ -36,7 +36,6 @@ import {
 import { toast } from 'sonner';
 import { getControlsByCatalogId, deleteControl } from '@/services/controls';
 import { getScopeSetsByControlId } from '@/services/scopes';
-import { ControlForm } from '@/components/forms/create-control';
 import { useAuth } from '@/hooks/use-auth';
 import {
   Popover,
@@ -52,6 +51,7 @@ import {
 } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { format as formatDate } from 'date-fns';
+import { NewControlForm } from '@/forms/control/new/form';
 
 const columnHelper = createColumnHelper();
 
@@ -646,7 +646,7 @@ export function CatalogDetails() {
       </div>
 
       {showControlForm && (
-        <ControlForm 
+        <NewControlForm 
           catalogId={params.id} 
           onClose={handleControlFormCancel}
           onSuccess={handleControlFormSubmit}

@@ -43,3 +43,25 @@ export function getAllApiFlows() {
 export function getFlowById(id) {
   return nodeRedClient.get(`/flow/${id}`);
 }
+
+
+/**
+ * Gets the flat params from all nodes in a flow by flowId.
+ * It aggregates the "params" objects from each node into a single object.
+ * @param {string} flowId - Flow ID
+ * @returns {Promise} - Promise with an object containing the merged params
+ */
+export function getFlowParams(flowId) {
+  return getFlowById(flowId)
+    .then(response => {
+      const params = {};
+      // Aseguramos que estamos iterando sobre la respuesta correctamente
+      const nodes = response.data.nodes || [];
+      nodes.forEach(node => {
+        if (node.params && typeof node.params === 'object') {
+          Object.assign(params, node.params);
+        }
+      });
+      return { data: params };
+    });
+}
