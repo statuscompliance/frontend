@@ -48,8 +48,10 @@ export function Mashups() {
   const [columnVisibility, setColumnVisibility] = useState({
     id: false,
     url: false,
+    numNodes: false,
   });
   const { userData } = useAuth();
+  const nodeRedUrl = import.meta.env.VITE_NODE_RED_URL || 'http://localhost:1880';
 
   // Fetch flows on component mount
   useEffect(() => {
@@ -245,7 +247,7 @@ export function Mashups() {
         </DropdownMenu>
         <Button 
           className="bg-sidebar-accent hover:bg-secondary hover:text-sidebar-accent border-2 border-sidebar-accent"
-          onClick={() => window.open('/red', '_blank')}
+          onClick={() => window.open(nodeRedUrl, '_blank')}
         >
           <ExternalLink className="mr-2 h-4 w-4" /> Open Node-RED
         </Button>

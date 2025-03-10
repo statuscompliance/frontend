@@ -192,12 +192,11 @@ export function Catalogs() {
           const dashboardId = info.getValue();
           return dashboardId ? (
             <Link 
-              to={`/app/dashboard/${dashboardId}`} 
+              to={'/app/dashboards/deeu8ffhhkikge'} 
               className="flex items-center text-blue-600 hover:text-blue-800"
               onClick={(e) => e.stopPropagation()}
             >
               <ExternalLink className="h-4 w-4 mr-1" />
-              Dashboard
             </Link>
           ) : (
             '-'

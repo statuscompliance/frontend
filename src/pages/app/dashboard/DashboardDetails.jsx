@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, Edit, Trash, Calendar, User, Bookmark, Clock, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Edit, Trash, Calendar, User, Bookmark, Clock, ExternalLink, Info, ChevronDown, ChevronUp } from 'lucide-react';
 import { DashboardPanel } from '@/components/dashboard/dashboard-panel';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -27,6 +27,7 @@ export function DashboardDetails() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { userData } = useAuth();
+  const [showDashboardInfo, setShowDashboardInfo] = useState(false);
 
   useEffect(() => {
     const fetchDashboard = async () => {
@@ -215,88 +216,106 @@ export function DashboardDetails() {
           
           <TabsContent value="overview" className="space-y-4 mt-6">
             <Card>
-              {externalGrafanaUrl && (
-                <CardHeader className="border-t pt-4 flex items-end">
-                  <Button className="w-44" variant="outline" size="sm" onClick={() => window.open(externalGrafanaUrl, '_blank')}>
-                    <ExternalLink className="h-4 w-4 mr-2" /> View in Grafana
-                  </Button>
-                </CardHeader>
-              )}
-              <CardContent className="px-6 pb-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Rest of overview card content */}
-                  <div className="space-y-4">
-                    <div>
-                      <h3 className="text-sm font-medium text-muted-foreground mb-1">Dashboard Details</h3>
-                      <dl className="grid grid-cols-1 gap-2 text-left">
-                        <div>
-                          <dt className="text-sm font-medium text-muted-foreground">Folder</dt>
-                          <dd className="text-sm flex items-center">
-                            <Bookmark className="h-3 w-3 mr-1" /> 
-                            {folderTitle}
-                          </dd>
-                        </div>
-                        <div>
-                          <dt className="text-sm font-medium text-muted-foreground">Version</dt>
-                          <dd className="text-sm">{version}</dd>
-                        </div>
-                      </dl>
-                    </div>
-
-                    {tags.length > 0 && (
-                      <div>
-                        <h3 className="text-sm font-medium text-muted-foreground mb-2">Tags</h3>
-                        <div className="flex flex-wrap gap-1">
-                          {tags.map(tag => (
-                            <Badge key={tag} variant="secondary">
-                              {tag}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {timeRange && (timeRange.from || timeRange.to) && (
-                      <div>
-                        <h3 className="text-sm font-medium text-muted-foreground mb-1">Default Time Range</h3>
-                        <div className="flex items-center justify-center text-sm">
-                          <Clock className="h-3 w-3 mr-1" />
-                          <span>
-                            {new Date(parsedTimeRange.from).toLocaleString()
-                            } - {new Date(parsedTimeRange.to).toLocaleString()}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="space-y-4">
-                    <div>
-                      <h3 className="text-sm font-medium text-muted-foreground mb-1">General Settings</h3>
-                      <dl className="grid grid-cols-1 gap-2 text-left">
-                        {dashboard.dashboard?.timezone && (
-                          <div>
-                            <dt className="text-sm font-medium text-muted-foreground">Timezone</dt>
-                            <dd className="text-sm">{dashboard.dashboard.timezone}</dd>
-                          </div>
-                        )}
-                        {dashboard.dashboard?.refresh !== undefined && (
-                          <div>
-                            <dt className="text-sm font-medium text-muted-foreground">Auto Refresh</dt>
-                            <dd className="text-sm">{dashboard.dashboard.refresh || 'Off'}</dd>
-                          </div>
-                        )}
-                        {dashboard.dashboard?.graphTooltip !== undefined && (
-                          <div>
-                            <dt className="text-sm font-medium text-muted-foreground">Graph Tooltip</dt>
-                            <dd className="text-sm">{dashboard.dashboard.graphTooltip}</dd>
-                          </div>
-                        )}
-                      </dl>
-                    </div>
-                  </div>
+              <CardHeader className="border-t pt-4 flex flex-row items-center justify-between">
+                <div className="flex items-end">
+                  {externalGrafanaUrl && (
+                    <Button className="w-44" variant="outline" size="sm" onClick={() => window.open(externalGrafanaUrl, '_blank')}>
+                      <ExternalLink className="h-4 w-4 mr-2" /> View in Grafana
+                    </Button>
+                  )}
                 </div>
-              </CardContent>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setShowDashboardInfo(!showDashboardInfo)}
+                  className="flex items-center"
+                >
+                  <Info className="h-4 w-4 mr-1" /> 
+                  {showDashboardInfo ? 'Hide Details' : 'More Info'}
+                  {showDashboardInfo ? (
+                    <ChevronUp className="h-4 w-4 ml-1" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 ml-1" />
+                  )}
+                </Button>
+              </CardHeader>
+              {showDashboardInfo && (
+                <CardContent className="px-6 pb-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Rest of overview card content */}
+                    <div className="space-y-4">
+                      <div>
+                        <h3 className="text-sm font-medium text-muted-foreground mb-1">Dashboard Details</h3>
+                        <dl className="grid grid-cols-1 gap-2 text-left">
+                          <div>
+                            <dt className="text-sm font-medium text-muted-foreground">Folder</dt>
+                            <dd className="text-sm flex items-center">
+                              <Bookmark className="h-3 w-3 mr-1" /> 
+                              {folderTitle}
+                            </dd>
+                          </div>
+                          <div>
+                            <dt className="text-sm font-medium text-muted-foreground">Version</dt>
+                            <dd className="text-sm">{version}</dd>
+                          </div>
+                        </dl>
+                      </div>
+
+                      {tags.length > 0 && (
+                        <div>
+                          <h3 className="text-sm font-medium text-muted-foreground mb-2">Tags</h3>
+                          <div className="flex flex-wrap gap-1">
+                            {tags.map(tag => (
+                              <Badge key={tag} variant="secondary">
+                                {tag}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {timeRange && (timeRange.from || timeRange.to) && (
+                        <div>
+                          <h3 className="text-sm font-medium text-muted-foreground mb-1">Default Time Range</h3>
+                          <div className="flex items-center justify-center text-sm">
+                            <Clock className="h-3 w-3 mr-1" />
+                            <span>
+                              {new Date(parsedTimeRange.from).toLocaleString()
+                              } - {new Date(parsedTimeRange.to).toLocaleString()}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-4">
+                      <div>
+                        <h3 className="text-sm font-medium text-muted-foreground mb-1">General Settings</h3>
+                        <dl className="grid grid-cols-1 gap-2 text-left">
+                          {dashboard.dashboard?.timezone && (
+                            <div>
+                              <dt className="text-sm font-medium text-muted-foreground">Timezone</dt>
+                              <dd className="text-sm">{dashboard.dashboard.timezone}</dd>
+                            </div>
+                          )}
+                          {dashboard.dashboard?.refresh !== undefined && (
+                            <div>
+                              <dt className="text-sm font-medium text-muted-foreground">Auto Refresh</dt>
+                              <dd className="text-sm">{dashboard.dashboard.refresh || 'Off'}</dd>
+                            </div>
+                          )}
+                          {dashboard.dashboard?.graphTooltip !== undefined && (
+                            <div>
+                              <dt className="text-sm font-medium text-muted-foreground">Graph Tooltip</dt>
+                              <dd className="text-sm">{dashboard.dashboard.graphTooltip}</dd>
+                            </div>
+                          )}
+                        </dl>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              )}
             </Card>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
