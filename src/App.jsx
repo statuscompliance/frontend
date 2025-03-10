@@ -56,7 +56,10 @@ function App() {
               </Route>
               <Route path="scopes" element={<Scopes />} />
               <Route path="mashups" element={<Mashups />} />
-              <Route path="editor" element={<Editor />} />
+              <Route path="editor">
+                <Route index element={<Editor />} />
+                <Route path=":id" element={<Editor />} />
+              </Route>
             </Route>
             { /* Routes here have no layout ON PURPOSE */ }
             <Route path="/login" element={<Login />} />

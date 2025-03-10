@@ -24,6 +24,9 @@ function generateBreadcrumbs(path, additionalData = {}) {
     const isFolder = segments[index-1] === 'folders';
     const isDashboard = segments[index-1] === 'dashboards' && segments[index] !== 'folders';
     
+    // Detect if we are in the editor view
+    const isEditor = segments[index-1] === 'editor';
+    
     let name = segment;
     let isClickable = !isLast;
     
@@ -46,6 +49,9 @@ function generateBreadcrumbs(path, additionalData = {}) {
       isClickable = false;
     } else if (isDashboard) {
       name = additionalData.dashboardData?.title || 'Dashboard';
+    } else if (isEditor) {
+      name = additionalData.flowName || 'Flow';
+      isClickable = false;
     } else {
       name = segment.charAt(0).toUpperCase() + segment.slice(1);
     }
@@ -55,7 +61,7 @@ function generateBreadcrumbs(path, additionalData = {}) {
       href, 
       isLast,
       isClickable,
-      state: (segments[index-1] === 'catalogs' || segments[index] === 'catalogs' || isFolder || isDashboard) ? additionalData : null,
+      state: (segments[index-1] === 'catalogs' || segments[index] === 'catalogs' || isFolder || isDashboard || isEditor) ? additionalData : null,
       uniqueKey: segments.slice(0, index + 1).join('/')
     };
   }).filter(crumb => crumb.name !== 'Home' || crumb.isLast);
@@ -69,7 +75,8 @@ export default function Page({ children, ...props }) {
   const controlData = props.control || location.state?.control;
   const folderData = props.folder || location.state?.folder;
   const dashboardData = props.dashboard || location.state?.dashboard;
-  const additionalData = { catalogData, control: controlData, folderData, dashboardData };
+  const flowName = props.flowName || location.state?.flowName;
+  const additionalData = { catalogData, control: controlData, folderData, dashboardData, flowName };
   
   const breadcrumbs = generateBreadcrumbs(location.pathname, additionalData);
 

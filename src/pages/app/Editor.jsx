@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useParams, useLocation } from 'react-router-dom';
 import Page from '@/components/basic-page.jsx';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,11 +9,14 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CircleAlert } from 'lucide-react';
 
 export function Editor() {
+  const { id } = useParams();
+  const location = useLocation();
   const [loading, setLoading] = useState(true);
   const [error, _setError] = useState(null);
+  const flowName = location.state?.flowName || 'Flow';
   
   // URL del editor de Node-RED, obtenida de variables de entorno
-  const nodeRedUrl = import.meta.env.VITE_NODE_RED_URL || 'http://localhost:1880';
+  const nodeRedUrl = `${import.meta.env.VITE_NODE_RED_URL || 'http://localhost:1880'}/#flow/${id}`;
   
   // Manejo de carga del iframe
   const handleIframeLoad = () => {
@@ -25,7 +29,7 @@ export function Editor() {
   };
 
   return (
-    <Page>
+    <Page flowName={flowName}>
       <div className="container mx-auto px-4">
         <Card className="w-full overflow-hidden bg-muted">
           {error ? (
@@ -53,7 +57,7 @@ export function Editor() {
               <div className="p-2 bg-muted flex justify-between">
                 <div className='flex items-center'>
                   <p className="text-xs mt-1">
-                    Server: {nodeRedUrl}
+                    Server: {import.meta.env.VITE_NODE_RED_URL}
                   </p>
                   <Badge 
                     variant={loading ? 'outline' : error ? 'destructive' : 'success'} 

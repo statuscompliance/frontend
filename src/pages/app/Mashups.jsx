@@ -35,6 +35,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useAuth } from '@/hooks/use-auth';
+import { Link } from 'react-router-dom';
 
 const columnHelper = createColumnHelper();
 
@@ -94,10 +95,6 @@ export function Mashups() {
       setFlowToDelete(null);
     }
   }, [flows, flowToDelete]);
-  
-  const handleRowClick = useCallback((flow) => {
-    window.open(`${import.meta.env.VITE_NODE_RED_URL}#/flow/${flow.id}`, '_blank');
-  }, []);
 
   const columns = useMemo(
     () => [
@@ -125,12 +122,13 @@ export function Mashups() {
       columnHelper.accessor('label', {
         header: 'Mashup Name',
         cell: (info) => (
-          <span
-            className="cursor-pointer text-blue-600 hover:underline"
-            onClick={() => handleRowClick(info.row.original)}
+          <Link
+            to={`/app/editor/${info.row.original.id}`}
+            className="text-blue-600 hover:underline"
+            state={{ flowName: info.row.original.label }}
           >
             {info.getValue() || 'Untitled Flow'}
-          </span>
+          </Link>
         ),
       }),
       columnHelper.accessor('info', {
@@ -181,7 +179,7 @@ export function Mashups() {
         },
       },
     ],
-    [handleDeleteConfirm, handleRowClick, userData.authority]
+    [handleDeleteConfirm, userData.authority]
   );
 
   const table = useReactTable({
