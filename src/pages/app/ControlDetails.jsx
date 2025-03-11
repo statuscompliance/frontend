@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useParams, Link, useLocation } from 'react-router-dom';
+import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   useReactTable,
   getCoreRowModel,
@@ -22,42 +22,118 @@ import Page from '@/components/basic-page.jsx';
 import { ScopeSetForm } from '@/forms/scopeSet/form';
 import { ControlForm } from '@/forms/control/form';
 import { useAuth } from '@/hooks/use-auth';
+import { getComputationsByControlId } from '@/services/controls';
 
 const columnHelper = createColumnHelper();
 
-const mockEvidences = [
-  { 
-    id: 'fbc4c50a-c21a-45f3-87af-27116ac8d56c', 
-    key: 'AND operation', 
-    value: [true, true], 
-    result: true,
-    from: '2023-06-01T08:00:00',
-    to: '2023-06-01T17:30:00'
+// Mock computations data based on the provided example
+const randomLocations = ['Champs-Élysées', 'Montmartre', 'La Défense', 'Opéra', 'Saint-Germain'];
+
+const mockComputations = [
+  {
+    id: '60bf2620-1075-4d00-aead-7e57fe811469',
+    computationGroup: '6956b9d1-8b7d-4422-a7d7-cc4f8dba523f',
+    value: true,
+    scope: {
+      country: 'France',
+      city: 'Paris',
+      declaration: 'declaration 86791',
+      location: randomLocations[0],
+    },
+    evidences: [
+      { 
+        id: 'fbc4c50a-c21a-45f3-87af-27116ac8d56c', 
+        key: 'AND operation', 
+        value: [true, true], 
+        result: true,
+        from: '2023-06-01T08:00:00',
+        to: '2023-06-01T17:30:00'
+      }
+    ],
+    period: {
+      from: '2025-01-01T00:00:00.000Z',
+      to: '2025-01-01T00:59:59.999Z'
+    },
+    controlId: '1234'
   },
   {
-    id: '2cfd4036-22c7-4533-babf-b339f2237acb',
-    key: 'url',
-    value: 'https://github.com/statuscompliance/infrastructure/blob/examples/files/receipts/payment81001.pdf',
-    result: true,
-    from: '2023-06-02T09:15:00',
-    to: '2023-06-02T19:45:00'
+    id: '70bf2620-1075-4d00-aead-7e57fe811470',
+    computationGroup: '7956b9d1-8b7d-4422-a7d7-cc4f8dba524f',
+    value: false,
+    scope: {
+      country: 'France',
+      city: 'Paris',
+      declaration: 'declaration 12345',
+      location: randomLocations[1],
+    },
+    evidences: [
+      {
+        id: '2cfd4036-22c7-4533-babf-b339f2237acb',
+        key: 'url',
+        value: 'https://github.com/statuscompliance/infrastructure/blob/examples/files/receipts/payment81001.pdf',
+        result: true,
+        from: '2023-06-02T09:15:00',
+        to: '2023-06-02T19:45:00'
+      }
+    ],
+    period: {
+      from: '2025-01-02T00:00:00.000Z',
+      to: '2025-01-02T00:59:59.999Z'
+    },
+    controlId: '1234'
   },
-  { 
-    id: '3', 
-    key: 'password_length', 
-    value: 10, 
-    result: true,
-    from: '2023-06-03T07:30:00',
-    to: '2023-06-03T16:00:00'
+  {
+    id: '80bf2620-1075-4d00-aead-7e57fe811471',
+    computationGroup: '8956b9d1-8b7d-4422-a7d7-cc4f8dba525f',
+    value: true,
+    scope: {
+      country: 'France',
+      city: 'Paris',
+      declaration: 'declaration 67890',
+      location: randomLocations[2],
+    },
+    evidences: [
+      { 
+        id: '3', 
+        key: 'password_length', 
+        value: 10, 
+        result: true,
+        from: '2023-06-03T07:30:00',
+        to: '2023-06-03T16:00:00'
+      }
+    ],
+    period: {
+      from: '2025-01-03T00:00:00.000Z',
+      to: '2025-01-03T00:59:59.999Z'
+    },
+    controlId: '1234'
   },
-  { 
-    id: '4', 
-    key: 'special_char_present', 
-    value: false, 
-    result: false,
-    from: '2023-06-04T10:00:00',
-    to: '2023-06-04T18:30:00'
-  },
+  {
+    id: '90bf2620-1075-4d00-aead-7e57fe811472',
+    computationGroup: '9956b9d1-8b7d-4422-a7d7-cc4f8dba526f',
+    value: false,
+    scope: {
+      country: 'France',
+      city: 'Paris',
+      declaration: 'declaration 54321',
+      location: randomLocations[3],
+    },
+    evidences: [
+      { 
+        id: '4', 
+        key: 'special_char_present', 
+        value: false, 
+        result: false,
+        from: '2023-06-04T10:00:00',
+        to: '2023-06-04T18:30:00'
+      }
+    ],
+    period: {
+      from: '2025-01-04T00:00:00.000Z',
+      to: '2025-01-04T00:59:59.999Z'
+    },
+    controlId: '1234'
+  }
 ];
 
 // Mock scopes data
@@ -71,6 +147,7 @@ const mockAvailableScopes = [
 export function ControlDetails() {
   const params = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const { userData } = useAuth();
   
   // Use control data from the state if available
@@ -78,7 +155,7 @@ export function ControlDetails() {
   const catalogData = location.state?.catalogData;
   
   const [control, setControl] = useState(null);
-  const [evidences, setEvidences] = useState([]);
+  const [computations, setComputations] = useState([]);
   const [globalFilter, setGlobalFilter] = useState('');
   const [editingControl, setEditingControl] = useState(false);
   const [editingScopes, setEditingScopes] = useState(false);
@@ -91,7 +168,12 @@ export function ControlDetails() {
     // Load control data from the state if available
     if (controlData) {
       setControl(controlData);
-      setEvidences(mockEvidences);
+      // In a real application, we would fetch computations here
+      // getComputationsByControlId(controlData.id).then(response => {
+      //   setComputations(response.data);
+      //   setLoading(false);
+      // });
+      setComputations(mockComputations);
       setLoading(false);
     } else if (params.controlId) {
       // Fallback to loading control data by ID
@@ -106,7 +188,7 @@ export function ControlDetails() {
         params: { minLength: 8, requireSpecialChar: true },
         scopes: { environment: 'production', criticality: 'high' },
       });
-      setEvidences(mockEvidences);
+      setComputations(mockComputations);
       setLoading(false);
     }
   }, [params.controlId, controlData]);
@@ -120,58 +202,58 @@ export function ControlDetails() {
 
   const columns = useMemo(
     () => [
-      columnHelper.accessor('result', {
-        header: 'Result',
-        cell: (info) => (info.getValue() ? <CircleCheck className="size-4 text-green-500" /> : <CircleX className="size-4 text-red-500" />),
-        size: 80, // Smaller width for the result column
-      }),
-      columnHelper.accessor('key', {
-        header: 'Key',
-        cell: (info) => info.getValue(),
-        size: 150, // Fixed width for key column
+      columnHelper.accessor((row, index) => index + 1, {
+        id: 'index',
+        header: '#',
+        cell: (info) => {
+          const computation = computations[info.row.index];
+          return (
+            <Link 
+              to={`/app/catalogs/${params.id}/controls/${params.controlId}/computations/${computation.id}`} 
+              state={{ computation, control, catalogData }}
+              className="text-blue-600 hover:underline"
+            >
+              {info.getValue()}
+            </Link>
+          );
+        },
+        size: 60
       }),
       columnHelper.accessor('value', {
-        header: 'Value',
+        header: 'Result',
+        cell: (info) => (info.getValue() ? 
+          <CircleCheck className="size-4 text-green-500" /> : 
+          <CircleX className="size-4 text-red-500" />
+        ),
+        size: 80,
+      }),
+      columnHelper.accessor('scope', {
+        header: 'Scope',
         cell: (info) => {
-          const value = info.getValue();
-          if (typeof value === 'boolean') {
-            return value ? 'True' : 'False';
-          } else if (Array.isArray(value)) {
-            return JSON.stringify(value);
-          } else if (typeof value === 'string' && value.startsWith('http')) {
-            return (
-              <Link 
-                to={value} 
-                className="text-blue-600 hover:underline flex items-center"
-              >
-                Evidence link <ExternalLink className="ml-1 h-4 w-4" />
-              </Link>
-            );
-          }
+          const scope = info.getValue();
           return (
-            <div className="max-w-[300px] break-words">
-              {JSON.stringify(value)}
+            <div className="flex flex-wrap gap-1">
+              {Object.entries(scope).map(([key, value]) => (
+                <Badge key={key} variant="outline" className="px-1 py-0 text-xs">
+                  {key}: {value}
+                </Badge>
+              ))}
             </div>
           );
         },
-        size: 300, // Allow more space for value contents
+        size: 300,
       }),
-      columnHelper.accessor('from', {
+      columnHelper.accessor('period.from', {
         header: 'From',
         cell: (info) => format(new Date(info.getValue()), 'yyyy-MM-dd HH:mm'),
-        size: 120, // Fixed width for date columns
-      }),
-      columnHelper.accessor('to', {
-        header: 'To',
-        cell: (info) => format(new Date(info.getValue()), 'yyyy-MM-dd HH:mm'),
-        size: 120, // Fixed width for date columns
+        size: 150,
       }),
     ],
-    [],
+    [params.id, params.controlId, computations, catalogData, control],
   );
 
   const table = useReactTable({
-    data: evidences,
+    data: computations,
     columns,
     state: {
       globalFilter,
@@ -354,10 +436,10 @@ export function ControlDetails() {
 
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-          <h2 className="text-xl font-semibold">Evidences</h2>
+          <h2 className="text-xl font-semibold">Computation Results</h2>
           <div className="flex space-x-2">
             <Input
-              placeholder="Search evidences..."
+              placeholder="Search computations..."
               value={globalFilter ?? ''}
               onChange={(e) => setGlobalFilter(e.target.value)}
               className="max-w-sm"

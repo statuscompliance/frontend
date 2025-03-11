@@ -20,6 +20,9 @@ function generateBreadcrumbs(path, additionalData = {}) {
     // Detect if we are in the control details view
     const isControlView = segments[index-1] === 'controls' && additionalData.control;
     
+    // Detect if we are in computation details view
+    const isComputationView = isLast && segments[index-1] === 'computations';
+    
     // Detect if we are in folders or dashboards view
     const isFolder = segments[index-1] === 'folders';
     const isDashboard = segments[index-1] === 'dashboards' && segments[index] !== 'folders';
@@ -40,6 +43,8 @@ function generateBreadcrumbs(path, additionalData = {}) {
       return { name: 'Controls', href: catalogHref, isLast, state: additionalData };
     } else if (isControlView) {
       return { name: additionalData.control.name || 'Control Details', href: '', isLast: true, state: additionalData };
+    } else if (isComputationView && additionalData.computationDate) {
+      return { name: `Computation (${additionalData.computationDate})`, href: '', isLast: true, state: additionalData };
     } else if (segments[index-2] === 'controls') {
       return { name: 'Control Details', href: '', isLast: true, state: additionalData };
     } else if (segments[index] === 'folders') {
@@ -76,7 +81,16 @@ export default function Page({ children, ...props }) {
   const folderData = props.folder || location.state?.folder;
   const dashboardData = props.dashboard || location.state?.dashboard;
   const flowName = props.flowName || location.state?.flowName;
-  const additionalData = { catalogData, control: controlData, folderData, dashboardData, flowName };
+  const computationDate = props.computationDate || location.state?.computationDate;
+  
+  const additionalData = { 
+    catalogData, 
+    control: controlData, 
+    folderData, 
+    dashboardData, 
+    flowName, 
+    computationDate 
+  };
   
   const breadcrumbs = generateBreadcrumbs(location.pathname, additionalData);
 

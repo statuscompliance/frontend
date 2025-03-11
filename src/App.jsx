@@ -10,6 +10,7 @@ import { Verify2FA } from '@/pages/Verify2FA';
 import { Catalogs } from '@/pages/app/catalog/Catalogs';
 import { CatalogDetails } from '@/pages/app/catalog/CatalogDetails';
 import { ControlDetails } from '@/pages/app/ControlDetails';
+import { ComputationDetails } from '@/pages/app/ComputationDetails';
 import { CatalogWizard } from './pages/app/catalog/CatalogWizard.jsx';
 import { Mashups } from '@/pages/app/Mashups';
 import { Scopes } from '@/pages/app/Scopes';
@@ -47,6 +48,7 @@ function App() {
                 <Route path=":id">
                   <Route index element={<CatalogDetails />} />
                   <Route path="controls/:controlId" element={<ControlDetails />} />
+                  <Route path="controls/:controlId/computations/:computationId" element={<ComputationDetails />} />
                 </Route>
               </Route>
               <Route path="dashboards">

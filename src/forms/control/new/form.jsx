@@ -92,13 +92,15 @@ export function NewControlForm({ catalogId, onClose, onSuccess }) {
     setLoadingParams(true);
     try {
       const response = await getFlowParams(flowId);
-      setAvailableParams(response.data || {});
+      const fetchedParams = response.data || {};
+      const updatedParams = { ...fetchedParams, threshold: '' }; // Add threshold param
+      setAvailableParams(updatedParams);
       
       // Buscar la URL del mashup seleccionado y añadirla como parámetro "endpoint"
       const selectedMashup = availableMashups.find(mashup => mashup.id === flowId);
       if (selectedMashup && selectedMashup.url) {
-        const updatedParams = { ...getValues('params'), endpoint: selectedMashup.url };
-        setValue('params', updatedParams);
+        const updatedFormParams = { ...getValues('params'), endpoint: selectedMashup.url };
+        setValue('params', updatedFormParams);
       }
     } catch (error) {
       console.error('Error fetching flow parameters:', error);
