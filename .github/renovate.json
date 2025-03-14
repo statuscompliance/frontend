@@ -48,7 +48,11 @@
   },
   "ignoreDeps": [
     "npm",
-    "node"
+    "node",
+    "date-fns",
+    "react",
+    "react-day-picker",
+    "react-dom"
   ],
   "enabledManagers": [
     "npm",
