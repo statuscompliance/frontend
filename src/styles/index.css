@@ -70,6 +70,7 @@ h1 {
     --sidebar-accent-foreground: 0 0 100%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+    --status: 139.5 47.06% 33.33%;
   }
   .dark {
     --background: 240 10% 3.9%;
@@ -91,7 +92,7 @@ h1 {
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
     --ring: 240 4.9% 83.9%;
-    --chart-1: 220 70% 50%;
+    --chart-1: 139.5 47.06% 33.33%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;

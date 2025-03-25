@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Check, ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import Page from '@/components/basic-page.jsx';
-import { createCatalog, updateCatalog, getCatalogById } from '@/services/catalogs';
+import { createDraftCatalog, updateCatalog, getCatalogById } from '@/services/catalogs';
 import { CatalogInfoStep } from '@/components/catalog/CatalogInfoStep';
 import { CatalogControlsStep } from '@/components/catalog/CatalogControlsStep';
 import { CatalogDashboardStep } from '@/components/catalog/CatalogDashboardStep';
@@ -74,9 +74,9 @@ export function CatalogWizard() {
       
       // If first step and not editing, create new catalog
       if (currentStep === 0 && !isEditing) {
-        const response = await createCatalog(catalogInfo);
+        const response = await createDraftCatalog(catalogInfo);
         setCatalogData({
-          ...response.data,
+          ...response,
           controls: [],
           dashboardConfig: {}
         });
@@ -234,9 +234,9 @@ export function CatalogWizard() {
               <div 
                 className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
                   index < currentStep
-                    ? 'bg-green-500 border-green-500 text-white'
+                    ? 'bg-chart-1 border-chart-1 text-white'
                     : index === currentStep
-                      ? 'border-blue-500 text-blue-500'
+                      ? 'border-sidebar-accent text-sidebar-accent'
                       : 'border-gray-300 text-gray-300'
                 }`}
               >
@@ -257,7 +257,7 @@ export function CatalogWizard() {
               {/* Connector line */}
               {index < steps.length - 1 && (
                 <div className={`w-12 h-1 mr-2 ${
-                  index < currentStep ? 'bg-green-500' : 'bg-gray-300'
+                  index < currentStep ? 'bg-chart-1' : 'bg-gray-300'
                 }`}></div>
               )}
             </div>

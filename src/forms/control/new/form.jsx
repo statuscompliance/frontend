@@ -19,7 +19,7 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { controlSchema } from './schemas';
 
-export function NewControlForm({ catalogId, onClose, onSuccess }) {
+export function NewControlForm({ catalogId, onClose, onSuccess, customSubmit = null }) {
   const [loading, setLoading] = useState(false);
   const [availableScopes, setAvailableScopes] = useState([]);
   const [availableMashups, setAvailableMashups] = useState([]);
@@ -96,7 +96,6 @@ export function NewControlForm({ catalogId, onClose, onSuccess }) {
       const updatedParams = { ...fetchedParams, threshold: '' }; // Add threshold param
       setAvailableParams(updatedParams);
       
-      // Buscar la URL del mashup seleccionado y añadirla como parámetro "endpoint"
       const selectedMashup = availableMashups.find(mashup => mashup.id === flowId);
       if (selectedMashup && selectedMashup.url) {
         const updatedFormParams = { ...getValues('params'), endpoint: selectedMashup.url };
@@ -142,26 +141,33 @@ export function NewControlForm({ catalogId, onClose, onSuccess }) {
 
   const onSubmit = async (data) => {
     setLoading(true);
-
+  
     try {
-      // First create the control
-      const createdControl = await createControl(data);
-      
-      // Then create the scope set using the control ID if scopes exist
-      if (Object.keys(data.scopes).length > 0) {
-        const scopeSetData = {
-          controlId: createdControl.id,
-          scopes: data.scopes
-        };
+      // If customSubmit is provided, use it instead of the default submit behavior
+      if (customSubmit) {
+        const result = await customSubmit(data);
+        onSuccess(result);
+      } else {
+        // Default behavior: create control and scope set
+        const response = await createControl(data);
+        const createdControl = response.data || response;
         
-        await createScopeSet(scopeSetData);
+        // Then create the scope set using the control ID if scopes exist
+        if (Object.keys(data.scopes).length > 0) {
+          const scopeSetData = {
+            controlId: createdControl.id,
+            scopes: data.scopes
+          };
+          
+          await createScopeSet(scopeSetData);
+        }
+        
+        toast.success('Control created successfully with associated scopes');
+        onSuccess(createdControl);
       }
-      
-      toast.success('Control created successfully with associated scopes');
-      onSuccess();
     } catch (error) {
       console.error('Error creating control and scopes:', error);
-      const errorMessage = error.response?.data.error || 'Failed to create control and associate scopes';
+      const errorMessage = error.response?.data || 'Failed to create control and associate scopes';
       toast.error(errorMessage);
     } finally {
       setLoading(false);
@@ -480,6 +486,7 @@ export function NewControlForm({ catalogId, onClose, onSuccess }) {
               <Button
                 type="submit"
                 disabled={loading}
+                variant="destructive"
               >
                 {loading ? 'Creating...' : 'Save'}
               </Button>
