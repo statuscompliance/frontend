@@ -27,15 +27,12 @@ import { cn } from '@/lib/utils';
 // Schema validation for catalog info
 const catalogInfoSchema = z.object({
   name: z.string().min(1, { message: 'Catalog name is required' }),
-  description: z.string().min(1, { message: 'Description is required' }),
   startDate: z.date({
     required_error: 'Start date is required',
   }),
-  endDate: z.date({
-    required_error: 'End date is required',
-  }),
+  endDate: z.date().optional(),
 }).refine(data => {
-  return data.startDate <= data.endDate;
+  return !data.endDate || data.startDate <= data.endDate;
 }, {
   message: 'End date must be after start date',
   path: ['endDate']
@@ -80,7 +77,7 @@ export function CatalogInfoStep({ initialData = {}, onSubmit, isSubmitting, apiE
 
   return (
     <div className="py-4 text-left">
-      <h2 className="mb-6 text-xl font-semibold">Basic Catalog Information</h2>
+      <h2 className="mb-6 text-xl font-semibold">Catalog Information</h2>
       
       {submitError && (
         <Alert variant="destructive" className="mb-6">
@@ -122,7 +119,7 @@ export function CatalogInfoStep({ initialData = {}, onSubmit, isSubmitting, apiE
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="text-base font-medium">
-                  Description <span className="text-red-500">*</span>
+                  Description
                 </FormLabel>
                 <FormControl>
                   <Textarea 
@@ -186,7 +183,7 @@ export function CatalogInfoStep({ initialData = {}, onSubmit, isSubmitting, apiE
               render={({ field }) => (
                 <FormItem className="flex flex-col">
                   <FormLabel className="text-base font-medium">
-                    End Date <span className="text-red-500">*</span>
+                    End Date
                   </FormLabel>
                   <Popover>
                     <PopoverTrigger asChild>

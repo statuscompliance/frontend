@@ -121,3 +121,38 @@ export function addPanelToControl(controlId, panelId, data) {
 export function deletePanelFromControl(controlId, panelId) {
   return apiClient.delete(`/controls/${controlId}/panels/${panelId}`);
 }
+
+/**
+ * Gets all draft controls
+ * @returns {Promise} - Promise with the list of draft controls
+ */
+export function getDraftControls() {
+  return apiClient.get('/controls/drafts');
+}
+
+/**
+ * Gets all draft controls for a specific catalog
+ * @param {string} catalogId - Catalog ID
+ * @returns {Promise} - Promise with the list of draft controls for the catalog
+ */
+export function getDraftControlsByCatalogId(catalogId) {
+  return apiClient.get(`/controls/drafts/catalog/${catalogId}`);
+}
+
+/**
+ * Creates a new draft control
+ * @param {object} controlData - Control data
+ * @returns {Promise} - Promise with the created draft control
+ */
+export function createDraftControl(controlData) {
+  return apiClient.post('/controls/drafts', controlData);
+}
+
+/**
+ * Finalizes a draft control
+ * @param {string} id - Control ID
+ * @returns {Promise} - Promise with the finalized control
+ */
+export function finalizeControl(id) {
+  return apiClient.patch(`/controls/${id}/finalize`);
+}

@@ -59,3 +59,29 @@ export function getPointsByTpaId(tpaId, from = null, to = null) {
   
   return apiClient.get(`/catalogs/${tpaId}/points`, params);
 }
+
+/**
+ * Gets all draft catalogs
+ * @returns {Promise} - Promise with the list of draft catalogs
+ */
+export function getDraftCatalogs() {
+  return apiClient.get('/catalogs/drafts');
+}
+
+/**
+ * Creates a new draft catalog
+ * @param {object} catalogData - Catalog data
+ * @returns {Promise} - Promise with the created draft catalog
+ */
+export function createDraftCatalog(catalogData) {
+  return apiClient.post('/catalogs/drafts', catalogData);
+}
+
+/**
+ * Finalizes a draft catalog
+ * @param {string} id - Catalog ID
+ * @returns {Promise} - Promise with the finalized catalog
+ */
+export function finalizeCatalog(id) {
+  return apiClient.patch(`/catalogs/${id}/finalize`);
+}
