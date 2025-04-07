@@ -29,9 +29,8 @@ export function HeroSection() {
         <div className="pt-16 pb-12 md:pt-24 md:pb-20">
           {/* Section header */}
           <div className="text-center pb-12 md:pb-16">
-            {/* TODO: Check if leading-tighter was being applied before, it requires the typography plugin but before was not provided */}
             <h1
-              className="text-4xl md:text-5xl font-extrabold leading-tighter tracking-tighter mb-4"
+              className="text-4xl md:text-5xl font-extrabold tracking-tighter mb-4"
               data-aos="zoom-y-out"
             >
               Optimise the compliance management of your processes with{' '}
