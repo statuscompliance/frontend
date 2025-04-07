@@ -1,6 +1,5 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import url('@unocss/reset/tailwind.css');
+@import url('./App.css');
 
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
