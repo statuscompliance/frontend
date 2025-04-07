@@ -189,8 +189,8 @@ function NonCollapsibleItem({ item, ...props }) {
           <DropdownMenuContent side="right" align="start">
             {item.actions.map((action) => (
               <DropdownMenuItem key={`${action.title}`}>
-                {/* TODO: Investigate why these classes are not being recognized */}
-                <span onClick={action.onClick} className="font-small primary">{action.title}</span>
+                {/* TODO: Investigate why primary is necessary */}
+                <span onClick={action.onClick} className="primary">{action.title}</span>
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>

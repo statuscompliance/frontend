@@ -18,14 +18,13 @@ export function LoginForm({ form, onSubmit, isLoading, error }) {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         {error && <FormMessage className="flex flex-col items-start text-base">{error}</FormMessage>}
-        {/* TODO: Check why font-large is not being recognized */}
         <FormField
           control={form.control}
           name="username"
           rules={{ required: true }}
           render={({ field }) => (
             <FormItem className="flex flex-col items-start">
-              <FormLabel className="text-base font-large">Username</FormLabel>
+              <FormLabel className="text-base">Username</FormLabel>
               <FormControl>
                 <Input placeholder="username" {...field} />
               </FormControl>
