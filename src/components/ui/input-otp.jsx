@@ -32,6 +32,7 @@ const InputOTPSlot = React.forwardRef(({ index, className, ...props }, ref) => {
       )}
       {...props}>
       {char}
+      {/* TODO: Check why animate-caret-blink is not recognized */}
       {hasFakeCaret && (
         <div
           className="pointer-events-none absolute inset-0 flex items-center justify-center">

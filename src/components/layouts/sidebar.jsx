@@ -103,7 +103,8 @@ export function AppSidebar() {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem className="flex items-center justify-center">
-            <div className={`statusImg flex aspect-square items-center justify-center rounded-lg bg-sidebar-background text-sidebar-foreground ${open || isMobile ? 'size-20' : 'size-8'}`}>
+            {/* TODO: Investigate if statusImg is necessary */}
+            <div className={`statusImg flex aspect-square items-center justify-center rounded-lg bg-sidebar text-sidebar-foreground ${open || isMobile ? 'size-20' : 'size-8'}`}>
               <img
                 src={logo}
                 alt="statusImg"
@@ -117,7 +118,7 @@ export function AppSidebar() {
         {data.filter((item) => item.type === 'group').map((group) => (
           <SidebarGroup key={group.title}>
             <SidebarGroupLabel>
-              <span className="text-sm font-medium sidebar-foreground">{group.title}</span>
+              <span className="text-sm font-medium text-sidebar-foreground">{group.title}</span>
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu className="space-y-4 sm:space-y-2">
@@ -150,7 +151,7 @@ export function AppSidebar() {
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
               <DropdownMenuContent
-                className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg bg-sidebar-background"
+                className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg bg-sidebar"
                 side="bottom"
                 align="end"
                 sideOffset={4}
@@ -175,6 +176,7 @@ function NonCollapsibleItem({ item, ...props }) {
       <SidebarMenuButton asChild tooltip={item.title}>
         <Link to={item.url}>
           <item.icon />
+          {/* TODO: Investigate why primary is not being recognized */}
           <span className="text-base font-medium primary">{item.title}</span>
         </Link>
       </SidebarMenuButton>
@@ -188,6 +190,7 @@ function NonCollapsibleItem({ item, ...props }) {
           <DropdownMenuContent side="right" align="start">
             {item.actions.map((action) => (
               <DropdownMenuItem key={`${action.title}`}>
+                {/* TODO: Investigate why these classes are not being recognized */}
                 <span onClick={action.onClick} className="font-small primary">{action.title}</span>
               </DropdownMenuItem>
             ))}
@@ -199,6 +202,7 @@ function NonCollapsibleItem({ item, ...props }) {
 }
 
 function CollapsibleItem({ item, ...props }) {
+  {/* TODO: Investigate why group/collapsible is not being recognized */ }
   return (
     <Collapsible asChild defaultOpen={item.active ? item.active : false} key={props.key ? props.key : null} className="group/collapsible">
       <SidebarMenuItem>
@@ -216,6 +220,7 @@ function CollapsibleItem({ item, ...props }) {
             {item.items && item.items.map((subItem) => (
               <SidebarMenuSubItem key={subItem.title}>
                 <SidebarMenuSubButton asChild>
+                  {/* TODO: Investigate what primary means and why is not being recognized */}
                   <Link to={subItem.url} className="text-base font-medium primary">{subItem.title}</Link>
                 </SidebarMenuSubButton>
               </SidebarMenuSubItem>
