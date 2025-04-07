@@ -103,8 +103,7 @@ export function AppSidebar() {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem className="flex items-center justify-center">
-            {/* TODO: Investigate if statusImg is necessary */}
-            <div className={`statusImg flex aspect-square items-center justify-center rounded-lg bg-sidebar text-sidebar-foreground ${open || isMobile ? 'size-20' : 'size-8'}`}>
+            <div className={`hover:shadow-[0_0_8px_#bf0a2e] transition-duration-300 transition-filter will-change-filter flex aspect-square items-center justify-center rounded-lg bg-sidebar text-sidebar-foreground ${open || isMobile ? 'size-20' : 'size-8'}`}>
               <img
                 src={logo}
                 alt="statusImg"

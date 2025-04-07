@@ -1,5 +1,4 @@
 @import url('@unocss/reset/tailwind.css');
-@import url('./App.css');
 
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
@@ -14,6 +13,12 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  margin: 0 auto;
+  padding: 0 2rem;
+  text-align: center;
 }
 
 h1 {
