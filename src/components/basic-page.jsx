@@ -102,9 +102,8 @@ export default function Page({ children, ...props }) {
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                {/* TODO: Check if hover:text-sidebar-accent-foreground class was working before switching to UnoCSS */}
                 <SidebarTrigger
-                  className={`${isMobile ? 'self-end fixed' : 'self-start'} hover:bg-sidebar-accent hover:text-sidebar-accent-foreground`}
+                  className={`${isMobile ? 'self-end fixed' : 'self-start'} hover:bg-sidebar-accent hover:text-sidebar-foreground`}
                 />
               </TooltipTrigger>
               <TooltipContent>

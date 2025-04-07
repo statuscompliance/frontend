@@ -28,7 +28,6 @@ const AccordionTrigger = React.forwardRef(({ className, children, ...props }, re
 ))
 AccordionTrigger.displayName = AccordionPrimitive.Trigger.displayName
 
-{/* TODO: Investigate why animate-accordion-* are not being recognized */ }
 const AccordionContent = React.forwardRef(({ className, children, ...props }, ref) => (
   <AccordionPrimitive.Content
     ref={ref}
