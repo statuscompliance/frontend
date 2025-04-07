@@ -18,6 +18,7 @@ export function LoginForm({ form, onSubmit, isLoading, error }) {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         {error && <FormMessage className="flex flex-col items-start text-base">{error}</FormMessage>}
+        {/* TODO: Check why font-large is not being recognized */}
         <FormField
           control={form.control}
           name="username"

@@ -80,6 +80,7 @@ export function DashboardPanel({ dashboardUid, panel, height = 300, showTitle = 
 
   const iframeUrl = buildGrafanaIframeUrl();
 
+  // TODO: Check why panel-header is not being recognized
   return (
     <div style={{ height: `${height}px`, overflow: 'hidden' }}>
       {showTitle && panel.title && (

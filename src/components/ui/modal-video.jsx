@@ -25,6 +25,7 @@ export function ModalVideo({ thumb, thumbWidth, thumbHeight, thumbAlt, videoUrl 
 
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
+            {/* TODO: Check why group class is not recognized */}
             <Button
               variant="outline"
               className="absolute top-full flex items-center transform -translate-y-1/2 bg-background rounded-full font-medium group p-4 shadow-lg"

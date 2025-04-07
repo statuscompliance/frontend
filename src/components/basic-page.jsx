@@ -96,11 +96,13 @@ export default function Page({ children, ...props }) {
 
   return (
     <div className="h-full space-y-8">
+      {/* TODO: Check if group-has-* class was working before switching to UnoCSS */}
       <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
         <div className="flex items-center gap-2">
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
+                {/* TODO: Check if hover:text-sidebar-accent-foreground class was working before switching to UnoCSS */}
                 <SidebarTrigger
                   className={`${isMobile ? 'self-end fixed' : 'self-start'} hover:bg-sidebar-accent hover:text-sidebar-accent-foreground`}
                 />

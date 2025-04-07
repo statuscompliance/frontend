@@ -34,6 +34,7 @@ const PasswordInput = React.forwardRef(({ className, ...props }, ref) => {
       </Button>
 
       {/* hides browsers password toggles */}
+      {/* TODO: These prefixes are IE specific and probably could be dropped */}
       <style>{`
 					.hide-password-toggle::-ms-reveal,
 					.hide-password-toggle::-ms-clear {

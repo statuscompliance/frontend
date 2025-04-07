@@ -174,6 +174,7 @@ const Sidebar = React.forwardRef((
     );
   }
 
+  // TODO: Check if group and peer classes are necessary
   return (
     (<div
       ref={ref}
@@ -264,6 +265,7 @@ const SidebarRail = React.forwardRef(({ className, ...props }, ref) => {
 SidebarRail.displayName = "SidebarRail"
 
 const SidebarInset = React.forwardRef(({ className, ...props }, ref) => {
+  // TODO: Investigate why md:peer-data* is not being applied
   return (
     (<main
       ref={ref}
@@ -352,6 +354,7 @@ SidebarGroup.displayName = "SidebarGroup"
 const SidebarGroupLabel = React.forwardRef(({ className, asChild = false, ...props }, ref) => {
   const Comp = asChild ? Slot : "div"
 
+  // TODO: Fix transition-[margin,opa] class
   return (
     (<Comp
       ref={ref}
@@ -369,6 +372,7 @@ SidebarGroupLabel.displayName = "SidebarGroupLabel"
 const SidebarGroupAction = React.forwardRef(({ className, asChild = false, ...props }, ref) => {
   const Comp = asChild ? Slot : "button"
 
+  // TODO: Fix hover:text-sidebar-accent-foreground not being correctly applied
   return (
     (<Comp
       ref={ref}
@@ -403,6 +407,7 @@ const SidebarMenu = React.forwardRef(({ className, ...props }, ref) => (
 ))
 SidebarMenu.displayName = "SidebarMenu"
 
+// TODO: Check why group/menu-item is not being applied correctly
 const SidebarMenuItem = React.forwardRef(({ className, ...props }, ref) => (
   <li
     ref={ref}
@@ -412,6 +417,7 @@ const SidebarMenuItem = React.forwardRef(({ className, ...props }, ref) => (
 ))
 SidebarMenuItem.displayName = "SidebarMenuItem"
 
+// TODO: Check why peer/menu-button is not being applied correctly and quite a few classes in this area
 const sidebarMenuButtonVariants = cva(
   "peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-none ring-sidebar-ring transition-[width,height,padding] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!p-2 [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0",
   {
@@ -485,6 +491,7 @@ SidebarMenuButton.displayName = "SidebarMenuButton"
 const SidebarMenuAction = React.forwardRef(({ className, asChild = false, showOnHover = false, ...props }, ref) => {
   const Comp = asChild ? Slot : "button"
 
+  // TODO: Check why peer-data class (and many in this area) are not being applied
   return (
     (<Comp
       ref={ref}
@@ -506,6 +513,7 @@ const SidebarMenuAction = React.forwardRef(({ className, asChild = false, showOn
 })
 SidebarMenuAction.displayName = "SidebarMenuAction"
 
+// TODO: Check why peer-data class (and many in this area) are not being applied
 const SidebarMenuBadge = React.forwardRef(({ className, ...props }, ref) => (
   <div
     ref={ref}
@@ -571,6 +579,7 @@ const SidebarMenuSubButton = React.forwardRef(
   ({ asChild = false, size = "md", isActive, className, ...props }, ref) => {
     const Comp = asChild ? Slot : "a"
 
+    // TODO: Check why accent-sidebar classes are not being applied
     return (
       (<Comp
         ref={ref}

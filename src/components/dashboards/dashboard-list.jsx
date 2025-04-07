@@ -147,6 +147,7 @@ export const DashboardList = forwardRef(({ filter, filterBy, items = [], loading
           </div>
           <div className="flex items-center w-full">
             {/* Icono de expansión como un div separado */}
+            {/* TODO: Investigate if hover:bg-secondary-200 was a valid Tailwind class and it's actually in use */}
             <div
               className="cursor-pointer p-1 hover:bg-secondary-200 rounded-md mr-2"
               onClick={(e) => toggleFolder(folder.uid, e)}
