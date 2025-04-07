@@ -45,7 +45,7 @@ export function ControlForm({ onSubmit, onCancel, defaultValues }) {
       const date = parseISO(dateString);
       date.setHours(12, 0, 0, 0);
       return date;
-    } catch (e) {
+    } catch {
       return undefined;
     }
   };

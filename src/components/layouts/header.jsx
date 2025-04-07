@@ -81,7 +81,7 @@ export function Header() {
               </Button>
             </div>
           </div>
-          <div className="flex items-center sm:hidden ">
+          <div className="flex items-center sm:hidden">
             <Sheet open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon">
