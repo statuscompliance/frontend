@@ -4,7 +4,7 @@
     "rsc": false,
     "tsx": false,
     "tailwind": {
-        "config": "tailwind.config.js",
+        "config": "uno.config.js",
         "css": "src/styles/index.css",
         "baseColor": "zinc",
         "cssVariables": true,
