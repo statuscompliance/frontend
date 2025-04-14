@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Slot } from "@radix-ui/react-slot"
+import { Slot as SlotPrimitive } from "radix-ui"
 import { Controller, FormProvider, useFormContext } from "react-hook-form"
 
 import { cn } from "@/lib/utils"
@@ -77,7 +77,7 @@ const FormControl = React.forwardRef(({ ...props }, ref) => {
   const { error, formItemId, formDescriptionId, formMessageId } = useFormField()
 
   return (
-    <Slot
+    <SlotPrimitive.Root
       ref={ref}
       id={formItemId}
       aria-describedby={
