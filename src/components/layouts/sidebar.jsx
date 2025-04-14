@@ -175,8 +175,7 @@ function NonCollapsibleItem({ item, ...props }) {
       <SidebarMenuButton asChild tooltip={item.title}>
         <Link to={item.url}>
           <item.icon />
-          {/* TODO: Investigate why primary is not being recognized */}
-          <span className="text-base font-medium primary">{item.title}</span>
+          <span className="text-base font-medium">{item.title}</span>
         </Link>
       </SidebarMenuButton>
       {item.actions && !item.items ? (
@@ -189,8 +188,7 @@ function NonCollapsibleItem({ item, ...props }) {
           <DropdownMenuContent side="right" align="start">
             {item.actions.map((action) => (
               <DropdownMenuItem key={`${action.title}`}>
-                {/* TODO: Investigate why primary is necessary */}
-                <span onClick={action.onClick} className="primary">{action.title}</span>
+                <span onClick={action.onClick}>{action.title}</span>
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
@@ -208,7 +206,7 @@ function CollapsibleItem({ item, ...props }) {
           <SidebarMenuButton asChild tooltip={item.title}>
             <Link to={item.url}>
               <item.icon/>
-              <span className="text-base font-medium primary">{item.title}</span>
+              <span className="text-base font-medium">{item.title}</span>
               <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
             </Link>
           </SidebarMenuButton>
@@ -218,8 +216,7 @@ function CollapsibleItem({ item, ...props }) {
             {item.items && item.items.map((subItem) => (
               <SidebarMenuSubItem key={subItem.title}>
                 <SidebarMenuSubButton asChild>
-                  {/* TODO: Investigate what primary means and why is not being recognized */}
-                  <Link to={subItem.url} className="text-base font-medium primary">{subItem.title}</Link>
+                  <Link to={subItem.url} className="text-base font-medium">{subItem.title}</Link>
                 </SidebarMenuSubButton>
               </SidebarMenuSubItem>
             ))}

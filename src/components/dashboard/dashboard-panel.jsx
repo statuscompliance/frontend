@@ -80,11 +80,10 @@ export function DashboardPanel({ dashboardUid, panel, height = 300, showTitle = 
 
   const iframeUrl = buildGrafanaIframeUrl();
 
-  // TODO: Check why panel-header is not being recognized
   return (
     <div style={{ height: `${height}px`, overflow: 'hidden' }}>
       {showTitle && panel.title && (
-        <div className="panel-header p-2 bg-card">
+        <div className="p-2 bg-card">
           <h3 className="text-base font-medium">{panel.title}</h3>
           {panel.description && (
             <p className="text-xs text-muted-foreground">{panel.description}</p>
