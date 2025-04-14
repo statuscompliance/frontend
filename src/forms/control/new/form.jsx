@@ -398,13 +398,13 @@ export function NewControlForm({ catalogId, onClose, onSuccess }) {
               </div>
               <div className="mt-2 flex flex-wrap gap-2">
                 {Object.entries(watchParams).map(([key, value]) => (
-                  <div key={key} className="flex items-center bg-gray-100 rounded-md">
+                  <div key={key} className="flex items-center rounded-md bg-gray-100">
                     <Badge key={key} variant="outline" className="px-2 py-1">
                       <span>{key}: {value}</span>
                       <div 
                         role="button"
                         tabIndex="0"
-                        className="flex cursor-pointer ml-1 text-center items-center"
+                        className="ml-1 flex cursor-pointer items-center text-center"
                         onClick={() => removeParam(key)}
                       >
                         <X size="14" />
@@ -414,7 +414,7 @@ export function NewControlForm({ catalogId, onClose, onSuccess }) {
                 ))}
               </div>
               {form.formState.errors.params && (
-                <p className="text-sm font-medium text-destructive">{form.formState.errors.params.message}</p>
+                <p className="text-sm text-destructive font-medium">{form.formState.errors.params.message}</p>
               )}
             </div>
 
@@ -452,13 +452,13 @@ export function NewControlForm({ catalogId, onClose, onSuccess }) {
               </div>
               <div className="mt-2 flex flex-wrap gap-2">
                 {Object.entries(watchScopes).map(([key, value]) => (
-                  <div key={key} className="flex items-center bg-gray-100 rounded-md">
+                  <div key={key} className="flex items-center rounded-md bg-gray-100">
                     <Badge key={key} variant="outline" className="px-2 py-1">
                       <span>{key}: {value}</span>
                       <div 
                         role="button"
                         tabIndex="0"
-                        className="flex cursor-pointer ml-1 text-center items-center"
+                        className="ml-1 flex cursor-pointer items-center text-center"
                         onClick={() => removeScope(key)}
                       >
                         <X size="14" />

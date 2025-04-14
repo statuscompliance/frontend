@@ -373,12 +373,12 @@ export function CatalogDetails() {
   }
 
   return (
-    <Page className="container mx-auto p-4 space-y-6">
-      <Card className="text-left p-4">
+    <Page className="mx-auto p-4 container space-y-6">
+      <Card className="p-4 text-left">
         
-        <div className="grid grid-cols-2 gap-4 items-start">
+        <div className="grid grid-cols-2 items-start gap-4">
           <div>
-            <CardHeader className="flex flex-row items-center justify-start space-y-0 space-x-2 pb-2">
+            <CardHeader className="flex flex-row items-center justify-start pb-2 space-x-2 space-y-0">
               <CardTitle>{catalog?.name}</CardTitle>
               <Button variant="outline" size="sm" onClick={editingCatalog ? () => setEditingCatalog(false) : handleEditCatalog} userRole={userData.authority}>
                 {editingCatalog ? (
@@ -389,7 +389,7 @@ export function CatalogDetails() {
               </Button>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-600 mb-2">{catalog?.description || ''}</p>
+              <p className="mb-2 text-gray-600">{catalog?.description || ''}</p>
               <p className="text-sm">
                 Duration: {catalog?.startDate ? format(new Date(catalog.startDate), 'yyyy-MM-dd') : 'N/A'} to {catalog?.endDate ? format(new Date(catalog.endDate), 'yyyy-MM-dd') : 'N/A'}
               </p>
@@ -405,13 +405,13 @@ export function CatalogDetails() {
               )}
             </CardContent>
           </div>
-          <div className="flex flex-wrap p-4 justify-end space-x-2">
+          <div className="flex flex-wrap justify-end p-4 space-x-2">
           </div>
         </div>
       </Card>
 
       <div className="space-y-4">
-        <div className="flex justify-between items-center">
+        <div className="flex items-center justify-between">
           <div className="flex space-x-2">
             <Input
               placeholder="Search controls..."
@@ -424,7 +424,7 @@ export function CatalogDetails() {
             <Popover open={showFilters} onOpenChange={setShowFilters}>
               <PopoverTrigger asChild>
                 <Button variant="outline" className="flex items-center">
-                  <Filter className="h-4 w-4 mr-2" />
+                  <Filter className="mr-2 h-4 w-4" />
                   Advanced Filters
                 </Button>
               </PopoverTrigger>
@@ -528,7 +528,7 @@ export function CatalogDetails() {
             </Popover>
 
             <Button
-              className="bg-sidebar-accent hover:bg-secondary hover:text-sidebar-accent border-sidebar-accent border-2"
+              className="border-2 border-sidebar-accent bg-sidebar-accent hover:bg-secondary hover:text-sidebar-accent"
               onClick={handleDeleteControls}
               disabled={Object.keys(selectedControls).length === 0}
               userRole={userData.authority}
@@ -560,7 +560,7 @@ export function CatalogDetails() {
                   })}
               </DropdownMenuContent>
             </DropdownMenu>
-            <Button className="bg-sidebar-accent hover:bg-secondary hover:text-sidebar-accent border-2 border-sidebar-accent" onClick={handleAddControl} userRole={userData.authority}>
+            <Button className="border-2 border-sidebar-accent bg-sidebar-accent hover:bg-secondary hover:text-sidebar-accent" onClick={handleAddControl} userRole={userData.authority}>
               <Plus className="mr-2 h-4 w-4" /> Add New Control
             </Button>
           </div>
@@ -568,7 +568,7 @@ export function CatalogDetails() {
 
         {/* Mostrar indicadores de filtros activos */}
         {(selectedScopeKey !== 'all' || startDateFilter || endDateFilter) && (
-          <div className="flex flex-wrap gap-2 my-2">
+          <div className="my-2 flex flex-wrap gap-2">
             <div className="text-sm font-medium">Active filters:</div>
             {selectedScopeKey !== 'all' && selectedScopeValue !== 'all' && (
               <Badge variant="secondary" className="flex items-center gap-1">
@@ -592,11 +592,11 @@ export function CatalogDetails() {
         )}
 
         {loading ? (
-          <div className="flex justify-center items-center h-64">
+          <div className="h-64 flex items-center justify-center">
             <p>Loading controls...</p>
           </div>
         ) : (
-          <div className="rounded-md border">
+          <div className="border rounded-md">
             <Table>
               <TableHeader>
                 {table.getHeaderGroups().map((headerGroup) => (
@@ -630,7 +630,7 @@ export function CatalogDetails() {
           </div>
         )}
 
-        <div className="flex items-center justify-end space-x-2 py-4">
+        <div className="flex items-center justify-end py-4 space-x-2">
           <Button
             variant="outline"
             size="sm"

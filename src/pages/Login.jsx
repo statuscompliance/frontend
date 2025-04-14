@@ -21,7 +21,7 @@ export function Login() {
   }, [navigate]);
 
   return (
-    <div className="flex min-h-screen">
+    <div className="min-h-screen flex">
       <div className="w-full flex items-center justify-center p-8">
         <LoginCard />
       </div>
@@ -66,7 +66,7 @@ function LoginCard() {
   }
 
   return (
-    <Card className="w-full max-w-md rounded-lg shadow-sm">
+    <Card className="max-w-md w-full rounded-lg shadow-sm">
       <CardHeader className="items-start">
         <CardTitle>Log In</CardTitle>
         <CardDescription>Log In to STATUS</CardDescription>

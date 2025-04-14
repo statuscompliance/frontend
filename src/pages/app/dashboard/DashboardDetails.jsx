@@ -75,9 +75,9 @@ export function DashboardDetails() {
   if (loading) {
     return (
       <Page>
-        <div className="flex items-center mb-6">
+        <div className="mb-6 flex items-center">
           <Button variant="ghost" onClick={handleBack} className="mr-4">
-            <ArrowLeft className="h-4 w-4 mr-2" /> Back
+            <ArrowLeft className="mr-2 h-4 w-4" /> Back
           </Button>
           <Skeleton className="h-8 w-64" />
         </div>
@@ -125,16 +125,16 @@ export function DashboardDetails() {
 
   return (
     <Page dashboard={dashboardData}>
-      <div className="flex justify-between items-center mb-6">
+      <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center">
           <div className="flex items-center justify-between"> 
             <Button variant="ghost" onClick={handleBack} className="mr-4">
-              <ArrowLeft className="h-4 w-4 mr-2" /> Back
+              <ArrowLeft className="mr-2 h-4 w-4" /> Back
             </Button>
             <h3 className="text-2xl font-bold">{title}</h3>
             {userData.authority === 'USER' && timeRange && (timeRange.from || timeRange.to) && (
-              <CardDescription className="flex items-center mx-4">
-                <Clock className="h-3 w-3 mr-1" />
+              <CardDescription className="mx-4 flex items-center">
+                <Clock className="mr-1 h-3 w-3" />
                 <span>
                   {new Date(parsedTimeRange.from).toLocaleString()} - {new Date(parsedTimeRange.to).toLocaleString()}
                 </span>
@@ -143,19 +143,19 @@ export function DashboardDetails() {
           </div>
           {userData.authority === 'USER' && externalGrafanaUrl && (
             <Button variant="outline" size="sm" onClick={() => window.open(externalGrafanaUrl, '_blank')}>
-              <ExternalLink className="h-4 w-4 mr-2" /> View in Grafana
+              <ExternalLink className="mr-2 h-4 w-4" /> View in Grafana
             </Button>
           )}
         </div>
         <div className="flex space-x-2">
           {isEditable && userData.authority !== 'USER' && (
             <Button variant="outline" onClick={() => navigate(`/app/dashboards/edit/${id}`)}>
-              <Edit className="h-4 w-4 mr-2" /> Edit
+              <Edit className="mr-2 h-4 w-4" /> Edit
             </Button>
           )}
           {meta?.canDelete && userData.authority !== 'USER' && (
             <Button variant="destructive" onClick={handleDelete}>
-              <Trash className="h-4 w-4 mr-2" /> Delete
+              <Trash className="mr-2 h-4 w-4" /> Delete
             </Button>
           )}
         </div>
@@ -183,8 +183,8 @@ export function DashboardDetails() {
                     </div>
                     {panel.rawSql && userData.authority !== 'USER' && (
                       <div className="mt-2">
-                        <h4 className="text-sm font-medium text-muted-foreground mb-1">SQL Query</h4>
-                        <pre className="bg-muted p-2 rounded-md text-xs overflow-auto">{panel.rawSql}</pre>
+                        <h4 className="mb-1 text-sm text-muted-foreground font-medium">SQL Query</h4>
+                        <pre className="overflow-auto rounded-md bg-muted p-2 text-xs">{panel.rawSql}</pre>
                       </div>
                     )}
                   </CardHeader>
@@ -195,8 +195,8 @@ export function DashboardDetails() {
                       height={300}
                     />
                   </CardContent>
-                  <CardFooter className="text-xs text-muted-foreground border-t p-2">
-                    <div className="flex justify-between w-full">
+                  <CardFooter className="border-t p-2 text-xs text-muted-foreground">
+                    <div className="w-full flex justify-between">
                       <span>Panel ID: {panel.id}</span>
                     </div>
                   </CardFooter>
@@ -214,13 +214,13 @@ export function DashboardDetails() {
             <TabsTrigger className="bg-secondary" value="settings">Settings</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="overview" className="space-y-4 mt-6">
+          <TabsContent value="overview" className="mt-6 space-y-4">
             <Card>
-              <CardHeader className="border-t pt-4 flex flex-row items-center justify-between">
+              <CardHeader className="flex flex-row items-center justify-between border-t pt-4">
                 <div className="flex items-end">
                   {externalGrafanaUrl && (
                     <Button className="w-44" variant="outline" size="sm" onClick={() => window.open(externalGrafanaUrl, '_blank')}>
-                      <ExternalLink className="h-4 w-4 mr-2" /> View in Grafana
+                      <ExternalLink className="mr-2 h-4 w-4" /> View in Grafana
                     </Button>
                   )}
                 </div>
@@ -230,32 +230,32 @@ export function DashboardDetails() {
                   onClick={() => setShowDashboardInfo(!showDashboardInfo)}
                   className="flex items-center"
                 >
-                  <Info className="h-4 w-4 mr-1" /> 
+                  <Info className="mr-1 h-4 w-4" /> 
                   {showDashboardInfo ? 'Hide Details' : 'More Info'}
                   {showDashboardInfo ? (
-                    <ChevronUp className="h-4 w-4 ml-1" />
+                    <ChevronUp className="ml-1 h-4 w-4" />
                   ) : (
-                    <ChevronDown className="h-4 w-4 ml-1" />
+                    <ChevronDown className="ml-1 h-4 w-4" />
                   )}
                 </Button>
               </CardHeader>
               {showDashboardInfo && (
                 <CardContent className="px-6 pb-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                     {/* Rest of overview card content */}
                     <div className="space-y-4">
                       <div>
-                        <h3 className="text-sm font-medium text-muted-foreground mb-1">Dashboard Details</h3>
+                        <h3 className="mb-1 text-sm text-muted-foreground font-medium">Dashboard Details</h3>
                         <dl className="grid grid-cols-1 gap-2 text-left">
                           <div>
-                            <dt className="text-sm font-medium text-muted-foreground">Folder</dt>
-                            <dd className="text-sm flex items-center">
-                              <Bookmark className="h-3 w-3 mr-1" /> 
+                            <dt className="text-sm text-muted-foreground font-medium">Folder</dt>
+                            <dd className="flex items-center text-sm">
+                              <Bookmark className="mr-1 h-3 w-3" /> 
                               {folderTitle}
                             </dd>
                           </div>
                           <div>
-                            <dt className="text-sm font-medium text-muted-foreground">Version</dt>
+                            <dt className="text-sm text-muted-foreground font-medium">Version</dt>
                             <dd className="text-sm">{version}</dd>
                           </div>
                         </dl>
@@ -263,7 +263,7 @@ export function DashboardDetails() {
 
                       {tags.length > 0 && (
                         <div>
-                          <h3 className="text-sm font-medium text-muted-foreground mb-2">Tags</h3>
+                          <h3 className="mb-2 text-sm text-muted-foreground font-medium">Tags</h3>
                           <div className="flex flex-wrap gap-1">
                             {tags.map(tag => (
                               <Badge key={tag} variant="secondary">
@@ -276,9 +276,9 @@ export function DashboardDetails() {
 
                       {timeRange && (timeRange.from || timeRange.to) && (
                         <div>
-                          <h3 className="text-sm font-medium text-muted-foreground mb-1">Default Time Range</h3>
+                          <h3 className="mb-1 text-sm text-muted-foreground font-medium">Default Time Range</h3>
                           <div className="flex items-center justify-center text-sm">
-                            <Clock className="h-3 w-3 mr-1" />
+                            <Clock className="mr-1 h-3 w-3" />
                             <span>
                               {new Date(parsedTimeRange.from).toLocaleString()
                               } - {new Date(parsedTimeRange.to).toLocaleString()}
@@ -290,23 +290,23 @@ export function DashboardDetails() {
 
                     <div className="space-y-4">
                       <div>
-                        <h3 className="text-sm font-medium text-muted-foreground mb-1">General Settings</h3>
+                        <h3 className="mb-1 text-sm text-muted-foreground font-medium">General Settings</h3>
                         <dl className="grid grid-cols-1 gap-2 text-left">
                           {dashboard.dashboard?.timezone && (
                             <div>
-                              <dt className="text-sm font-medium text-muted-foreground">Timezone</dt>
+                              <dt className="text-sm text-muted-foreground font-medium">Timezone</dt>
                               <dd className="text-sm">{dashboard.dashboard.timezone}</dd>
                             </div>
                           )}
                           {dashboard.dashboard?.refresh !== undefined && (
                             <div>
-                              <dt className="text-sm font-medium text-muted-foreground">Auto Refresh</dt>
+                              <dt className="text-sm text-muted-foreground font-medium">Auto Refresh</dt>
                               <dd className="text-sm">{dashboard.dashboard.refresh || 'Off'}</dd>
                             </div>
                           )}
                           {dashboard.dashboard?.graphTooltip !== undefined && (
                             <div>
-                              <dt className="text-sm font-medium text-muted-foreground">Graph Tooltip</dt>
+                              <dt className="text-sm text-muted-foreground font-medium">Graph Tooltip</dt>
                               <dd className="text-sm">{dashboard.dashboard.graphTooltip}</dd>
                             </div>
                           )}
@@ -318,7 +318,7 @@ export function DashboardDetails() {
               )}
             </Card>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 md:grid-cols-2">
               {/* Panel preview grid */}
               {panels.slice(0, 6).map(panel => (
                 <Card key={panel.id} className="overflow-hidden">
@@ -364,8 +364,8 @@ export function DashboardDetails() {
                       </div>
                       {panel.rawSql && (
                         <div className="mt-2">
-                          <h4 className="text-sm font-medium text-muted-foreground mb-1">SQL Query</h4>
-                          <pre className="bg-muted p-2 rounded-md text-xs overflow-auto">{panel.rawSql}</pre>
+                          <h4 className="mb-1 text-sm text-muted-foreground font-medium">SQL Query</h4>
+                          <pre className="overflow-auto rounded-md bg-muted p-2 text-xs">{panel.rawSql}</pre>
                         </div>
                       )}
                     </CardHeader>
@@ -376,8 +376,8 @@ export function DashboardDetails() {
                         height={300}
                       />
                     </CardContent>
-                    <CardFooter className="text-xs text-muted-foreground border-t p-2">
-                      <div className="flex justify-between w-full">
+                    <CardFooter className="border-t p-2 text-xs text-muted-foreground">
+                      <div className="w-full flex justify-between">
                         <span>Panel ID: {panel.id}</span>
                       </div>
                     </CardFooter>
@@ -394,25 +394,25 @@ export function DashboardDetails() {
                 <CardDescription>Technical details about this dashboard</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                   <div className="space-y-4">
                     <div>
-                      <h3 className="text-sm font-medium text-muted-foreground mb-1">Dashboard JSON Model</h3>
+                      <h3 className="mb-1 text-sm text-muted-foreground font-medium">Dashboard JSON Model</h3>
                       <dl className="grid grid-cols-1 gap-2 text-left">
                         <div>
-                          <dt className="text-sm font-medium text-muted-foreground">Schema Version</dt>
+                          <dt className="text-sm text-muted-foreground font-medium">Schema Version</dt>
                           <dd className="text-base">{dashboardData?.schemaVersion || 'N/A'}</dd>
                         </div>
                         <div>
-                          <dt className="text-sm font-medium text-muted-foreground">Dashboard ID</dt>
+                          <dt className="text-sm text-muted-foreground font-medium">Dashboard ID</dt>
                           <dd className="text-base">{dashboardData?.id || 'N/A'}</dd>
                         </div>
                         <div>
-                          <dt className="text-sm font-medium text-muted-foreground">Version</dt>
+                          <dt className="text-sm text-muted-foreground font-medium">Version</dt>
                           <dd className="text-base">{version || 'N/A'}</dd>
                         </div>
                         <div>
-                          <dt className="text-sm font-medium text-muted-foreground">Iteration</dt>
+                          <dt className="text-sm text-muted-foreground font-medium">Iteration</dt>
                           <dd className="text-base">{dashboardData?.iteration || 'N/A'}</dd>
                         </div>
                       </dl>
@@ -421,45 +421,45 @@ export function DashboardDetails() {
                   
                   <div className="space-y-4">
                     <div>
-                      <h3 className="text-sm font-medium text-muted-foreground mb-1">API Information</h3>
+                      <h3 className="mb-1 text-sm text-muted-foreground font-medium">API Information</h3>
                       <dl className="grid grid-cols-1 gap-2 text-left">
                         <div>
-                          <dt className="text-sm font-medium text-muted-foreground">Provider Name</dt>
+                          <dt className="text-sm text-muted-foreground font-medium">Provider Name</dt>
                           <dd className="text-base">{meta?.provisionedBy || 'Manual'}</dd>
                         </div>
                         <div>
-                          <dt className="text-sm font-medium text-muted-foreground">Folder ID</dt>
+                          <dt className="text-sm text-muted-foreground font-medium">Folder ID</dt>
                           <dd className="text-base">{meta?.folderId !== undefined ? meta.folderId : 'N/A'}</dd>
                         </div>
                         <div>
-                          <dt className="text-sm font-medium text-muted-foreground">URL Slug</dt>
+                          <dt className="text-sm text-muted-foreground font-medium">URL Slug</dt>
                           <dd className="text-base">{meta?.slug || 'N/A'}</dd>
                         </div>
                         <div>
-                          <dt className="text-sm font-medium text-muted-foreground">UUID</dt>
-                          <dd className="text-base font-mono text-xs">{uid || 'N/A'}</dd>
+                          <dt className="text-sm text-muted-foreground font-medium">UUID</dt>
+                          <dd className="text-base text-xs font-mono">{uid || 'N/A'}</dd>
                         </div>
                       </dl>
                     </div>
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                   <div className="space-y-4">
                     <div>
-                      <h3 className="text-sm font-medium text-muted-foreground mb-1">Creation Information</h3>
+                      <h3 className="mb-1 text-sm text-muted-foreground font-medium">Creation Information</h3>
                       <dl className="grid grid-cols-1 gap-2 text-left">
                         {created && (
                           <div>
-                            <dt className="text-sm font-medium text-muted-foreground">Created</dt>
-                            <dd className="text-base flex items-center gap-1">
+                            <dt className="text-sm text-muted-foreground font-medium">Created</dt>
+                            <dd className="flex items-center gap-1 text-base">
                               <Calendar className="h-3 w-3" />
                               <span>{created.toLocaleDateString()}</span>
                               {createdBy && (
                                 <>
-                                  <span className="text-muted-foreground mx-1">by</span>
+                                  <span className="mx-1 text-muted-foreground">by</span>
                                   <span className="flex items-center">
-                                    <User className="h-3 w-3 mr-1" /> {createdBy}
+                                    <User className="mr-1 h-3 w-3" /> {createdBy}
                                   </span>
                                 </>
                               )}
@@ -469,16 +469,16 @@ export function DashboardDetails() {
                         
                         {updated && (
                           <div>
-                            <dt className="text-sm font-medium text-muted-foreground">Last updated</dt>
-                            <dd className="text-base flex items-center gap-1">
+                            <dt className="text-sm text-muted-foreground font-medium">Last updated</dt>
+                            <dd className="flex items-center gap-1 text-base">
                               <Calendar className="h-3 w-3" />
                               <span>{updated.toLocaleDateString()}</span>
-                              <span className="text-muted-foreground text-xs">({formatDistanceToNow(updated, { addSuffix: true })})</span>
+                              <span className="text-xs text-muted-foreground">({formatDistanceToNow(updated, { addSuffix: true })})</span>
                               {updatedBy && (
                                 <>
-                                  <span className="text-muted-foreground mx-1">by</span>
+                                  <span className="mx-1 text-muted-foreground">by</span>
                                   <span className="flex items-center">
-                                    <User className="h-3 w-3 mr-1" /> {updatedBy}
+                                    <User className="mr-1 h-3 w-3" /> {updatedBy}
                                   </span>
                                 </>
                               )}
@@ -491,8 +491,8 @@ export function DashboardDetails() {
 
                   <div className="space-y-4">
                     <div>
-                      <h3 className="text-sm font-medium text-muted-foreground mb-1">Permissions</h3>
-                      <div className="grid grid-cols-2 gap-2 text-sm text-left">
+                      <h3 className="mb-1 text-sm text-muted-foreground font-medium">Permissions</h3>
+                      <div className="grid grid-cols-2 gap-2 text-left text-sm">
                         <div className="flex items-center">
                           <span className="mr-2">Editable:</span>
                           <Badge variant={isEditable ? 'default' : 'outline'}>
@@ -523,22 +523,22 @@ export function DashboardDetails() {
                 </div>
                 
                 <div>
-                  <h3 className="text-sm font-medium text-muted-foreground mb-1">Additional Properties</h3>
-                  <dl className="grid grid-cols-1 md:grid-cols-2 gap-2 text-left">
+                  <h3 className="mb-1 text-sm text-muted-foreground font-medium">Additional Properties</h3>
+                  <dl className="grid grid-cols-1 gap-2 text-left md:grid-cols-2">
                     <div>
-                      <dt className="text-sm font-medium text-muted-foreground">Timezone</dt>
+                      <dt className="text-sm text-muted-foreground font-medium">Timezone</dt>
                       <dd className="text-base">{dashboardData?.timezone || 'browser'}</dd>
                     </div>
                     <div>
-                      <dt className="text-sm font-medium text-muted-foreground">Refresh Rate</dt>
+                      <dt className="text-sm text-muted-foreground font-medium">Refresh Rate</dt>
                       <dd className="text-base">{dashboardData?.refresh || 'Off'}</dd>
                     </div>
                     <div>
-                      <dt className="text-sm font-medium text-muted-foreground">Graph Tooltip</dt>
+                      <dt className="text-sm text-muted-foreground font-medium">Graph Tooltip</dt>
                       <dd className="text-base">{dashboardData?.graphTooltip !== undefined ? dashboardData.graphTooltip : 'Default'}</dd>
                     </div>
                     <div>
-                      <dt className="text-sm font-medium text-muted-foreground">Time Picker Visible</dt>
+                      <dt className="text-sm text-muted-foreground font-medium">Time Picker Visible</dt>
                       <dd className="text-base">{dashboardData?.timepicker?.hidden === true ? 'No' : 'Yes'}</dd>
                     </div>
                   </dl>
@@ -557,28 +557,28 @@ export function DashboardDetails() {
                 <div>
                   <h3 className="text-lg font-medium">Dashboard Properties</h3>
                   <Separator className="my-2" />
-                  <dl className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
+                  <dl className="grid grid-cols-1 gap-4 text-left md:grid-cols-2">
                     {dashboard.dashboard?.graphTooltip !== undefined && (
                       <div>
-                        <dt className="text-sm font-medium text-muted-foreground">Graph Tooltip</dt>
+                        <dt className="text-sm text-muted-foreground font-medium">Graph Tooltip</dt>
                         <dd className="text-base">{dashboard.dashboard.graphTooltip}</dd>
                       </div>
                     )}
                     {dashboard.dashboard?.timezone && (
                       <div>
-                        <dt className="text-sm font-medium text-muted-foreground">Timezone</dt>
+                        <dt className="text-sm text-muted-foreground font-medium">Timezone</dt>
                         <dd className="text-base">{dashboard.dashboard.timezone}</dd>
                       </div>
                     )}
                     {dashboard.dashboard?.schemaVersion && (
                       <div>
-                        <dt className="text-sm font-medium text-muted-foreground">Schema Version</dt>
+                        <dt className="text-sm text-muted-foreground font-medium">Schema Version</dt>
                         <dd className="text-base">{dashboard.dashboard.schemaVersion}</dd>
                       </div>
                     )}
                     {dashboard.dashboard?.refresh !== undefined && (
                       <div>
-                        <dt className="text-sm font-medium text-muted-foreground">Auto Refresh</dt>
+                        <dt className="text-sm text-muted-foreground font-medium">Auto Refresh</dt>
                         <dd className="text-base">{dashboard.dashboard.refresh || 'Off'}</dd>
                       </div>
                     )}

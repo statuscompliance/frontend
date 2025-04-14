@@ -117,7 +117,7 @@ export function AppSidebar() {
         {data.filter((item) => item.type === 'group').map((group) => (
           <SidebarGroup key={group.title}>
             <SidebarGroupLabel>
-              <span className="text-sm font-medium text-sidebar-foreground">{group.title}</span>
+              <span className="text-sm text-sidebar-foreground font-medium">{group.title}</span>
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu className="space-y-4 sm:space-y-2">
@@ -150,7 +150,7 @@ export function AppSidebar() {
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
               <DropdownMenuContent
-                className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg bg-sidebar"
+                className="min-w-56 w-[--radix-dropdown-menu-trigger-width] rounded-lg bg-sidebar"
                 side="bottom"
                 align="end"
                 sideOffset={4}
@@ -212,7 +212,7 @@ function CollapsibleItem({ item, ...props }) {
           </SidebarMenuButton>
         </CollapsibleTrigger>
         <CollapsibleContent>
-          <SidebarMenuSub className="pt-4 sm:pt-2 space-y-2 sm:space-y-1">
+          <SidebarMenuSub className="pt-4 space-y-2 sm:pt-2 sm:space-y-1">
             {item.items && item.items.map((subItem) => (
               <SidebarMenuSubItem key={subItem.title}>
                 <SidebarMenuSubButton asChild>

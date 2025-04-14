@@ -154,7 +154,7 @@ export function Dashboards() {
 
   return (
     <Page>
-      <div className="flex justify-between items-center space-x-4 mb-4">
+      <div className="mb-4 flex items-center justify-between space-x-4">
         <div className='flex items-center space-x-2'>
           <Input
             placeholder="Filter dashboards and folders..."
@@ -179,7 +179,7 @@ export function Dashboards() {
             disabled={loading || selectedItemsCount === 0}
             userRole={userData.authority}
           >
-            <Trash className="h-4 w-4 mr-2" /> Delete
+            <Trash className="mr-2 h-4 w-4" /> Delete
           </Button>
           <Button 
             variant="outline" 
@@ -190,7 +190,7 @@ export function Dashboards() {
             <FolderPlus className="mr-2 h-4 w-4" /> Add Folder
           </Button>
           <Button 
-            className="bg-sidebar-accent text-white hover:bg-secondary hover:text-sidebar-accent border-2 border-sidebar-accent" 
+            className="border-2 border-sidebar-accent bg-sidebar-accent text-white hover:bg-secondary hover:text-sidebar-accent" 
             variant="outline" 
             onClick={handleAddDashboard}
             disabled={loading}
@@ -200,7 +200,7 @@ export function Dashboards() {
           </Button>
         </div>
       </div>
-      {error && <div className="text-red-500 mb-4">{error}</div>}
+      {error && <div className="mb-4 text-red-500">{error}</div>}
       <DashboardList 
         ref={dashboardListRef}
         filter={filter} 

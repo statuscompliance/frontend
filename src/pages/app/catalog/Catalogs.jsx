@@ -196,7 +196,7 @@ export function Catalogs() {
               className="flex items-center text-blue-600 hover:text-blue-800"
               onClick={(e) => e.stopPropagation()}
             >
-              <ExternalLink className="h-4 w-4 mr-1" />
+              <ExternalLink className="mr-1 h-4 w-4" />
             </Link>
           ) : (
             '-'
@@ -257,7 +257,7 @@ export function Catalogs() {
   });
 
   return (
-    <Page name="Catalogs" className="w-full h-full">
+    <Page name="Catalogs" className="h-full w-full">
       <div className="flex items-center justify-between gap-x-4">
         <Input
           placeholder="Search catalogs..."
@@ -289,7 +289,7 @@ export function Catalogs() {
           </DropdownMenuContent>
         </DropdownMenu>
         <Button 
-          className="bg-sidebar-accent hover:bg-secondary hover:text-sidebar-accent border-2 border-sidebar-accent"
+          className="border-2 border-sidebar-accent bg-sidebar-accent hover:bg-secondary hover:text-sidebar-accent"
           onClick={handleNew}
           userRole={userData.authority}
         >
@@ -298,12 +298,12 @@ export function Catalogs() {
       </div>
       
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded my-4">
+        <div className="my-4 border border-red-400 rounded bg-red-100 px-4 py-3 text-red-700">
           {error}
         </div>
       )}
       
-      <div className="rounded-md border mt-4">
+      <div className="mt-4 border rounded-md">
         <Table>
           <TableHeader className="bg-gray-50">
             {table.getHeaderGroups().map((headerGroup) => (
@@ -320,8 +320,8 @@ export function Catalogs() {
             {loading && (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                  <div className="flex justify-center items-center">
-                    <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                  <div className="flex items-center justify-center">
+                    <Loader2 className="mr-2 h-6 w-6 animate-spin" />
                     Loading catalogs...
                   </div>
                 </TableCell>
@@ -347,7 +347,7 @@ export function Catalogs() {
         </Table>
       </div>
       
-      <div className="flex items-center justify-end space-x-2 py-4">
+      <div className="flex items-center justify-end py-4 space-x-2">
         <Button variant="outline" size="sm" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
           Previous
         </Button>

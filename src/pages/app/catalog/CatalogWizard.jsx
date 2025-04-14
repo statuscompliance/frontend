@@ -224,7 +224,7 @@ export function CatalogWizard() {
   };
 
   return (
-    <Page name={isEditing ? 'Edit Catalog' : 'Create New Catalog'} className="w-full h-full">
+    <Page name={isEditing ? 'Edit Catalog' : 'Create New Catalog'} className="h-full w-full">
       {/* Stepper */}
       <div className="mb-8">
         <div className="flex items-center justify-center">
@@ -241,7 +241,7 @@ export function CatalogWizard() {
                 }`}
               >
                 {index < currentStep ? (
-                  <Check className="w-5 h-5" />
+                  <Check className="h-5 w-5" />
                 ) : (
                   <span>{index + 1}</span>
                 )}
@@ -267,7 +267,7 @@ export function CatalogWizard() {
 
       {/* Error message */}
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+        <div className="mb-4 border border-red-400 rounded bg-red-100 px-4 py-3 text-red-700">
           {error}
         </div>
       )}
@@ -276,7 +276,7 @@ export function CatalogWizard() {
       <Card>
         <CardContent className="pt-6">
           {loading && currentStep === 0 ? (
-            <div className="flex justify-center items-center h-60">
+            <div className="h-60 flex items-center justify-center">
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>
           ) : (
@@ -286,7 +286,7 @@ export function CatalogWizard() {
       </Card>
 
       {/* Navigation buttons - Only shown for manually navigation */}
-      <div className="flex justify-between mt-6">
+      <div className="mt-6 flex justify-between">
         <Button
           variant="outline"
           onClick={() => currentStep === 0 ? navigate('/app/catalogs') : goToPrevStep()}

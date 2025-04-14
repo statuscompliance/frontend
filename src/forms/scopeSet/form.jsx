@@ -71,7 +71,7 @@ export function ScopeSetForm({ onSubmit, controls, scopes, defaultValues, onCanc
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-2">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="py-2 space-y-4">
         {controls.length > 1 && (
           <FormField
             control={form.control}
@@ -99,16 +99,16 @@ export function ScopeSetForm({ onSubmit, controls, scopes, defaultValues, onCanc
           />
         )}
 
-        <div className="flex flex-wrap gap-2 mt-2">
+        <div className="mt-2 flex flex-wrap gap-2">
           {fields.map((field) => (
-            <Badge key={field.id} variant="outline" className="px-2 py-1 flex items-center gap-1 bg-secondary">
+            <Badge key={field.id} variant="outline" className="flex items-center gap-1 bg-secondary px-2 py-1">
               <span>
                 {field.name}: {field.value}
               </span>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-4 w-4 ml-1 hover:bg-destructive/10"
+                className="ml-1 h-4 w-4 hover:bg-destructive/10"
                 onClick={() => handleScopeSelection(field.id)}
                 type="button"
               >
@@ -149,7 +149,7 @@ export function ScopeSetForm({ onSubmit, controls, scopes, defaultValues, onCanc
               variant="outline"
               role="combobox"
               aria-expanded={open}
-              className="px-2 w-32 justify-start"
+              className="w-32 justify-start px-2"
             >
               <Plus className="mr-2 h-4 w-4 opacity-50" />
               {availableScopes.length > 0 ? 'Add Scope' : 'No more scopes available'}
@@ -162,7 +162,7 @@ export function ScopeSetForm({ onSubmit, controls, scopes, defaultValues, onCanc
                 className="h-9 text-black" // Override muted text style
               />
               <CommandList>
-                <CommandEmpty className="text-black text-sm py-4 px-2">No scope found.</CommandEmpty>
+                <CommandEmpty className="px-2 py-4 text-sm text-black">No scope found.</CommandEmpty>
                 <CommandGroup>
                   {availableScopes.map((scope) => (
                     <CommandItem

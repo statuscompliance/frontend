@@ -49,7 +49,7 @@ export function CatalogForm({ catalog = {}, onSubmit, isSubmitting, errors = {} 
           disabled={isSubmitting}
         />
         {errors.name && (
-          <p className="text-red-500 text-sm mt-1">{errors.name}</p>
+          <p className="mt-1 text-sm text-red-500">{errors.name}</p>
         )}
       </div>
       
@@ -68,7 +68,7 @@ export function CatalogForm({ catalog = {}, onSubmit, isSubmitting, errors = {} 
           disabled={isSubmitting}
         />
         {errors.description && (
-          <p className="text-red-500 text-sm mt-1">{errors.description}</p>
+          <p className="mt-1 text-sm text-red-500">{errors.description}</p>
         )}
       </div>
       

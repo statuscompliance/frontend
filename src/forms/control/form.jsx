@@ -208,7 +208,7 @@ export function ControlForm({ onSubmit, onCancel, defaultValues }) {
           )}
         />
 
-        <div className="flex justify-end space-x-2 pt-4">
+        <div className="flex justify-end pt-4 space-x-2">
           <Button variant="outline" onClick={onCancel} type="button">
             <X className="mr-2 h-4 w-4"/>
             Cancel

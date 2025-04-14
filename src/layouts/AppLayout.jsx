@@ -8,7 +8,7 @@ export default function AppLayout() {
   return (
     <SidebarProvider className="min-h-screen">
       <AppSidebar />
-      <div className="flex w-full h-dvh">
+      <div className="w-full flex h-dvh">
         <main className="flex-grow">
           <Outlet />
         </main>

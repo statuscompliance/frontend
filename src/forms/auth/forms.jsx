@@ -38,7 +38,7 @@ export function LoginForm({ form, onSubmit, isLoading, error }) {
           rules={{ required: true }}
           render={({ field }) => (
             <FormItem className="flex flex-col items-start">
-              <FormLabel className="text-base font-large">Password</FormLabel>
+              <FormLabel className="font-large text-base">Password</FormLabel>
               <FormControl>
                 <PasswordInput {...field} />
               </FormControl>
@@ -50,7 +50,7 @@ export function LoginForm({ form, onSubmit, isLoading, error }) {
           {isLoading && (
             <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
           )}
-          <span className="text-base font-large">Log In</span>
+          <span className="font-large text-base">Log In</span>
         </Button>
       </form>
     </Form>
@@ -94,7 +94,7 @@ export function Verify2FAForm({ form, onSubmit, isLoading, error }) {
           {isLoading && (
             <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
           )}
-          <span className="text-base font-large">Verify</span>
+          <span className="font-large text-base">Verify</span>
         </Button>
       </form>
     </Form>

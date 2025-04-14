@@ -56,11 +56,11 @@ export function Enable2FA() {
             <Card>
               <CardContent className="p-6">
                 {twoFactorData?.qrCodeUrl && (
-                  <div className="flex justify-center items-center">
+                  <div className="flex items-center justify-center">
                     <img
                       src={`${twoFactorData.qrCodeUrl}`}
                       alt="2FA QR Code"
-                      className="w-48 h-48"
+                      className="h-48 w-48"
                     />
                   </div>
                 )}
@@ -77,9 +77,9 @@ export function Enable2FA() {
                   <li>Use this code whenever you sign in to verify your identity</li>
                 </ol>
 
-                <div className="mt-4 pt-4 border-t">
+                <div className="mt-4 border-t pt-4">
                   <p className="text-sm font-medium">Secret Code (Save this somewhere safe. Do not share)</p>
-                  <code className="break-all block mt-1 p-2 bg-secondary rounded">
+                  <code className="mt-1 block break-all rounded bg-secondary p-2">
                     {twoFactorData?.secret}
                   </code>
                 </div>

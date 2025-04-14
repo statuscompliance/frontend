@@ -80,7 +80,7 @@ export function CatalogInfoStep({ initialData = {}, onSubmit, isSubmitting, apiE
 
   return (
     <div className="py-4 text-left">
-      <h2 className="text-xl font-semibold mb-6">Basic Catalog Information</h2>
+      <h2 className="mb-6 text-xl font-semibold">Basic Catalog Information</h2>
       
       {submitError && (
         <Alert variant="destructive" className="mb-6">
@@ -230,7 +230,7 @@ export function CatalogInfoStep({ initialData = {}, onSubmit, isSubmitting, apiE
             <Button 
               type="submit" 
               disabled={isSubmitting}
-              className="bg-white hover:bg-secondary text-primary min-w-[120px]"
+              className="min-w-[120px] bg-white text-primary hover:bg-secondary"
             >
               {isSubmitting ? (
                 <>
