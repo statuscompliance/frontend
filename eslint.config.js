@@ -5,6 +5,7 @@ import react from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
 import json from '@eslint/json';
+import packageJson from './package.json' with { type: 'json' };
 
 export default [
   { ignores: ['dist', '**/tailwind.config.js', '**/components/ui/**'] },
@@ -19,7 +20,7 @@ export default [
         sourceType: 'module',
       },
     },
-    settings: { react: { version: '18.3' } },
+    settings: { react: { version: packageJson.dependencies.react } },
     plugins: {
       react,
       json,
