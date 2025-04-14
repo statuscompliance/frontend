@@ -195,9 +195,9 @@ export function Scopes() {
   };
 
   return (
-    <Page className="container mx-auto p-4 space-y-6">
+    <Page className="mx-auto p-4 container space-y-6">
       <Card>
-        <CardHeader className="grid grid-cols-2 gap-4 items-start text-left">
+        <CardHeader className="grid grid-cols-2 items-start gap-4 text-left">
           <div>
             <CardTitle>Scope Definitions</CardTitle>
             <CardDescription>Manage your scope definitions here.</CardDescription>
@@ -230,7 +230,7 @@ export function Scopes() {
                 className="max-w-sm"
               />
               <Button
-                className="bg-sidebar-accent hover:bg-secondary hover:text-sidebar-accent border-sidebar-accent border-2"
+                className="border-2 border-sidebar-accent bg-sidebar-accent hover:bg-secondary hover:text-sidebar-accent"
                 onClick={handleDeleteSelectedScopes}
                 disabled={Object.keys(selectedScopes).length === 0}
                 userRole={userData.authority}
@@ -262,7 +262,7 @@ export function Scopes() {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-          <div className="rounded-md border">
+          <div className="border rounded-md">
             <Table>
               <TableHeader>
                 {table.getHeaderGroups().map((headerGroup) => (
@@ -300,7 +300,7 @@ export function Scopes() {
               </TableBody>
             </Table>
           </div>
-          <div className="flex items-center justify-end space-x-2 py-4">
+          <div className="flex items-center justify-end py-4 space-x-2">
             <Button
               variant="outline"
               size="sm"

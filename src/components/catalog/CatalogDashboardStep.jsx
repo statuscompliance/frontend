@@ -134,7 +134,7 @@ export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalo
   const ChartPreview = ({ type }) => {
     const Icon = chartTypes.find(chart => chart.value === type)?.icon || PieChart;
     return (
-      <div className="flex items-center justify-center bg-gray-100 rounded-md p-6 h-40">
+      <div className="h-40 flex items-center justify-center rounded-md bg-gray-100 p-6">
         <Icon className="h-20 w-20 text-gray-400" />
       </div>
     );
@@ -142,7 +142,7 @@ export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalo
 
   return (
     <div className="py-4">
-      <h2 className="text-xl font-semibold mb-6 text-left">Configure Dashboard</h2>
+      <h2 className="mb-6 text-left text-xl font-semibold">Configure Dashboard</h2>
       
       {submitError && (
         <Alert variant="destructive" className="mb-6">
@@ -180,7 +180,7 @@ export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalo
                 control={form.control}
                 name="showSummaryStats"
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                  <FormItem className="flex flex-row items-center justify-between border rounded-lg p-3 shadow-sm">
                     <div className="space-y-0.5">
                       <FormLabel>Show Summary Statistics</FormLabel>
                       <p className="text-sm text-gray-500">
@@ -218,12 +218,12 @@ export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalo
           />
 
           <div className="border-t pt-6">
-            <div className="flex justify-between items-center mb-4">
+            <div className="mb-4 flex items-center justify-between">
               <h3 className="text-lg font-medium">Dashboard Charts</h3>
               <Button 
                 type="button" 
                 onClick={handleAddChart}
-                className="bg-sidebar-accent hover:bg-secondary hover:text-sidebar-accent border-2 border-sidebar-accent"
+                className="border-2 border-sidebar-accent bg-sidebar-accent hover:bg-secondary hover:text-sidebar-accent"
                 variant="outline"
               >
                 Add Chart
@@ -276,7 +276,7 @@ export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalo
                                 {chartTypes.map(type => (
                                   <SelectItem key={type.value} value={type.value}>
                                     <div className="flex items-center">
-                                      <type.icon className="h-4 w-4 mr-2" />
+                                      <type.icon className="mr-2 h-4 w-4" />
                                       {type.label}
                                     </div>
                                   </SelectItem>
@@ -288,7 +288,7 @@ export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalo
 
                         <FormItem>
                           <FormLabel>Select Controls <span className="text-red-500">*</span></FormLabel>
-                          <div className="border rounded-md p-3 max-h-[200px] overflow-y-auto">
+                          <div className="max-h-[200px] overflow-y-auto border rounded-md p-3">
                             {controls.length === 0 ? (
                               <p className="text-sm text-gray-500">No controls available</p>
                             ) : (
@@ -341,7 +341,7 @@ export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalo
                 ))}
               </Tabs>
             ) : (
-              <div className="text-center py-10 bg-gray-50 border rounded-md">
+              <div className="border rounded-md bg-gray-50 py-10 text-center">
                 <p className="text-gray-500">No charts added yet. Click "Add Chart" to start building your dashboard.</p>
               </div>
             )}
@@ -352,7 +352,7 @@ export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalo
             <Button 
               type="submit" 
               disabled={isSubmitting}
-              className="bg-sidebar-accent hover:bg-secondary hover:text-sidebar-accent border-2 border-sidebar-accent min-w-[120px]"
+              className="min-w-[120px] border-2 border-sidebar-accent bg-sidebar-accent hover:bg-secondary hover:text-sidebar-accent"
             >
               {isSubmitting ? (
                 <>

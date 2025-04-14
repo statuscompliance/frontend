@@ -4,8 +4,8 @@ import { Footer } from '@/components/layouts/footer';
 
 export function Landing() {
   return (
-    <div className="flex flex-col items-center min-h-screen">
-      <div className="flex flex-col items-center mb-16 pt-16 flex-grow">
+    <div className="min-h-screen flex flex-col items-center">
+      <div className="mb-16 flex flex-grow flex-col items-center pt-16">
         <HeroSection />
         <FeaturesSection />
       </div>

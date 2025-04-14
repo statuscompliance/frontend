@@ -30,7 +30,7 @@ export function Editor() {
 
   return (
     <Page flowName={flowName}>
-      <div className="container mx-auto px-4">
+      <div className="mx-auto px-4 container">
         <Card className="w-full overflow-hidden bg-muted">
           {error ? (
             <Alert variant="destructive" className="m-4">
@@ -47,16 +47,16 @@ export function Editor() {
               </AlertDescription>
             </Alert>
           ) : (
-            <CardContent className="p-0 relative min-h-[calc(100vh-240px)]">
+            <CardContent className="relative min-h-[calc(100vh-240px)] p-0">
               {loading && (
-                <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
+                <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/80">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                   <span className="ml-2">Loading Node-RED editor...</span>
                 </div>
               )}
-              <div className="p-2 bg-muted flex justify-between">
+              <div className="flex justify-between bg-muted p-2">
                 <div className='flex items-center'>
-                  <p className="text-xs mt-1">
+                  <p className="mt-1 text-xs">
                     Server: {import.meta.env.VITE_NODE_RED_URL}
                   </p>
                   <Badge 
@@ -82,7 +82,7 @@ export function Editor() {
               </div>
               <iframe 
                 src={nodeRedUrl}
-                className="w-full h-[calc(100vh-290px)]"
+                className="h-[calc(100vh-290px)] w-full"
                 title="Node-RED Editor"
                 onLoad={handleIframeLoad}
                 allow="clipboard-read; clipboard-write"

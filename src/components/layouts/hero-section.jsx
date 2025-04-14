@@ -6,7 +6,7 @@ export function HeroSection() {
     <section className="relative">
       {/* Illustration behind hero content */}
       <div
-        className="absolute left-1/2 transform -translate-x-1/2 bottom-0 pointer-events-none -z-10"
+        className="pointer-events-none absolute bottom-0 left-1/2 transform -z-10 -translate-x-1/2"
         aria-hidden="true"
       >
         <svg width="1360" height="578" viewBox="0 0 1360 578" xmlns="http://www.w3.org/2000/svg">
@@ -24,20 +24,20 @@ export function HeroSection() {
         </svg>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6">
         {/* Hero content */}
-        <div className="pt-16 pb-12 md:pt-24 md:pb-20">
+        <div className="pb-12 pt-16 md:pb-20 md:pt-24">
           {/* Section header */}
-          <div className="text-center pb-12 md:pb-16">
+          <div className="pb-12 text-center md:pb-16">
             <h1
-              className="text-4xl md:text-5xl font-extrabold tracking-tighter mb-4"
+              className="mb-4 text-4xl font-extrabold tracking-tighter md:text-5xl"
               data-aos="zoom-y-out"
             >
               Optimise the compliance management of your processes with{' '}
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-green-700 to-sidebar-accent">STATUS</span>
+              <span className="from-green-700 to-sidebar-accent bg-gradient-to-r bg-clip-text text-transparent">STATUS</span>
             </h1>
-            <div className="max-w-3xl mx-auto">
-              <p className="text-xl text-muted-foreground mb-8" data-aos="zoom-y-out" data-aos-delay="150">
+            <div className="mx-auto max-w-3xl">
+              <p className="mb-8 text-xl text-muted-foreground" data-aos="zoom-y-out" data-aos-delay="150">
                 Find out how to manage the compliance of your business processes effectively.
               </p>
             </div>

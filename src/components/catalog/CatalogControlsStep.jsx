@@ -170,8 +170,8 @@ export function CatalogControlsStep({ initialControls = [], catalogId, onSubmit,
 
   return (
     <div className="py-4">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold text-left">Security Controls</h2>
+      <div className="mb-6 flex items-center justify-between">
+        <h2 className="text-left text-xl font-semibold">Security Controls</h2>
         <Button 
           onClick={handleAddControl}
         >
@@ -193,17 +193,17 @@ export function CatalogControlsStep({ initialControls = [], catalogId, onSubmit,
       )}
 
       {/* Controls list */}
-      <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
+      <div className="max-h-[500px] overflow-y-auto pr-2 space-y-4">
         {controls.length === 0 ? (
-          <div className="text-center py-10 bg-gray-50 border rounded-md">
+          <div className="border rounded-md bg-gray-50 py-10 text-center">
             <p className="text-gray-500">No controls added yet. Click &quot;Add Control&quot; to start.</p>
           </div>
         ) : (
           controls.map((control, index) => (
-            <Card key={control.id || index} className="hover:shadow-md transition-shadow">
-              <CardHeader className="p-4 pb-2 flex flex-row justify-between">
+            <Card key={control.id || index} className="transition-shadow hover:shadow-md">
+              <CardHeader className="flex flex-row justify-between p-4 pb-2">
                 <div>
-                  <CardTitle className="text-base font-medium flex items-center">
+                  <CardTitle className="flex items-center text-base font-medium">
                     {control.name}
                     <span className="ml-3">
                       {getSeverityBadge(control.severity)}
@@ -224,7 +224,7 @@ export function CatalogControlsStep({ initialControls = [], catalogId, onSubmit,
                   <Button 
                     size="sm" 
                     variant="ghost" 
-                    className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                    className="text-red-500 hover:bg-red-50 hover:text-red-700"
                     onClick={() => handleDeleteControl(index)}
                   >
                     <Trash className="h-4 w-4" />
@@ -234,9 +234,9 @@ export function CatalogControlsStep({ initialControls = [], catalogId, onSubmit,
               <CardContent className="p-4 pt-2">
                 <p className="text-sm">{control.description}</p>
                 {control.implementation && (
-                  <div className="mt-2 p-2 bg-gray-50 rounded-md text-xs text-gray-700">
+                  <div className="mt-2 rounded-md bg-gray-50 p-2 text-xs text-gray-700">
                     <strong>Implementation:</strong>
-                    <p className="whitespace-pre-line mt-1">{control.implementation}</p>
+                    <p className="mt-1 whitespace-pre-line">{control.implementation}</p>
                   </div>
                 )}
               </CardContent>
@@ -382,11 +382,11 @@ export function CatalogControlsStep({ initialControls = [], catalogId, onSubmit,
       </Dialog>
 
       {/* Navigation buttons */}
-      <div className="flex justify-end mt-8">
+      <div className="mt-8 flex justify-end">
         <Button 
           onClick={handleSubmit} 
           disabled={isSubmitting}
-          className="bg-white hover:bg-secondary text-primary min-w-[120px]"
+          className="min-w-[120px] bg-white text-primary hover:bg-secondary"
         >
           {isSubmitting ? (
             <>

@@ -11,7 +11,7 @@ import { useAuth } from '@/hooks/use-auth';
 export function Verify2FA() {
 
   return (
-    <div className="flex min-h-screen">
+    <div className="min-h-screen flex">
       <div className="w-full flex items-center justify-center p-8">
         <Verify2FACard />
       </div>
@@ -66,7 +66,7 @@ function Verify2FACard() {
   }
 
   return (
-    <Card className="w-full max-w-md rounded-lg shadow-sm">
+    <Card className="max-w-md w-full rounded-lg shadow-sm">
       <CardHeader className="items-start">
         <CardTitle>Almost there!</CardTitle>
         <CardDescription>Open your 2FA app and enter the 6-digit code</CardDescription>

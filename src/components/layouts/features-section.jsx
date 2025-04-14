@@ -23,10 +23,10 @@ export function FeaturesSection() {
   return (
     <div className="bg-background">
       <section className="relative">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="py-12 md:py-20">
-            <div className="max-w-3xl mx-auto text-center pb-12">
-              <h2 className="text-3xl font-bold tracking-tight mb-4">
+            <div className="mx-auto max-w-3xl pb-12 text-center">
+              <h2 className="mb-4 text-3xl font-bold tracking-tight">
                 Try our beta version now!
               </h2>
               <p className="text-xl text-muted-foreground">
@@ -43,10 +43,10 @@ export function FeaturesSection() {
       </section>
 
       <section className="relative">
-        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 border-2 border-muted mb-16 rounded-xl">
+        <div className="relative mx-auto mb-16 max-w-6xl border-2 border-muted rounded-xl px-4 sm:px-6">
           <div className="py-10 md:pt-20">
             {/* Section header */}
-            <div className="max-w-2xl mx-auto text-center pb-8">
+            <div className="mx-auto max-w-2xl pb-8 text-center">
               <h1 className="text-3xl font-bold tracking-tight">
                 Know some of the use cases
               </h1>
@@ -55,9 +55,9 @@ export function FeaturesSection() {
             {/* Section content */}
             <div className="md:grid md:grid-cols-12 md:gap-6">
               {/* Content */}
-              <div className="max-w-xl md:max-w-none md:w-full mx-auto md:col-span-7 lg:col-span-6 md:mt-6">
-                <div className="md:pr-4 lg:pr-12 xl:pr-16 mb-8">
-                  <h3 className="text-2xl font-bold mb-3">
+              <div className="mx-auto max-w-xl lg:col-span-6 md:col-span-7 md:mt-6 md:max-w-none md:w-full">
+                <div className="mb-8 lg:pr-12 md:pr-4 xl:pr-16">
+                  <h3 className="mb-3 text-2xl font-bold">
                     Measure compliance in your company quickly and easily
                   </h3>
                   <p className="text-lg text-muted-foreground">
@@ -79,7 +79,7 @@ export function FeaturesSection() {
                       )}
                     >
                       <div>
-                        <div className="font-bold leading-snug tracking-tight mb-1">
+                        <div className="mb-1 font-bold leading-snug tracking-tight">
                           ISO Standards
                         </div>
                         <div className="text-muted-foreground">
@@ -89,9 +89,9 @@ export function FeaturesSection() {
                           standards.
                         </div>
                       </div>
-                      <div className="flex justify-center items-center w-8 h-8 bg-background rounded-full shadow flex-shrink-0 ml-3">
+                      <div className="ml-3 h-8 w-8 flex flex-shrink-0 items-center justify-center rounded-full bg-background shadow">
                         <svg
-                          className="w-3 h-3 fill-current"
+                          className="h-3 w-3 fill-current"
                           viewBox="0 0 12 12"
                           xmlns="http://www.w3.org/2000/svg"
                         >
@@ -110,7 +110,7 @@ export function FeaturesSection() {
                       )}
                     >
                       <div>
-                        <div className="font-bold leading-snug tracking-tight mb-1">
+                        <div className="mb-1 font-bold leading-snug tracking-tight">
                           GDPR and LOPD
                         </div>
                         <div className="text-muted-foreground">
@@ -120,9 +120,9 @@ export function FeaturesSection() {
                           improving user confidence.
                         </div>
                       </div>
-                      <div className="flex justify-center items-center w-8 h-8 bg-background rounded-full shadow flex-shrink-0 ml-3">
+                      <div className="ml-3 h-8 w-8 flex flex-shrink-0 items-center justify-center rounded-full bg-background shadow">
                         <svg
-                          className="w-3 h-3 fill-current"
+                          className="h-3 w-3 fill-current"
                           viewBox="0 0 12 12"
                           xmlns="http://www.w3.org/2000/svg"
                         >
@@ -144,7 +144,7 @@ export function FeaturesSection() {
                       )}
                     >
                       <div>
-                        <div className="font-bold leading-snug tracking-tight mb-1">
+                        <div className="mb-1 font-bold leading-snug tracking-tight">
                           CMMI and project management methodologies
                         </div>
                         <div className="text-muted-foreground">
@@ -154,9 +154,9 @@ export function FeaturesSection() {
                           strategic objectives.
                         </div>
                       </div>
-                      <div className="flex justify-center items-center w-8 h-8 bg-background rounded-full shadow flex-shrink-0 ml-3">
+                      <div className="ml-3 h-8 w-8 flex flex-shrink-0 items-center justify-center rounded-full bg-background shadow">
                         <svg
-                          className="w-3 h-3 fill-current"
+                          className="h-3 w-3 fill-current"
                           viewBox="0 0 12 12"
                           xmlns="http://www.w3.org/2000/svg"
                         >
@@ -184,7 +184,7 @@ export function FeaturesSection() {
               </div>
 
               {/* Tabs items */}
-              <div className="max-w-xl md:max-w-none md:w-full mx-auto md:col-span-5 lg:col-span-6 mb-8 md:mb-0 md:order-1 flex items-center">
+              <div className="mx-auto mb-8 max-w-xl flex items-center md:order-1 lg:col-span-6 md:col-span-5 md:mb-0 md:max-w-none md:w-full">
                 <div className="transition-all">
                   <div className="relative flex flex-col text-center lg:text-right" ref={tabsRef}>
                     {/* Image for ISO tab */}
@@ -198,7 +198,7 @@ export function FeaturesSection() {
                     >
                       <div className="relative inline-flex flex-col">
                         <img
-                          className="md:max-w-none mx-auto rounded border border-black shadow-xl shadow-gray-400"
+                          className="mx-auto border border-black rounded shadow-gray-400 shadow-xl md:max-w-none"
                           src={FeaturesBg1 || '/placeholder.svg?height=462&width=500'}
                           width="500"
                           height="462"
@@ -218,7 +218,7 @@ export function FeaturesSection() {
                     >
                       <div className="relative inline-flex flex-col">
                         <img
-                          className="md:max-w-none mx-auto rounded border border-black shadow-xl shadow-gray-400"
+                          className="mx-auto border border-black rounded shadow-gray-400 shadow-xl md:max-w-none"
                           src={FeaturesBg2 || '/placeholder.svg?height=462&width=500'}
                           width="500"
                           height="462"
@@ -238,7 +238,7 @@ export function FeaturesSection() {
                     >
                       <div className="relative inline-flex flex-col">
                         <img
-                          className="md:max-w-none mx-auto rounded border border-black shadow-xl shadow-gray-400"
+                          className="mx-auto border border-black rounded shadow-gray-400 shadow-xl md:max-w-none"
                           src={FeaturesBg3 || '/placeholder.svg?height=462&width=500'}
                           width="500"
                           height="462"

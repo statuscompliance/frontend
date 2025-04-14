@@ -162,9 +162,9 @@ export function FolderDetails() {
   if (loading && !folder) {
     return (
       <Page>
-        <div className="flex items-center mb-6">
+        <div className="mb-6 flex items-center">
           <Button variant="ghost" onClick={handleBack} className="mr-4">
-            <ArrowLeft className="h-4 w-4 mr-2" /> Back
+            <ArrowLeft className="mr-2 h-4 w-4" /> Back
           </Button>
           <Skeleton className="h-8 w-64" />
         </div>
@@ -180,7 +180,7 @@ export function FolderDetails() {
     return (
       <Page>
         <Button variant="ghost" onClick={handleBack} className="mb-4">
-          <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboards
+          <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboards
         </Button>
         <Alert variant="destructive">
           <AlertTitle>Error</AlertTitle>
@@ -194,14 +194,14 @@ export function FolderDetails() {
 
   return (
     <Page folder={folder}>
-      <div className="flex items-center mb-6">
+      <div className="mb-6 flex items-center">
         <div>
           <h1 className="text-2xl font-bold">{folder.title}</h1>
           {folder.description && <p className="text-muted-foreground">{folder.description}</p>}
         </div>
       </div>
 
-      <div className="flex justify-between items-center space-x-4 mb-4">
+      <div className="mb-4 flex items-center justify-between space-x-4">
         <div className='flex items-center space-x-2'>
           <Input
             placeholder="Filter dashboards and folders..."
@@ -224,7 +224,7 @@ export function FolderDetails() {
           <Button variant="destructive" 
             onClick={() => dashboardListRef.current?.deleteSelected()}
             disabled={loading}>
-            <Trash className="h-4 w-4 mr-2" /> Delete
+            <Trash className="mr-2 h-4 w-4" /> Delete
           </Button>
           <Button 
             variant="outline" 
@@ -234,7 +234,7 @@ export function FolderDetails() {
             <FolderPlus className="mr-2 h-4 w-4" /> Add Folder
           </Button>
           <Button 
-            className="bg-sidebar-accent text-white hover:bg-secondary hover:text-sidebar-accent border-2 border-sidebar-accent" 
+            className="border-2 border-sidebar-accent bg-sidebar-accent text-white hover:bg-secondary hover:text-sidebar-accent" 
             variant="outline" 
             onClick={handleAddDashboard}
             disabled={loading}
@@ -243,7 +243,7 @@ export function FolderDetails() {
           </Button>
         </div>
       </div>
-      {error && <div className="text-red-500 mb-4">{error}</div>}
+      {error && <div className="mb-4 text-red-500">{error}</div>}
       <DashboardList 
         ref={dashboardListRef}
         filter={filter} 

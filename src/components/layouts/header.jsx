@@ -39,9 +39,9 @@ export function Header() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
-    <header className="fixed top-0 left-0 w-full bg-background/65 border-b border-background/20 backdrop-filter backdrop-blur-lg z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
+    <header className="fixed left-0 top-0 z-50 w-full border-b border-background/20 bg-background/65 backdrop-blur-lg backdrop-filter">
+      <div className="mx-auto max-w-7xl px-4 lg:px-8 sm:px-6">
+        <div className="h-16 flex justify-between">
           <img src={logo} className="ml-8 h-14 w-14" alt="Status logo" />
           <div className="hidden sm:ml-6 sm:flex sm:items-center">
             <nav className="flex">
@@ -56,7 +56,7 @@ export function Header() {
                   <DropdownMenuContent>
                     {item.items.map((subItem) => (
                       <DropdownMenuItem key={subItem.title} asChild>
-                        <Link to={subItem.href} className="text-primary hover:bg-secondary/75 hover:text-primary px-3 py-2 rounded-md text-sm font-medium">
+                        <Link to={subItem.href} className="rounded-md px-3 py-2 text-sm text-primary font-medium hover:bg-secondary/75 hover:text-primary">
                           {subItem.title}
                         </Link>
                       </DropdownMenuItem>
@@ -68,7 +68,7 @@ export function Header() {
                 <Link
                   key={item.title}
                   to={item.href}
-                  className="text-primary hover:bg-secondary/35 hover:text-primary px-3 py-2 rounded-md text-sm font-medium"
+                  className="rounded-md px-3 py-2 text-sm text-primary font-medium hover:bg-secondary/35 hover:text-primary"
                 >
                   {item.title}
                 </Link>
@@ -89,18 +89,18 @@ export function Header() {
                   <span className="sr-only">Open sidebar</span>
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="flex flex-col h-full">
-                <nav className="flex-1 flex flex-col flex-grow space-y-8 pt-8 overflow-y-auto">
+              <SheetContent side="right" className="h-full flex flex-col">
+                <nav className="flex flex-1 flex-grow flex-col overflow-y-auto pt-8 space-y-8">
                   <Accordion type="single" collapsible className="space-y-8"> {/* here space needs to be redeclared because items inside won't get it */}
                     {expandableNavItems.length > 0 && expandableNavItems.map((item, index) =>
                       <AccordionItem key={item.title} value={`value-${index + 1}`} className="border-none">
-                        <AccordionTrigger className="text-base font-medium text-primary hover:text-primary py-0">{item.title}</AccordionTrigger>
+                        <AccordionTrigger className="py-0 text-base text-primary font-medium hover:text-primary">{item.title}</AccordionTrigger>
                         <AccordionContent className="flex flex-col pb-0">
                           {item.items.map((subItem) => (
                             <item key={subItem.title} className="pt-4">
                               <Link
                                 to={subItem.href}
-                                className="text-primary/80 hover:text-primary px-3 font-medium text-base"
+                                className="px-3 text-base text-primary/80 font-medium hover:text-primary"
                                 onClick={() => setIsSidebarOpen(false)}
                               >
                                 {subItem.title}
@@ -115,7 +115,7 @@ export function Header() {
                     <Link
                       key={item.title}
                       to={item.href}
-                      className="text-primary hover:text-primary font-medium"
+                      className="text-primary font-medium hover:text-primary"
                       onClick={() => setIsSidebarOpen(false)}
                     >
                       {item.title}
@@ -124,7 +124,7 @@ export function Header() {
                   )}
                 </nav>
                 <end className="w-full">
-                  <Separator className="w-full mb-8" />
+                  <Separator className="mb-8 w-full" />
                   <Button asChild className="w-full">
                     <Link to="/login" onClick={() => setIsSidebarOpen(false)}>
                       Login

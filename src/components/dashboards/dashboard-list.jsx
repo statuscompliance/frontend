@@ -145,10 +145,10 @@ export const DashboardList = forwardRef(({ filter, filterBy, items = [], loading
               userRole={userRole}
             />
           </div>
-          <div className="flex items-center w-full">
+          <div className="w-full flex items-center">
             {/* Icono de expansión como un div separado */}
             <div
-              className="cursor-pointer p-1 rounded-md mr-2"
+              className="mr-2 cursor-pointer rounded-md p-1"
               onClick={(e) => toggleFolder(folder.uid, e)}
             >
               {expandedFolders.includes(folder.uid) ? (
@@ -161,7 +161,7 @@ export const DashboardList = forwardRef(({ filter, filterBy, items = [], loading
             {/* Botón principal de la carpeta */}
             <Button 
               variant="ghost" 
-              className="w-full justify-start hover:bg-secondary hover:text-primary hover:underline mr-8" 
+              className="mr-8 w-full justify-start hover:bg-secondary hover:text-primary hover:underline" 
               onClick={() => handleItemClick(folder)}
             >
               <Folder className="mr-2 h-4 w-4" />
@@ -171,7 +171,7 @@ export const DashboardList = forwardRef(({ filter, filterBy, items = [], loading
         </div>
         
         {expandedFolders.includes(folder.uid) && (
-          <div className="ml-6 space-y-1 mt-1">
+          <div className="ml-6 mt-1 space-y-1">
             {/* Renderizar subcarpetas */}
             {folder.subFolders && folder.subFolders.length > 0 && 
               folder.subFolders
@@ -191,12 +191,12 @@ export const DashboardList = forwardRef(({ filter, filterBy, items = [], loading
                         userRole={userRole}
                       />
                     </div>
-                    <div className="flex items-center w-full">
+                    <div className="w-full flex items-center">
                       {/* Div vacío para mantener el mismo espacio que el chevron */}
                       <div className="w-8"></div>
                       <Button 
                         variant="ghost" 
-                        className="w-full justify-start hover:bg-secondary hover:text-primary hover:underline mr-8"
+                        className="mr-8 w-full justify-start hover:bg-secondary hover:text-primary hover:underline"
                         onClick={() => handleItemClick(dashboard)}
                       >
                         <LayoutDashboard className="mr-1 h-4 w-4" />
@@ -231,7 +231,7 @@ export const DashboardList = forwardRef(({ filter, filterBy, items = [], loading
       } else {
         // Renderizado de dashboards en el nivel raíz
         return (
-          <div key={item.uid} className="flex items-center space-x-2 mb-1">
+          <div key={item.uid} className="mb-1 flex items-center space-x-2">
             <div className="flex-shrink-0" onClick={(e) => e.stopPropagation()}>
               <Checkbox
                 checked={selectedItems.some(selected => selected.uid === item.uid)}
@@ -239,12 +239,12 @@ export const DashboardList = forwardRef(({ filter, filterBy, items = [], loading
                 userRole={userRole}
               />
             </div>
-            <div className="flex items-center w-full">
+            <div className="w-full flex items-center">
               {/* Div vacío para mantener el mismo espacio que el chevron */}
               <div className="w-8"></div>
               <Button 
                 variant="ghost" 
-                className="w-full justify-start hover:bg-secondary hover:text-primary hover:underline mr-8"
+                className="mr-8 w-full justify-start hover:bg-secondary hover:text-primary hover:underline"
                 onClick={() => handleItemClick(item)}
               >
                 <LayoutDashboard className="mr-2 h-4 w-4" />

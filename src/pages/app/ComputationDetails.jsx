@@ -130,7 +130,7 @@ export function ComputationDetails() {
                 to={value} 
                 target="_blank" 
                 rel="noopener noreferrer" 
-                className="text-blue-600 hover:underline flex items-center"
+                className="flex items-center text-blue-600 hover:underline"
               >
                 Evidence link <ExternalLink className="ml-1 h-4 w-4" />
               </Link>
@@ -182,11 +182,11 @@ export function ComputationDetails() {
   if (loading) {
     return (
       <Page 
-        className="container mx-auto p-4 space-y-6" 
+        className="mx-auto p-4 container space-y-6" 
         catalogData={catalogData}
         computationDate={computationDate}
       >
-        <div className="flex justify-center items-center h-64">
+        <div className="h-64 flex items-center justify-center">
           <p>Loading computation details...</p>
         </div>
       </Page>
@@ -195,7 +195,7 @@ export function ComputationDetails() {
 
   return (
     <Page 
-      className="container mx-auto p-4 space-y-6" 
+      className="mx-auto p-4 container space-y-6" 
       catalogData={catalogData}
       computationDate={computationDate}
     >
@@ -211,9 +211,9 @@ export function ComputationDetails() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4 text-left">
+          <div className="text-left space-y-4">
             <div>
-              <h3 className="font-medium text-base">Computation Period</h3>
+              <h3 className="text-base font-medium">Computation Period</h3>
               <p className="text-sm text-muted-foreground">
                 From: {computation?.period?.from ? format(new Date(computation.period.from), 'yyyy-MM-dd HH:mm:ss') : 'N/A'} <br />
                 To: {computation?.period?.to ? format(new Date(computation.period.to), 'yyyy-MM-dd HH:mm:ss') : 'N/A'}
@@ -221,8 +221,8 @@ export function ComputationDetails() {
             </div>
 
             <div>
-              <h3 className="font-medium text-base">Scopes</h3>
-              <div className="flex flex-wrap gap-2 mt-1">
+              <h3 className="text-base font-medium">Scopes</h3>
+              <div className="mt-1 flex flex-wrap gap-2">
                 {computation?.scope && Object.entries(computation.scope).map(([key, value]) => (
                   <Badge key={key} variant="outline">
                     {key}: {value}
@@ -235,7 +235,7 @@ export function ComputationDetails() {
       </Card>
 
       <div className="space-y-4">
-        <div className="flex justify-between items-center">
+        <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold">Evidences</h2>
           <div className="flex space-x-2">
             <Input
@@ -267,7 +267,7 @@ export function ComputationDetails() {
           </div>
         </div>
 
-        <div className="rounded-md border overflow-x-auto">
+        <div className="overflow-x-auto border rounded-md">
           <Table className="w-full table-auto">
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
@@ -315,7 +315,7 @@ export function ComputationDetails() {
           </Table>
         </div>
 
-        <div className="flex items-center justify-end space-x-2 py-4">
+        <div className="flex items-center justify-end py-4 space-x-2">
           <Button
             variant="outline"
             size="sm"
