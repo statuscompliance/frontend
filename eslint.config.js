@@ -6,9 +6,11 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
 import json from '@eslint/json';
 import packageJson from './package.json' with { type: 'json' };
+import unocss from '@unocss/eslint-config/flat';
 
 export default [
   { ignores: ['dist', '**/components/ui/**'] },
+  unocss,
   {
     files: ['**/*.{js,jsx}'],
     languageOptions: {
