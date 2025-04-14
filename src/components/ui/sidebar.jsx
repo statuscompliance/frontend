@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Slot } from "@radix-ui/react-slot"
+import { Slot as SlotPrimitive } from "radix-ui"
 import { cva } from "class-variance-authority";
 import { PanelLeft } from "lucide-react"
 
@@ -351,7 +351,7 @@ const SidebarGroup = React.forwardRef(({ className, ...props }, ref) => {
 SidebarGroup.displayName = "SidebarGroup"
 
 const SidebarGroupLabel = React.forwardRef(({ className, asChild = false, ...props }, ref) => {
-  const Comp = asChild ? Slot : "div"
+  const Comp = asChild ? SlotPrimitive.Root : "div"
 
   return (
     (<Comp
@@ -368,7 +368,7 @@ const SidebarGroupLabel = React.forwardRef(({ className, asChild = false, ...pro
 SidebarGroupLabel.displayName = "SidebarGroupLabel"
 
 const SidebarGroupAction = React.forwardRef(({ className, asChild = false, ...props }, ref) => {
-  const Comp = asChild ? Slot : "button"
+  const Comp = asChild ? SlotPrimitive.Root : "button"
 
   return (
     (<Comp
@@ -448,7 +448,7 @@ const SidebarMenuButton = React.forwardRef((
   },
   ref
 ) => {
-  const Comp = asChild ? Slot : "button"
+  const Comp = asChild ? SlotPrimitive.Root : "button"
   const { isMobile, state } = useSidebar()
 
   const button = (
@@ -485,7 +485,7 @@ const SidebarMenuButton = React.forwardRef((
 SidebarMenuButton.displayName = "SidebarMenuButton"
 
 const SidebarMenuAction = React.forwardRef(({ className, asChild = false, showOnHover = false, ...props }, ref) => {
-  const Comp = asChild ? Slot : "button"
+  const Comp = asChild ? SlotPrimitive.Root : "button"
 
   // TODO: Check why peer-data class (and many in this area) are not being applied
   return (
@@ -573,7 +573,7 @@ SidebarMenuSubItem.displayName = "SidebarMenuSubItem"
 
 const SidebarMenuSubButton = React.forwardRef(
   ({ asChild = false, size = "md", isActive, className, ...props }, ref) => {
-    const Comp = asChild ? Slot : "a"
+    const Comp = asChild ? SlotPrimitive.Root : "a"
 
     return (
       (<Comp
