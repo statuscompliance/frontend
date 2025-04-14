@@ -32,17 +32,6 @@ const PasswordInput = React.forwardRef(({ className, ...props }, ref) => {
         )}
         <span className="sr-only">{showPassword ? 'Hide password' : 'Show password'}</span>
       </Button>
-
-      {/* hides browsers password toggles */}
-      {/* TODO: These prefixes are IE specific and probably could be dropped */}
-      <style>{`
-					.hide-password-toggle::-ms-reveal,
-					.hide-password-toggle::-ms-clear {
-						visibility: hidden;
-						pointer-events: none;
-						display: none;
-					}
-				`}</style>
     </div>
   );
 });
