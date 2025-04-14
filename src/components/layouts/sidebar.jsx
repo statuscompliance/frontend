@@ -201,7 +201,6 @@ function NonCollapsibleItem({ item, ...props }) {
 }
 
 function CollapsibleItem({ item, ...props }) {
-  {/* TODO: Investigate why group/collapsible is not being recognized */ }
   return (
     <Collapsible asChild defaultOpen={item.active ? item.active : false} key={props.key ? props.key : null} className="group/collapsible">
       <SidebarMenuItem>

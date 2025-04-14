@@ -9,7 +9,6 @@ const Checkbox = React.forwardRef(({ className, userRole, ...props }, ref) => {
     return null;
   }
 
-  // TODO: Check why peer class is not being recognised
   return (
     <CheckboxPrimitive.Root
       ref={ref}
