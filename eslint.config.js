@@ -8,7 +8,7 @@ import json from '@eslint/json';
 import packageJson from './package.json' with { type: 'json' };
 
 export default [
-  { ignores: ['dist', '**/tailwind.config.js', '**/components/ui/**'] },
+  { ignores: ['dist', '**/components/ui/**'] },
   {
     files: ['**/*.{js,jsx}'],
     languageOptions: {
