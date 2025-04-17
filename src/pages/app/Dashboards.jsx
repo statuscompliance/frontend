@@ -65,9 +65,10 @@ export function Dashboards() {
   };
 
   const handleDashboardFormSubmit = async (data) => {
+    console.log('DashboardForm data:', data);
     try {
       setLoading(true);
-      await dashboardsService.create(data);
+      await dashboardsService.createTemplate(data);
       
       // Recargar datos para mostrar el nuevo dashboard
       const searchResponse = await searchService.search({});
@@ -179,7 +180,7 @@ export function Dashboards() {
             disabled={loading || selectedItemsCount === 0}
             userRole={userData.authority}
           >
-            <Trash className="mr-2 h-4 w-4" /> Delete
+            <Trash className="h-4 w-4" />
           </Button>
           <Button 
             variant="outline" 
@@ -187,7 +188,7 @@ export function Dashboards() {
             disabled={loading}
             userRole={userData.authority}
           >
-            <FolderPlus className="mr-2 h-4 w-4" /> Add Folder
+            <FolderPlus className="h-4 w-4" />
           </Button>
           <Button 
             className="border-2 border-sidebar-accent bg-sidebar-accent text-white hover:bg-secondary hover:text-sidebar-accent" 

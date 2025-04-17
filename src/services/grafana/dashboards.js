@@ -97,7 +97,16 @@ export const dashboardsService = {
    */
   getPanelQuery: (uid, id) => {
     return apiClient.get(`/grafana/dashboard/${uid}/panel/${id}/query`);
-  }
+  },
+
+  /**
+   * Creates a new template for a dashboard
+   * @param {object} data - Template data
+   * @returns {Promise} - Promise with the created template
+   */
+  createTemplate: (data) => {
+    return apiClient.post('/grafana/dashboard/template', data);
+  },
 };
 
 export default dashboardsService;
