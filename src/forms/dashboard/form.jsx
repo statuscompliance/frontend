@@ -1,5 +1,6 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useEffect, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -29,20 +30,40 @@ import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { dashboardFormSchema } from './schemas';
+import { foldersService } from '@/services/grafana/folders';
 
-// Mock folder data
-const mockFolders = [
-  { id: '1', name: 'Default' },
-  { id: '2', name: 'Folder 1' },
-  { id: '3', name: 'Folder 2' },
-];
+// Default folder option
+const defaultFolder = { uid: null, title: 'Default' };
 
 export function DashboardForm({ onClose, onSubmit }) {
+  const [folders, setFolders] = useState([defaultFolder]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchFolders = async () => {
+      try {
+        const response = await foldersService.getAll();
+        const fetchedFolders = response.data || response;
+        // Add the default folder and combine with fetched folders
+        setFolders([
+          defaultFolder,
+          ...fetchedFolders.map(folder => ({ uid: folder.uid, title: folder.title }))
+        ]);
+      } catch (error) {
+        console.error('Error loading folders:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFolders();
+  }, []);
+
   const form = useForm({
     resolver: zodResolver(dashboardFormSchema),
     defaultValues: {
       name: '',
-      folderId: '1',
+      folderId: null,
       startDate: new Date(),
       endDate: undefined,
     },
@@ -79,16 +100,16 @@ export function DashboardForm({ onClose, onSubmit }) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Folder</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={loading}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select folder" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {mockFolders.map((f) => (
-                        <SelectItem key={f.id} value={f.id}>
-                          {f.name}
+                      {folders.map((folder) => (
+                        <SelectItem key={folder.uid} value={folder.uid}>
+                          {folder.title}
                         </SelectItem>
                       ))}
                     </SelectContent>
