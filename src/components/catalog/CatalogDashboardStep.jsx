@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Save, PieChart, BarChart, LineChart, Table2, Check, ArrowRight, AlertCircle } from 'lucide-react';
+import { Loader2, PieChart, BarChart, LineChart, Table2, Check, AlertCircle } from 'lucide-react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { z } from 'zod';
@@ -223,8 +223,7 @@ export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalo
               <Button 
                 type="button" 
                 onClick={handleAddChart}
-                className="border-2 border-sidebar-accent bg-sidebar-accent hover:bg-secondary hover:text-sidebar-accent"
-                variant="outline"
+                variant="destructive"
               >
                 Add Chart
               </Button>
@@ -342,7 +341,7 @@ export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalo
               </Tabs>
             ) : (
               <div className="border rounded-md bg-gray-50 py-10 text-center">
-                <p className="text-gray-500">No charts added yet. Click "Add Chart" to start building your dashboard.</p>
+                <p className="text-gray-500">No charts added yet. Click &quot;Add Chart&quot; to start building your dashboard.</p>
               </div>
             )}
           </div>
@@ -352,7 +351,8 @@ export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalo
             <Button 
               type="submit" 
               disabled={isSubmitting}
-              className="min-w-[120px] border-2 border-sidebar-accent bg-sidebar-accent hover:bg-secondary hover:text-sidebar-accent"
+              className="min-w-[120px]"
+              variant="outline"
             >
               {isSubmitting ? (
                 <>

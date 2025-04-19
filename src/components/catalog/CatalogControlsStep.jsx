@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Loader2, ArrowRight, Plus, Trash, Edit, AlertCircle } from 'lucide-react';
+import { Loader2, ArrowRight, Plus, Trash, Edit, AlertCircle, ExternalLink } from 'lucide-react';
 import { 
   Card, 
   CardContent, 
@@ -19,6 +19,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { getScopeSetsByControlId } from '@/services/scopes';
 import { Badge } from '@/components/ui/badge';
 
 export function CatalogControlsStep({ initialControls = [], catalogId, onSubmit, isSubmitting, apiError = null }) {
@@ -29,6 +30,8 @@ export function CatalogControlsStep({ initialControls = [], catalogId, onSubmit,
   const [submitError, setSubmitError] = useState(null);
   const [currentControl, setCurrentControl] = useState(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+
+  const nodeRedUrl = import.meta.env.VITE_NODE_RED_URL || 'http://localhost:1880';
 
   // Load draft controls when component mounts or catalogId changes
   useEffect(() => {
@@ -54,7 +57,23 @@ export function CatalogControlsStep({ initialControls = [], catalogId, onSubmit,
     setIsLoading(true);
     try {
       const response = await getDraftControlsByCatalogId(catalogId);
-      setControls(response || []);
+      const controlsWithScopesData = await Promise.all(
+        response.map(async (control) => {
+          try {
+            const scopeResponse = await getScopeSetsByControlId(control.id);
+            return {
+              ...control,
+              scopes: scopeResponse.reduce((acc, scopeSet) => {
+                return { ...acc, ...scopeSet.scopes };
+              }, {})
+            };
+          } catch (error) {
+            console.error(`Error fetching scopes for control ${control.id}:`, error);
+            return { ...control, scopes: {} };
+          }
+        })
+      );
+      setControls(controlsWithScopesData);
     } catch (error) {
       console.error('Error fetching draft controls:', error);
       toast.error('Failed to load draft controls');
@@ -73,6 +92,7 @@ export function CatalogControlsStep({ initialControls = [], catalogId, onSubmit,
 
   const handleCustomSubmit = async (data) => {
     try {
+      let scopeSet = { scopes: {} };
       // Use createDraftControl specifically in the catalog context
       const createdControl = await createDraftControl(data);
       
@@ -83,10 +103,10 @@ export function CatalogControlsStep({ initialControls = [], catalogId, onSubmit,
           scopes: data.scopes
         };
         
-        await createScopeSet(scopeSetData);
+        scopeSet = await createScopeSet(scopeSetData);
       }
       
-      return createdControl;
+      return { ...createdControl, scopes: scopeSet.scopes };
     } catch (error) {
       console.error('Error creating draft control:', error);
       throw error;
@@ -101,7 +121,23 @@ export function CatalogControlsStep({ initialControls = [], catalogId, onSubmit,
         // Fetch the updated list of controls
         if (catalogId) {
           const response = await getDraftControlsByCatalogId(catalogId);
-          setControls(response || []);
+          const controlsWithScopesData = await Promise.all(
+            response.map(async (control) => {
+              try {
+                const scopeResponse = await getScopeSetsByControlId(control.id);
+                return {
+                  ...control,
+                  scopes: scopeResponse.reduce((acc, scopeSet) => {
+                    return { ...acc, ...scopeSet.scopes };
+                  }, {})
+                };
+              } catch (error) {
+                console.error(`Error fetching scopes for control ${control.id}:`, error);
+                return { ...control, scopes: {} };
+              }
+            })
+          );
+          setControls(controlsWithScopesData || []);
         } else {
           // If no catalogId, manually add the new control to the current list
           setControls(prevControls => [...prevControls, newControl]);
@@ -221,6 +257,13 @@ export function CatalogControlsStep({ initialControls = [], catalogId, onSubmit,
                   </p>
                 </div>
                 <div className="flex space-x-1">
+                  {control.mashupId && (
+                    <div>
+                      <Button variant="ghost" size="sm" onClick={() => window.open(`${nodeRedUrl}/#flow/${control.mashupId}`, '_blank')}>
+                        <ExternalLink className="mr-2 h-4 w-4" /> View mashup
+                      </Button>
+                    </div>
+                  )}
                   <Button 
                     size="sm" 
                     variant="ghost" 
@@ -242,22 +285,23 @@ export function CatalogControlsStep({ initialControls = [], catalogId, onSubmit,
                 <p className="text-sm">{control.description}</p>
                 
                 {/* Añadimos la visualización de scopes con badges */}
-                {control.scopes && Object.keys(control.scopes).length > 0 && (
-                  <div className="mt-2">
-                    <div className="flex flex-wrap gap-1">
+                {console.log(control)}
+                
+                
+                <div className="grid mt-2 gap-1 text-xs text-gray-500">
+                  
+                  <div className='flex'>Start Date: {new Date(control.startDate).toLocaleDateString()}</div>
+                  {control.endDate && <div className='flex'>End Date: {new Date(control.endDate).toLocaleDateString()}</div>}
+                  {control.scopes && Object.keys(control.scopes).length > 0 && (
+                    <div className="mt-1 flex flex-wrap items-center gap-1">
+                      <span>Scopes: </span>
                       {Object.entries(control.scopes).map(([key, value]) => (
                         <Badge key={key} variant="outline">
                           {key}: {value}
                         </Badge>
                       ))}
                     </div>
-                  </div>
-                )}
-                
-                <div className="grid mt-2 gap-1 text-xs text-gray-500">
-                  <div>Start Date: {new Date(control.startDate).toLocaleDateString()}</div>
-                  {control.endDate && <div>End Date: {new Date(control.endDate).toLocaleDateString()}</div>}
-                  {control.mashupId && <div>API Flow ID: {control.mashupId}</div>}
+                  )}  
                   {control.params && Object.keys(control.params).length > 0 && (
                     <div className="mt-1 flex flex-wrap items-center gap-1">
                       <span>Parameters: </span>
