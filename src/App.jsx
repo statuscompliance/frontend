@@ -21,6 +21,8 @@ import MainLayout from '@/layouts/MainLayout';
 import AppLayout from '@/layouts/AppLayout';
 import { AuthProvider, ProtectedRoute } from '@/components/auth-provider';
 
+const allRolesAllowed = () => ['admin', 'user', 'developer'];
+
 function App() {
   return (
     <ThemeProvider storageKey="vite-ui-theme">
@@ -35,7 +37,7 @@ function App() {
             <Route
               path="/app"
               element={
-                <ProtectedRoute allowedRoles={['admin', 'user', 'developer']}>
+                <ProtectedRoute allowedRoles={allRolesAllowed()}>
                   <AppLayout />
                 </ProtectedRoute>
               }
@@ -64,7 +66,11 @@ function App() {
             </Route>
             { /* Routes here have no layout ON PURPOSE */ }
             <Route path="/login" element={<Login />} />
-            <Route path="/logout" element={<Logout />} />
+            <Route path="/logout" element={
+              <ProtectedRoute allowedRoles={allRolesAllowed()}>
+                <Logout />
+              </ProtectedRoute>
+            } />
             <Route path="/verify-2fa" element={<Verify2FA />} />
           </Routes>
         </AuthProvider>
