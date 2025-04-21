@@ -18,6 +18,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { controlSchema } from './schemas';
+import { saveDraftCatalogId } from '@/utils/draftStorage';
 
 export function NewControlForm({ catalogId, onClose, onSuccess, customSubmit = null }) {
   const [loading, setLoading] = useState(false);
@@ -139,10 +140,24 @@ export function NewControlForm({ catalogId, onClose, onSuccess, customSubmit = n
     setValue('params', updatedParams);
   };
 
+  useEffect(() => {
+    // Si se proporciona un catalogId, asegúrate de guardarlo
+    if (catalogId) {
+      saveDraftCatalogId(catalogId);
+    }
+  }, [catalogId]);
+
   const onSubmit = async (data) => {
     setLoading(true);
   
     try {
+      // Guardar catalogId si está disponible
+      if (catalogId) {
+        saveDraftCatalogId(catalogId);
+        // Asegúrate de que el control esté asociado al catálogo
+        data.catalogId = catalogId;
+      }
+
       // If customSubmit is provided, use it instead of the default submit behavior
       if (customSubmit) {
         const result = await customSubmit(data);

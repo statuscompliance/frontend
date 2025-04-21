@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Loader2, ArrowRight, Plus, Trash, Edit, AlertCircle, ExternalLink } from 'lucide-react';
 import { 
@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { NewControlForm } from '@/forms/control/new/form';
-import { getDraftControlsByCatalogId, deleteControl, createDraftControl } from '@/services/controls';
+import { getControlsByCatalogId, deleteControl, createDraftControl } from '@/services/controls';
 import { createScopeSet } from '@/services/scopes';
 import { toast } from 'sonner';
 import {
@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/dialog';
 import { getScopeSetsByControlId } from '@/services/scopes';
 import { Badge } from '@/components/ui/badge';
+import { saveDraftControlId, saveDraftControlIds, saveDraftCatalogId, initializeControlIdsStorage } from '@/utils/draftStorage';
 
 export function CatalogControlsStep({ initialControls = [], catalogId, onSubmit, isSubmitting, apiError = null }) {
   const [controls, setControls] = useState([]);
@@ -30,19 +31,31 @@ export function CatalogControlsStep({ initialControls = [], catalogId, onSubmit,
   const [submitError, setSubmitError] = useState(null);
   const [currentControl, setCurrentControl] = useState(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const initialFetchCompleted = useRef(false);
 
   const nodeRedUrl = import.meta.env.VITE_NODE_RED_URL || 'http://localhost:1880';
 
-  // Load draft controls when component mounts or catalogId changes
+  // Save catalogId to localStorage and initialize controls storage
   useEffect(() => {
-    if (catalogId) {
-      fetchDraftControls();
-    } else if (initialControls.length > 0) {
-      // If no catalogId but initialControls exist, use them
+    // Ensure the control_draft_ids key exists in localStorage
+    initializeControlIdsStorage();
+    
+    if (initialControls && initialControls.length > 0) {
       setControls(initialControls);
+      
+      // Save control IDs to localStorage
+      const controlIds = initialControls.map(control => control.id).filter(Boolean);
+      if (controlIds.length > 0) {
+        saveDraftControlIds(controlIds);
+      }
     }
-    //eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [catalogId, initialControls]);
+    else if (catalogId && !initialFetchCompleted.current) {
+      saveDraftCatalogId(catalogId);
+      fetchDraftControls();
+      initialFetchCompleted.current = true;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [catalogId]);
 
   // Update error message when API error changes
   useEffect(() => {
@@ -56,16 +69,28 @@ export function CatalogControlsStep({ initialControls = [], catalogId, onSubmit,
     
     setIsLoading(true);
     try {
-      const response = await getDraftControlsByCatalogId(catalogId);
+      const response = await getControlsByCatalogId(catalogId, 'draft');
+      
+      // Handle case where the response is empty or undefined
+      if (!response || response.length === 0) {
+        setControls([]);
+        // Save an empty array to localStorage to indicate we've fetched controls (even if empty)
+        saveDraftControlIds([]);
+        setIsLoading(false);
+        return;
+      }
+      
       const controlsWithScopesData = await Promise.all(
         response.map(async (control) => {
           try {
             const scopeResponse = await getScopeSetsByControlId(control.id);
             return {
               ...control,
-              scopes: scopeResponse.reduce((acc, scopeSet) => {
-                return { ...acc, ...scopeSet.scopes };
-              }, {})
+              scopes: scopeResponse && scopeResponse.length > 0 
+                ? scopeResponse.reduce((acc, scopeSet) => {
+                  return { ...acc, ...scopeSet.scopes };
+                }, {})
+                : {}
             };
           } catch (error) {
             console.error(`Error fetching scopes for control ${control.id}:`, error);
@@ -73,10 +98,21 @@ export function CatalogControlsStep({ initialControls = [], catalogId, onSubmit,
           }
         })
       );
+      
       setControls(controlsWithScopesData);
+      
+      // Save control IDs to localStorage
+      const controlIds = controlsWithScopesData.map(control => control.id).filter(Boolean);
+      if (controlIds.length > 0) {
+        saveDraftControlIds(controlIds);
+      } else {
+        // Initialize with empty array if no controls
+        saveDraftControlIds([]);
+      }
     } catch (error) {
       console.error('Error fetching draft controls:', error);
       toast.error('Failed to load draft controls');
+      setControls([]);
     } finally {
       setIsLoading(false);
     }
@@ -92,9 +128,23 @@ export function CatalogControlsStep({ initialControls = [], catalogId, onSubmit,
 
   const handleCustomSubmit = async (data) => {
     try {
+      // Make sure the catalog ID is included in the control data
+      if (catalogId) {
+        data.catalogId = catalogId;
+        // Save catalog ID to localStorage again for safety
+        saveDraftCatalogId(catalogId);
+        // Ensure control_draft_ids is initialized
+        initializeControlIdsStorage();
+      }
+      
       let scopeSet = { scopes: {} };
       // Use createDraftControl specifically in the catalog context
       const createdControl = await createDraftControl(data);
+      
+      // Save the new control ID to localStorage
+      if (createdControl && createdControl.id) {
+        saveDraftControlId(createdControl.id);
+      }
       
       // Create the scope set if needed
       if (Object.keys(data.scopes).length > 0) {
@@ -120,7 +170,7 @@ export function CatalogControlsStep({ initialControls = [], catalogId, onSubmit,
       try {
         // Fetch the updated list of controls
         if (catalogId) {
-          const response = await getDraftControlsByCatalogId(catalogId);
+          const response = await getControlsByCatalogId(catalogId, 'draft');
           const controlsWithScopesData = await Promise.all(
             response.map(async (control) => {
               try {
@@ -196,6 +246,16 @@ export function CatalogControlsStep({ initialControls = [], catalogId, onSubmit,
       return;
     }
     
+    // Save control IDs and catalog ID to localStorage before submitting
+    const controlIds = controls.map(control => control.id).filter(Boolean);
+    if (controlIds.length > 0) {
+      saveDraftControlIds(controlIds);
+    }
+    
+    if (catalogId) {
+      saveDraftCatalogId(catalogId);
+    }
+    
     onSubmit(controls);
   };
 
@@ -227,9 +287,6 @@ export function CatalogControlsStep({ initialControls = [], catalogId, onSubmit,
       {/* Empty state with helpful message */}
       {!isLoading && controls.length === 0 && (
         <div className="mb-6 border border-gray-300 rounded-lg border-dashed bg-gray-50 p-8 text-center">
-          <div className="mx-auto mb-4 h-12 w-12 flex items-center justify-center rounded-full">
-            <Plus className="text-black-500 h-6 w-6" />
-          </div>
           <h3 className="mb-1 text-lg text-gray-900 font-medium">No draft controls yet</h3>
           <p className="mb-4 text-gray-500">Add draft controls to define what to monitor in your catalog</p>
         </div>
@@ -284,8 +341,6 @@ export function CatalogControlsStep({ initialControls = [], catalogId, onSubmit,
               <CardContent className="p-4 pt-2">
                 <p className="text-sm">{control.description}</p>
                 
-                {/* Añadimos la visualización de scopes con badges */}
-                {console.log(control)}
                 
                 
                 <div className="grid mt-2 gap-1 text-xs text-gray-500">

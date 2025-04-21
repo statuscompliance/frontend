@@ -2,10 +2,15 @@ import { apiClient } from '@/api/apiClient';
 
 /**
  * Gets all catalogs
+ * @param {string} status - Optional status filter ('finalized' or 'draft')
  * @returns {Promise} - Promise with the list of catalogs
  */
-export function getAllCatalogs() {
-  return apiClient.get('/catalogs');
+export function getAllCatalogs(status = null) {
+  let url = '/catalogs';
+  if (status) {
+    url += `?status=${encodeURIComponent(status)}`;
+  }
+  return apiClient.get(url);
 }
 
 /**
@@ -58,14 +63,6 @@ export function getPointsByTpaId(tpaId, from = null, to = null) {
   if (to) params.to = to;
   
   return apiClient.get(`/catalogs/${tpaId}/points`, params);
-}
-
-/**
- * Gets all draft catalogs
- * @returns {Promise} - Promise with the list of draft catalogs
- */
-export function getDraftCatalogs() {
-  return apiClient.get('/catalogs/drafts');
 }
 
 /**

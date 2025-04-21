@@ -1,14 +1,33 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Check, ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import Page from '@/components/basic-page.jsx';
-import { createDraftCatalog, updateCatalog, getCatalogById } from '@/services/catalogs';
+import { createDraftCatalog, updateCatalog, getCatalogById, deleteCatalog } from '@/services/catalogs';
+import { getControlById, deleteControl } from '@/services/controls';
 import { CatalogInfoStep } from '@/components/catalog/CatalogInfoStep';
 import { CatalogControlsStep } from '@/components/catalog/CatalogControlsStep';
 import { CatalogDashboardStep } from '@/components/catalog/CatalogDashboardStep';
+import { 
+  getDraftCatalogId, 
+  getDraftControlIds, 
+  clearDraftData, 
+  hasDraftData,
+  saveDraftCatalogId,
+  initializeControlIdsStorage
+} from '@/utils/draftStorage';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 const VITE_NODE_ENV = import.meta.env.VITE_NODE_ENV || 'production';
 
@@ -33,31 +52,168 @@ export function CatalogWizard() {
     dashboardConfig: {}
   });
   const [apiError, setApiError] = useState(null);
+  const [showDraftDialog, setShowDraftDialog] = useState(false);
+  const [hasDrafts, setHasDrafts] = useState(false);
+  const initialFetchCompleted = useRef(false);
+  const controlsFetchCompleted = useRef(false);
 
-  // Fetch catalog data if editing
+  // Check for draft data on component mount
+  useEffect(() => {
+    // Initialize control_draft_ids storage
+    initializeControlIdsStorage();
+    
+    // Only check for drafts if we're not in edit mode
+    if (!isEditing) {
+      const draftExists = hasDraftData();
+      setHasDrafts(draftExists);
+      
+      // Ya no mostramos automáticamente el diálogo, ahora sólo verificamos si hay un borrador
+      if (draftExists) {
+        setHasDrafts(true);
+      }
+    }
+  }, [isEditing]);
+
+  // Fetch catalog data if editing or if we have a draft
   useEffect(() => {
     const fetchCatalog = async () => {
-      if (isEditing) {
-        try {
-          setLoading(true);
-          const response = await getCatalogById(id);
-          setCatalogData({
-            ...response.data,
-            controls: response.data.controls || [],
-            dashboardConfig: response.data.dashboardConfig || {}
-          });
-        } catch (err) {
-          setError('Failed to load catalog data');
-          toast.error('Error loading catalog');
-          console.error('Error fetching catalog:', err);
-        } finally {
-          setLoading(false);
+      if (initialFetchCompleted.current) return;
+      
+      try {
+        setLoading(true);
+        let catalogResponse = null;
+        
+        if (isEditing) {
+          // Normal edit mode using URL parameter
+          catalogResponse = await getCatalogById(id);
+        } else if (hasDrafts && !showDraftDialog) {
+          // After user confirmed to continue with draft
+          const draftCatalogId = getDraftCatalogId();
+          if (draftCatalogId) {
+            catalogResponse = await getCatalogById(draftCatalogId);
+          }
         }
+        
+        if (catalogResponse) {
+          setCatalogData({
+            ...catalogResponse,
+            controls: catalogResponse.controls || [],
+            dashboardConfig: catalogResponse.dashboardConfig || {}
+          });
+        }
+        
+        initialFetchCompleted.current = true;
+      } catch (err) {
+        setError('Failed to load catalog data');
+        toast.error('Error loading catalog');
+        console.error('Error fetching catalog:', err);
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchCatalog();
-  }, [id, isEditing]);
+    if ((isEditing || (hasDrafts && !showDraftDialog)) && !loading && !initialFetchCompleted.current) {
+      fetchCatalog();
+    }
+  }, [id, isEditing, hasDrafts, showDraftDialog, loading]);
+
+  // Fetch draft controls if we have them
+  useEffect(() => {
+    const fetchDraftControls = async () => {
+      if (controlsFetchCompleted.current) return;
+      
+      try {
+        setLoading(true);
+        const controlIds = getDraftControlIds();
+        
+        if (controlIds && controlIds.length > 0) {
+          const controls = [];
+          
+          for (const controlId of controlIds) {
+            try {
+              const control = await getControlById(controlId);
+              if (control) {
+                controls.push(control);
+              }
+            } catch (err) {
+              console.error(`Error fetching control with ID ${controlId}:`, err);
+            }
+          }
+          
+          if (controls.length > 0) {
+            setCatalogData(prev => ({
+              ...prev,
+              controls
+            }));
+            
+            if (hasDrafts && !showDraftDialog) {
+              setCurrentStep(1); // Controls step - Changed from Dashboard step (2)
+            }
+          } else if (hasDrafts && !showDraftDialog) {
+            setCurrentStep(1);
+          }
+        } else if (hasDrafts && !showDraftDialog) {
+          setCurrentStep(1);
+        }
+        
+        controlsFetchCompleted.current = true;
+      } catch (err) {
+        console.error('Error fetching draft controls:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    if (!isEditing && hasDrafts && !showDraftDialog && !controlsFetchCompleted.current) {
+      fetchDraftControls();
+    }
+  }, [isEditing, hasDrafts, showDraftDialog]);
+
+  const handleContinueDraft = () => {
+    setShowDraftDialog(false);
+  };
+
+  const handleDiscardDraft = async () => {
+    try {
+      setLoading(true);
+      
+      // Delete catalog draft if it exists
+      const draftCatalogId = getDraftCatalogId();
+      if (draftCatalogId) {
+        try {
+          await deleteCatalog(draftCatalogId);
+        } catch (err) {
+          console.error('Error deleting draft catalog:', err);
+        }
+      }
+      
+      // Delete control drafts if they exist
+      const controlIds = getDraftControlIds();
+      for (const controlId of controlIds) {
+        try {
+          await deleteControl(controlId);
+        } catch (err) {
+          console.error(`Error deleting draft control ${controlId}:`, err);
+        }
+      }
+      
+      // Clear localStorage
+      clearDraftData();
+      
+      // Reset state and navigate back to catalogs list
+      setHasDrafts(false);
+      setShowDraftDialog(false);
+      
+      navigate('/app/catalogs');
+      
+      toast.success('Draft catalog discarded');
+    } catch (err) {
+      toast.error('Error discarding draft catalog');
+      console.error('Error discarding draft:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const goToNextStep = () => {
     setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
@@ -75,6 +231,14 @@ export function CatalogWizard() {
       // If first step and not editing, create new catalog
       if (currentStep === 0 && !isEditing) {
         const response = await createDraftCatalog(catalogInfo);
+        
+        // Here we'll save the catalog ID immediately after creation
+        if (response && response.id) {
+          // Initialize localStorage storage
+          saveDraftCatalogId(response.id);
+          initializeControlIdsStorage();
+        }
+        
         setCatalogData({
           ...response,
           controls: [],
@@ -123,6 +287,9 @@ export function CatalogWizard() {
       
       if (isEditing) {
         await updateCatalog(id, { controls });
+      } else if (catalogData && catalogData.id) {
+        // Save catalog ID again for non-editing mode
+        saveDraftCatalogId(catalogData.id);
       }
       
       setCatalogData(updatedData);
@@ -165,6 +332,9 @@ export function CatalogWizard() {
       setCatalogData(updatedData);
       toast.success('Catalog created successfully');
       
+      // Clear draft data on successful completion
+      clearDraftData();
+      
       // Navigate back to catalogs list
       navigate('/app/catalogs');
     } catch (err) {
@@ -205,6 +375,7 @@ export function CatalogWizard() {
           onSubmit={handleControlsSubmit} 
           isSubmitting={loading}
           apiError={apiError}
+          key={`controls-${isEditing ? id : catalogData.id}`}
         />
       );
     case 2:
@@ -225,6 +396,26 @@ export function CatalogWizard() {
 
   return (
     <Page name={isEditing ? 'Edit Catalog' : 'Create New Catalog'} className="h-full w-full">
+      {/* Draft Recovery Dialog */}
+      <AlertDialog open={showDraftDialog} onOpenChange={setShowDraftDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unfinished Catalog Found</AlertDialogTitle>
+            <AlertDialogDescription>
+              We found a catalog that you started creating but didn&apos;t finish. Would you like to continue where you left off?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleDiscardDraft} disabled={loading}>
+              {loading ? 'Discarding...' : 'Discard Draft'}
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleContinueDraft}>
+              Continue Draft
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Stepper */}
       <div className="mb-8">
         <div className="flex items-center justify-center">
@@ -236,7 +427,7 @@ export function CatalogWizard() {
                   index < currentStep
                     ? 'bg-chart-1 border-chart-1 text-white'
                     : index === currentStep
-                      ? 'border-sidebar-accent text-sidebar-accent'
+                      ? 'border-chart-5 text-chart-5'
                       : 'border-gray-300 text-gray-300'
                 }`}
               >
@@ -275,7 +466,7 @@ export function CatalogWizard() {
       {/* Step content */}
       <Card>
         <CardContent className="pt-6">
-          {loading && currentStep === 0 ? (
+          {loading && (showDraftDialog || (currentStep === 0 && (isEditing || hasDrafts))) ? (
             <div className="h-60 flex items-center justify-center">
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>
