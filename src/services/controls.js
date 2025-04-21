@@ -2,10 +2,15 @@ import { apiClient } from '@/api/apiClient';
 
 /**
  * Gets all controls
+ * * @param {string} status - Optional status filter ('finalized' or 'draft')
  * @returns {Promise} - Promise with the list of controls
  */
-export function getAllControls() {
-  return apiClient.get('/controls');
+export function getAllControls(status = null) {
+  let url = '/controls';
+  if (status) {
+    url += `?status=${encodeURIComponent(status)}`;
+  }
+  return apiClient.get(url);
 }
 
 /**
@@ -48,10 +53,15 @@ export function deleteControl(id) {
 /**
  * Gets all controls for a catalog
  * @param {string} catalogId - Catalog ID
+ * @param {string} status - Optional status filter ('finalized' or 'draft')
  * @returns {Promise} - Promise with the list of controls
  */
-export function getControlsByCatalogId(catalogId) {
-  return apiClient.get(`/catalogs/${catalogId}/controls`);
+export function getControlsByCatalogId(catalogId, status = null) {
+  let url = `/catalogs/${catalogId}/controls`;
+  if (status) {
+    url += `?status=${encodeURIComponent(status)}`;
+  }
+  return apiClient.get(url);
 }
 
 /**
@@ -120,23 +130,6 @@ export function addPanelToControl(controlId, panelId, data) {
  */
 export function deletePanelFromControl(controlId, panelId) {
   return apiClient.delete(`/controls/${controlId}/panels/${panelId}`);
-}
-
-/**
- * Gets all draft controls
- * @returns {Promise} - Promise with the list of draft controls
- */
-export function getDraftControls() {
-  return apiClient.get('/controls/drafts');
-}
-
-/**
- * Gets all draft controls for a specific catalog
- * @param {string} catalogId - Catalog ID
- * @returns {Promise} - Promise with the list of draft controls for the catalog
- */
-export function getDraftControlsByCatalogId(catalogId) {
-  return apiClient.get(`/controls/drafts/catalog/${catalogId}`);
 }
 
 /**

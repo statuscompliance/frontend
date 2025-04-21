@@ -131,8 +131,8 @@ export function CatalogDetails() {
   const fetchControls = async () => {
     setLoading(true);
     try {
-      const response = await getControlsByCatalogId(params.id);
-      response.forEach(control => control.result = control.name.includes('i'));
+      const response = await getControlsByCatalogId(params.id, 'finalized');
+      response.forEach(control => control.result = control.name.includes('i')); // TODO: This logic is just for testing, it must be replaced by its corresponding feature in the backend
       setControls(response);
       fetchScopesForControls(response);
     } catch (error) {
