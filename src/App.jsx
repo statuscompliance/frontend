@@ -1,5 +1,5 @@
 import { ThemeProvider } from '@/components/theme-provider';
-import { BrowserRouter as Router, Routes, Route } from 'react-router';
+import { HashRouter as Router, Routes, Route } from 'react-router';
 import { Landing } from '@/pages/Landing';
 import { About } from '@/pages/About';
 import { Home } from '@/pages/app/Home';
