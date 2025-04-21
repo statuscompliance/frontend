@@ -49,7 +49,6 @@ Create a `.env` file in the root directory with the following content:
 VITE_API_BASE_URL=http://localhost:3001/api/v1
 VITE_NODE_RED_URL=http://localhost:1880
 VITE_GRAFANA_URL=http://localhost:3100
-VITE_NODE_ENV=development
 ```
 
 ## Running the Application
