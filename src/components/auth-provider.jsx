@@ -75,12 +75,15 @@ export const AuthProvider = ({ children }) => {
 export const ProtectedRoute = ({ children, allowedRoles }) => {
   const { isAuthenticated, userData } = useAuth();
   const location = useLocation();
+  const hasAccess = useMemo(
+    () => allowedRoles == undefined || allowedRoles.some((role) => role === userData?.authority?.toLowerCase()),
+    [userData, allowedRoles]
+  );
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
-  const hasAccess = allowedRoles == undefined || allowedRoles.some((role) => role === userData?.authority?.toLowerCase());
   if (!hasAccess) {
     return <Navigate to="/unauthorized" replace />;
   }
