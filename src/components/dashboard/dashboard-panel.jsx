@@ -1,104 +1,115 @@
 import { useState, useEffect } from 'react';
-import { dashboardsService } from '@/services/grafana/dashboards';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertCircle } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
-// Obtenemos la URL base de Grafana desde las variables de entorno
 const GRAFANA_URL = import.meta.env.VITE_GRAFANA_URL || 'http://localhost:3100';
 
-/**
- * Renders a Grafana panel inside our application using iframe
- * @param {Object} props Component props
- * @param {string} props.dashboardUid UID of the dashboard containing the panel
- * @param {Object} props.panel Panel data object
- * @param {number} props.height Height of the panel in pixels
- * @param {boolean} props.showTitle Whether to display the panel title
- */
-export function DashboardPanel({ dashboardUid, panel, height = 300, showTitle = false }) {
+export function DashboardPanel({ dashboardUid, panel, height = 300, preview = false }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [iframeUrl, setIframeUrl] = useState('');
 
   useEffect(() => {
-    const fetchPanelData = async () => {
-      if (!dashboardUid || !panel || !panel.id) return;
+    if (!panel) {
+      setError('Panel data is missing');
+      setLoading(false);
+      return;
+    }
 
-      try {
-        setLoading(true);
+    try {
+      // Construye la URL para la visualización de Grafana
+      let baseUrl;
       
-        if (panel.rawSql) {
-          setError(null);
-          setLoading(false);
-          return;
-        }
-        
-        // Attempt to get the panel query, though it is not used further
-        try {
-          await dashboardsService.getPanelQuery(dashboardUid, panel.id);
-        } catch (queryErr) {
-          console.warn('Could not load panel query:', queryErr);
-        }
-        setError(null);
-      } catch (err) {
-        console.error('Error loading panel data:', err);
-        setError('Failed to load panel data');
-      } finally {
-        setLoading(false);
+      if (preview) {
+        // En modo preview usamos una URL especial si está disponible
+        baseUrl = `${GRAFANA_URL}/d-solo/preview`;
+      } else {
+        // URL normal para paneles existentes
+        baseUrl = `${GRAFANA_URL}/d-solo/${dashboardUid}`;
       }
-    };
 
-    fetchPanelData();
-  }, [dashboardUid, panel]);
+      // Parámetros comunes para la URL de Grafana
+      const params = new URLSearchParams({
+        orgId: 1,
+        panelId: panel.id,
+        from: 'now-6h',
+        to: 'now',
+        theme: 'light',
+      });
 
-  // Construir la URL del iframe para el panel de Grafana
-  const buildGrafanaIframeUrl = () => {
-    if (!dashboardUid || !panel || !panel.id) return '';
-    
-    // Usar el tiempo actual para from/to si no está definido
-    const now = Date.now();
-    const timeRange = {
-      from: now - 6 * 60 * 60 * 1000, // 6 horas atrás por defecto
-      to: now
-    };
-    
-    // URL para el panel en modo solo (d-solo)
-    return `${GRAFANA_URL}/d-solo/${dashboardUid}/${panel.slug || 'dashboard'}?orgId=1&from=${timeRange.from}&to=${timeRange.to}&timezone=browser&theme=light&panelId=${panel.id}`;
+      // Si es una preview, podemos añadir el panel y su configuración
+      if (preview) {
+        // Convertimos los datos del panel a un formato que Grafana pueda leer
+        // Esto dependerá de la API específica de tu backend
+        params.append('panelData', JSON.stringify({
+          type: panel.type,
+          title: panel.title,
+          description: panel.description,
+          options: panel.options,
+          rawSql: panel.rawSql
+        }));
+      }
+
+      setIframeUrl(`${baseUrl}?${params.toString()}`);
+    } catch (err) {
+      console.error('Error creating panel URL:', err);
+      setError('Failed to load panel visualization');
+    } finally {
+      setLoading(false);
+    }
+  }, [dashboardUid, panel, preview]);
+
+  // Manejador para cuando el iframe termina de cargar
+  const handleIframeLoad = () => {
+    setLoading(false);
   };
 
-  if (loading) {
-    return <Skeleton className="w-full" style={{ height: `${height}px` }} />;
-  }
+  // Manejador para errores del iframe
+  const handleIframeError = () => {
+    setError('Failed to load panel visualization');
+    setLoading(false);
+  };
 
   if (error) {
     return (
-      <Alert variant="destructive" className="mb-4">
+      <Alert variant="destructive">
         <AlertCircle className="h-4 w-4" />
-        <AlertDescription>{error}</AlertDescription>
+        <AlertTitle>Error</AlertTitle>
+        <AlertDescription>
+          {typeof error === 'object' ? JSON.stringify(error) : error}
+        </AlertDescription>
       </Alert>
     );
   }
 
-  const iframeUrl = buildGrafanaIframeUrl();
+  // Si no hay panel o URL, mostrar un mensaje adecuado
+  if (!panel || !iframeUrl) {
+    return (
+      <div style={{ height: `${height}px` }} className="flex items-center justify-center bg-muted/20">
+        <p className="text-muted-foreground">No panel data available</p>
+      </div>
+    );
+  }
 
   return (
-    <div style={{ height: `${height}px`, overflow: 'hidden' }}>
-      {showTitle && panel.title && (
-        <div className="bg-card p-2">
-          <h3 className="text-base font-medium">{panel.title}</h3>
-          {panel.description && (
-            <p className="text-xs text-muted-foreground">{panel.description}</p>
-          )}
+    <div className="relative" style={{ height: `${height}px` }}>
+      {loading && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <Skeleton className="h-full w-full" />
         </div>
       )}
       
-      <iframe 
-        src={iframeUrl} 
-        width="100%" 
-        height={showTitle ? `${height - 40}px` : `${height}px`} 
-        title={`Panel: ${panel.title || panel.id}`}
-        className="w-full"
-        loading="lazy"
-        style={{ border: 'none' }}
+      <iframe
+        title={panel.title || `Panel ${panel.id}`}
+        src={iframeUrl}
+        width="100%"
+        height={height}
+        frameBorder="0"
+        onLoad={handleIframeLoad}
+        onError={handleIframeError}
+        className={loading ? 'opacity-0' : 'opacity-100'}
+        style={{ transition: 'opacity 0.3s' }}
       />
     </div>
   );
