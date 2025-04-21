@@ -10,7 +10,7 @@ import { CatalogInfoStep } from '@/components/catalog/CatalogInfoStep';
 import { CatalogControlsStep } from '@/components/catalog/CatalogControlsStep';
 import { CatalogDashboardStep } from '@/components/catalog/CatalogDashboardStep';
 
-const VITE_NODE_ENV = import.meta.env.VITE_NODE_ENV || 'production';
+const isDev = !!import.meta.env.DEV;
 
 const steps = [
   { id: 'info', title: 'Catalog Information' },
@@ -297,7 +297,7 @@ export function CatalogWizard() {
         </Button>
         
         {/* This button is just for manual navigation during development */}
-        {VITE_NODE_ENV === 'development' && (
+        {isDev && (
           <Button
             onClick={goToNextStep}
             disabled={loading || currentStep === steps.length - 1}
