@@ -23,9 +23,9 @@ import { AuthProvider, ProtectedRoute } from '@/components/auth-provider';
 
 function App() {
   return (
-    <AuthProvider>
-      <ThemeProvider storageKey="vite-ui-theme">
-        <Router>
+    <ThemeProvider storageKey="vite-ui-theme">
+      <Router>
+        <AuthProvider>
           <Routes>
             {/* Doing nested routes allows to avoid re-rendering re-used components */}
             <Route path="/" element={<MainLayout />}>
@@ -67,9 +67,9 @@ function App() {
             <Route path="/logout" element={<Logout />} />
             <Route path="/verify-2fa" element={<Verify2FA />} />
           </Routes>
-        </Router>
-      </ThemeProvider>
-    </AuthProvider>
+        </AuthProvider>
+      </Router>
+    </ThemeProvider>
   );
 }
 

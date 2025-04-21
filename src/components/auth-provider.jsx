@@ -1,25 +1,67 @@
-import { useState } from 'react';
-import { AuthContext } from '@/hooks/use-auth';
+import { useEffect, useMemo } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '@/hooks/use-auth';
+import { AuthContext, useAuth } from '@/hooks/use-auth';
+import { useStorage } from '@/hooks/use-storage';
+import { apiClient } from '@/api/apiClient';
+import { nodeRedClient } from '@/api/nodeRedClient';
+import { client as axiosClient } from '@/api/axiosClient';
 
 export const AuthProvider = ({ children }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(localStorage.getItem('userData') !== null);
-  const [userData, setUserData] = useState(JSON.parse(localStorage.getItem('userData')));
+  const [userData, setUserData] = useStorage('userData');
+  const [, setNodeToken] = useStorage('token');
+  const nodeRedToken = useMemo(() => userData?.nodeRedToken, [userData]);
+  const isAuthenticated = useMemo(() => !!userData, [userData]);
+  // Handle node token change
+  useEffect(() => {
+    if (nodeRedToken) {
+      setNodeToken(nodeRedToken);
+      nodeRedClient.defaults.headers.common['Authorization'] = `Bearer ${nodeRedToken}`;
+    } else {
+      setNodeToken();
+      delete nodeRedClient.defaults.headers.common['Authorization'];
+    }
+  }, [nodeRedToken, setNodeToken]);
 
-  const authenticate = async (user) => {
-    setIsAuthenticated(true);
-    setUserData(user);
-    localStorage.setItem('userData', JSON.stringify(user)); // Save user data
+  const axiosLogoutInterceptor = (error) => {
+    // If a 401 error is received, logout the user
+    if (error.response?.status === 401) {
+      unauthenticate();
+    }
+    return Promise.reject(error);
   };
 
-  const unauthenticate = () => {
+  /**
+   * Logs in with a registered user
+   * @param {object} credentials - User credentials
+   * @param {string} credentials.username - Username
+   * @param {string} credentials.password - Password
+   * @returns {Promise} - Promise with the response
+   */
+  async function authenticate ({ username, password }) {
+    const { message: _, ...userData } = await apiClient.post('/users/signIn', { username, password });
+    setUserData(userData);
+    axiosClient.interceptors.response.use(
+      undefined,
+      axiosLogoutInterceptor
+    );
+    nodeRedClient.interceptors.response.use(
+      undefined,
+      axiosLogoutInterceptor
+    );
+  };
+
+  /**
+   * Logs out the current user
+   */
+  function unauthenticate() {
     try {
-      setIsAuthenticated(false);
-      setUserData(null);
-      localStorage.removeItem('userData'); // Remove user data
+      apiClient.get('/users/signOut');
     } catch (error) {
       console.error(error);
+    } finally {
+      setUserData();
+      axiosClient.interceptors.response.eject(axiosLogoutInterceptor);
+      nodeRedClient.interceptors.response.eject(axiosLogoutInterceptor);
     }
   };
 
