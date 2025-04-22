@@ -1,30 +1,11 @@
 import { LoginForm } from '@/forms/auth/forms';
 import { loginSchema } from '@/forms/auth/schemas';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import { useNavigate } from 'react-router';
+import { Navigate } from 'react-router';
 import { useAuth } from '@/hooks/use-auth';
-
-export function Login() {
-  const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/app');
-    }
-  }, [navigate, isAuthenticated]);
-
-  return (
-    <div className="min-h-screen flex">
-      <div className="w-full flex items-center justify-center p-8">
-        <LoginCard />
-      </div>
-    </div>
-  );
-}
 
 function LoginCard() {
   const [isLoading, setIsLoading] = useState(false);
@@ -67,4 +48,20 @@ function LoginCard() {
       </CardContent>
     </Card>
   );
+}
+
+export function Login() {
+  const { isAuthenticated } = useAuth();
+
+  if (isAuthenticated) {
+    return <Navigate to="/app" replace />;
+  } else {
+    return (
+      <div className="min-h-screen flex">
+        <div className="w-full flex items-center justify-center p-8">
+          <LoginCard />
+        </div>
+      </div>
+    );
+  }
 }
