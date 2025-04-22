@@ -5,6 +5,7 @@ import { useStorage } from '@/hooks/use-storage';
 import { apiClient } from '@/api/apiClient';
 import { nodeRedClient } from '@/api/nodeRedClient';
 import { client as axiosClient } from '@/api/axiosClient';
+import { toast } from 'sonner';
 
 export const AuthProvider = ({ children }) => {
   const [userData, setUserData] = useStorage('userData');
@@ -26,6 +27,7 @@ export const AuthProvider = ({ children }) => {
     // If a 401 error is received, logout the user
     if (error.response?.status === 401) {
       unauthenticate();
+      toast.error('You have been logged out by the server');
     }
     return Promise.reject(error);
   };
