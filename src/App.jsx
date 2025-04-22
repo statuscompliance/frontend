@@ -19,6 +19,7 @@ import { FolderDetails } from '@/pages/app/dashboard/FolderDetails';
 import { Editor } from '@/pages/app/Editor';
 import MainLayout from '@/layouts/MainLayout';
 import AppLayout from '@/layouts/AppLayout';
+import { Toaster } from '@/components/ui/sonner';
 import { AuthProvider, ProtectedRoute } from '@/components/auth-provider';
 
 const allRolesAllowed = () => ['admin', 'user', 'developer'];
@@ -75,6 +76,7 @@ function App() {
           </Routes>
         </AuthProvider>
       </Router>
+      <Toaster closeButton />
     </ThemeProvider>
   );
 }
