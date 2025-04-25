@@ -58,7 +58,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and Push Docker Image
-        uses: docker/build-push-action@v6.15.0
+        uses: docker/build-push-action@v6.16.0
         with:
           context: .
           file: Dockerfile
@@ -73,7 +73,7 @@ jobs:
             ${{ github.event_name == 'pull_request' && format('{0}:PR.{1}', env.REGISTRY_IMAGE, env.PR_ID) || '' }}
 
       - name: Build and Push Ghcr Image
-        uses: docker/build-push-action@v6.15.0
+        uses: docker/build-push-action@v6.16.0
         with:
           context: .
           file: Dockerfile
