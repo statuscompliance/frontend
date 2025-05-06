@@ -25,5 +25,5 @@ export function getUserAuthority() {
  * @returns {Promise} - Promise with the response
  */
 export function refreshToken() {
-  return apiClient.get('/api/refresh');
+  return apiClient.get('/users/auth/refresh');
 }
