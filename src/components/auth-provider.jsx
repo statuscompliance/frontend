@@ -31,14 +31,67 @@ export const AuthProvider = ({ children }) => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const axiosLogoutInterceptor = (error) => {
-    // If a 401 error is received, logout the user
-    if (error.response?.status === 401) {
-      unauthenticate();
-      toast.error('You have been logged out by the server');
+  /**
+   * Refreshes the user token
+   */
+  async function refreshUserToken() {
+    if (isAuthenticated) {
+      console.log('Refreshing user token...');
+      const { accessToken } = await refreshToken();
+      setUserData((p) => ({ ...p, accessToken }));
     }
-    return Promise.reject(error);
-  };
+  }
+
+  /**
+   * Closure holding the state of the logout interceptor
+   * and request retry queue
+   */
+  const axiosLogoutInterceptor = (() => {
+    let isRefreshing = false;
+    let failedQueue = [];
+
+    const processQueue = (error) => {
+      failedQueue.forEach((prom) => {
+        if (error) {
+          prom.reject(error);
+        } else {
+          prom.resolve();
+        }
+      });
+      failedQueue = [];
+    };
+
+    return async function (error) {
+      const originalRequest = error.config;
+
+      // If a 401 error is received, logout the user
+      if (error.response?.status === 401 && !originalRequest._retry) {
+        if (isRefreshing) {
+          return new Promise((resolve, reject) => failedQueue.push({ resolve, reject }))
+            .then(() => axiosClient(originalRequest))
+            .catch((err) => Promise.reject(err));
+        }
+
+        originalRequest._retry = true;
+        isRefreshing = true;
+
+        try {
+          await refreshUserToken();
+          processQueue(null);
+
+          return axiosClient(originalRequest);
+        } catch (err) {
+          processQueue(err, null);
+          unauthenticate();
+          toast.error('You have been logged out by the server');
+
+          return Promise.reject(err);
+        } finally {
+          isRefreshing = false;
+        }
+      }
+    };
+  })();  
 
   /**
    * Logs in with a registered user
@@ -59,17 +112,6 @@ export const AuthProvider = ({ children }) => {
       axiosLogoutInterceptor
     );
   };
-
-  /**
-   * Refreshes the current user's access token
-   */
-  async function refreshUserToken() {
-    if (isAuthenticated) {
-      console.log('Refreshing user token...');
-      const { accessToken } = await refreshToken();
-      setUserData((p) => ({ ...p, accessToken }));
-    }
-  }
 
   /**
    * Logs out the current user
