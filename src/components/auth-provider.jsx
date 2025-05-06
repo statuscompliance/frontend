@@ -5,6 +5,7 @@ import { useStorage } from '@/hooks/use-storage';
 import { apiClient } from '@/api/apiClient';
 import { nodeRedClient } from '@/api/nodeRedClient';
 import { client as axiosClient } from '@/api/axiosClient';
+import { refreshToken } from '@/services/auth';
 import { toast } from 'sonner';
 
 export const AuthProvider = ({ children }) => {
@@ -22,6 +23,13 @@ export const AuthProvider = ({ children }) => {
       delete nodeRedClient.defaults.headers.common['Authorization'];
     }
   }, [nodeRedToken, setNodeToken]);
+
+  // Refresh token on app boot
+  useEffect(() => {
+    void refreshUserToken();
+  // We want to run this effect exclusively on mount
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const axiosLogoutInterceptor = (error) => {
     // If a 401 error is received, logout the user
@@ -51,6 +59,17 @@ export const AuthProvider = ({ children }) => {
       axiosLogoutInterceptor
     );
   };
+
+  /**
+   * Refreshes the current user's access token
+   */
+  async function refreshUserToken() {
+    if (isAuthenticated) {
+      console.log('Refreshing user token...');
+      const { accessToken } = await refreshToken();
+      setUserData((p) => ({ ...p, accessToken }));
+    }
+  }
 
   /**
    * Logs out the current user
