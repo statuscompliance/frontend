@@ -11,7 +11,12 @@ export const apiClient = {
    * @returns {Promise} - Promise with the response
    */
   get: (url, params = {}) => {
-    return client.get(url, { params }).then(response => response.data);
+    return client.get(url, { params })
+      .then(response => response.data)
+      .catch(error => {
+        // Spread the error to the caller
+        throw error;
+      });
   },
   
   /**
@@ -21,7 +26,11 @@ export const apiClient = {
    * @returns {Promise} - Promise with the response
    */
   post: (url, data = {}) => {
-    return client.post(url, data).then(response => response.data);
+    return client.post(url, data)
+      .then(response => response.data)
+      .catch(error => {
+        throw error;
+      });
   },
   
   /**
@@ -51,6 +60,10 @@ export const apiClient = {
    * @returns {Promise} - Promise with the response
    */
   delete: (url, data = {}) => {
-    return client.delete(url, { data }).then(response => response.data);
+    return client.delete(url, { data })
+      .then(response => response.data)
+      .catch(error => {
+        throw error;
+      });
   }
 };
