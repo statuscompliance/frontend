@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { AuthContext, useAuth } from '@/hooks/use-auth';
 import { useStorage } from '@/hooks/use-storage';
@@ -13,6 +13,10 @@ export const AuthProvider = ({ children }) => {
   const [, setNodeToken] = useStorage('token');
   const nodeRedToken = useMemo(() => userData?.nodeRedToken, [userData]);
   const isAuthenticated = useMemo(() => !!userData, [userData]);
+  // Ref to store the interceptor references for cleanup
+  const axiosInterceptorRef = useRef(null);
+  const nodeRedInterceptorRef = useRef(null);
+  
   // Handle node token change
   useEffect(() => {
     if (nodeRedToken) {
@@ -27,19 +31,66 @@ export const AuthProvider = ({ children }) => {
   // Refresh token on app boot
   useEffect(() => {
     void refreshUserToken();
-  // We want to run this effect exclusively on mount
+    
+    // Configure interceptors if authenticated
+    if (isAuthenticated) {
+      setupInterceptors();
+    }
+    
+    // Cleanup interceptors on unmount
+    return () => {
+      cleanupInterceptors();
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  /**
+   * Configures the interceptors for axios and nodeRed clients
+   */
+  const setupInterceptors = () => {
+    cleanupInterceptors();
+    
+    axiosInterceptorRef.current = axiosClient.interceptors.response.use(
+      response => response,
+      axiosLogoutInterceptor
+    );
+    
+    nodeRedInterceptorRef.current = nodeRedClient.interceptors.response.use(
+      response => response,
+      axiosLogoutInterceptor
+    );
+  };
+
+  /**
+   * Cleans up the interceptors
+   */
+  const cleanupInterceptors = () => {
+    if (axiosInterceptorRef.current !== null) {
+      axiosClient.interceptors.response.eject(axiosInterceptorRef.current);
+      axiosInterceptorRef.current = null;
+    }
+    
+    if (nodeRedInterceptorRef.current !== null) {
+      nodeRedClient.interceptors.response.eject(nodeRedInterceptorRef.current);
+      nodeRedInterceptorRef.current = null;
+    }
+  };
 
   /**
    * Refreshes the user token
    */
   async function refreshUserToken() {
     if (isAuthenticated) {
-      console.log('Refreshing user token...');
-      const { accessToken } = await refreshToken();
-      setUserData((p) => ({ ...p, accessToken }));
+      try {
+        const { accessToken } = await refreshToken();
+        setUserData((p) => ({ ...p, accessToken }));
+        return true;
+      } catch (error) {
+        console.error('Error refreshing token:', error);
+        return false;
+      }
     }
+    return false;
   }
 
   /**
@@ -64,10 +115,17 @@ export const AuthProvider = ({ children }) => {
     return async function (error) {
       const originalRequest = error.config;
 
-      // If a 401 error is received, logout the user
-      if (error.response?.status === 401 && !originalRequest._retry) {
+      // If the error is not a 401, reject the promise
+      if (error.response?.status !== 401) {
+        return Promise.reject(error);
+      }
+
+      // If the request is already retried, reject the promise
+      if (!originalRequest._retry) {
         if (isRefreshing) {
-          return new Promise((resolve, reject) => failedQueue.push({ resolve, reject }))
+          return new Promise((resolve, reject) => {
+            failedQueue.push({ resolve, reject });
+          })
             .then(() => axiosClient(originalRequest))
             .catch((err) => Promise.reject(err));
         }
@@ -76,20 +134,31 @@ export const AuthProvider = ({ children }) => {
         isRefreshing = true;
 
         try {
-          await refreshUserToken();
+          const refreshed = await refreshUserToken();
+          
+          if (!refreshed) {
+            throw new Error('Token refresh failed');
+          }
+          
+          // Update the original request with the new access token
+          if (userData?.accessToken) {
+            originalRequest.headers['Authorization'] = `Bearer ${userData.accessToken}`;
+          }
+          
           processQueue(null);
-
           return axiosClient(originalRequest);
         } catch (err) {
-          processQueue(err, null);
+          processQueue(err);
           unauthenticate();
-          toast.error('You have been logged out by the server');
-
+          toast.error('Session expired. Please log in again.');
           return Promise.reject(err);
         } finally {
           isRefreshing = false;
         }
       }
+      
+      // If the request has already been retried, reject the promise
+      return Promise.reject(error);
     };
   })();  
 
@@ -103,14 +172,7 @@ export const AuthProvider = ({ children }) => {
   async function authenticate ({ username, password }) {
     const { message: _, ...userData } = await apiClient.post('/users/signIn', { username, password });
     setUserData(userData);
-    axiosClient.interceptors.response.use(
-      undefined,
-      axiosLogoutInterceptor
-    );
-    nodeRedClient.interceptors.response.use(
-      undefined,
-      axiosLogoutInterceptor
-    );
+    setupInterceptors();
   };
 
   /**
@@ -122,9 +184,8 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error(error);
     } finally {
+      cleanupInterceptors();
       setUserData();
-      axiosClient.interceptors.response.eject(axiosLogoutInterceptor);
-      nodeRedClient.interceptors.response.eject(axiosLogoutInterceptor);
     }
   };
 
