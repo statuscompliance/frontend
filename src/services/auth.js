@@ -13,26 +13,6 @@ export function signUp({ username, password, email }) {
 }
 
 /**
- * Logs in with a registered user
- * @param {object} credentials - User credentials
- * @param {string} credentials.username - Username
- * @param {string} credentials.password - Password
- * @returns {Promise} - Promise with the response
- */
-export function signIn({ username, password }) {
-  return apiClient.post('/users/signIn', { username, password });
-}
-
-/**
- * Logs out the user
- * @returns {Promise} - Promise with the response
- */
-export function signOut() {
-  window.location.href = '/';
-  return apiClient.get('/users/signOut');
-}
-
-/**
  * Gets the authenticated user's authority
  * @returns {Promise} - Promise with the response
  */
@@ -45,5 +25,5 @@ export function getUserAuthority() {
  * @returns {Promise} - Promise with the response
  */
 export function refreshToken() {
-  return apiClient.get('/api/refresh');
+  return apiClient.get('/users/auth/refresh');
 }

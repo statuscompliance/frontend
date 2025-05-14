@@ -1,5 +1,5 @@
 import { ThemeProvider } from '@/components/theme-provider';
-import { BrowserRouter as Router, Routes, Route } from 'react-router';
+import { HashRouter as Router, Routes, Route } from 'react-router';
 import { Landing } from '@/pages/Landing';
 import { About } from '@/pages/About';
 import { Home } from '@/pages/app/Home';
@@ -19,13 +19,16 @@ import { FolderDetails } from '@/pages/app/dashboard/FolderDetails';
 import { Editor } from '@/pages/app/Editor';
 import MainLayout from '@/layouts/MainLayout';
 import AppLayout from '@/layouts/AppLayout';
+import { Toaster } from '@/components/ui/sonner';
 import { AuthProvider, ProtectedRoute } from '@/components/auth-provider';
+
+const allRolesAllowed = () => ['admin', 'user', 'developer'];
 
 function App() {
   return (
-    <AuthProvider>
-      <ThemeProvider storageKey="vite-ui-theme">
-        <Router>
+    <ThemeProvider storageKey="vite-ui-theme">
+      <Router>
+        <AuthProvider>
           <Routes>
             {/* Doing nested routes allows to avoid re-rendering re-used components */}
             <Route path="/" element={<MainLayout />}>
@@ -35,7 +38,7 @@ function App() {
             <Route
               path="/app"
               element={
-                <ProtectedRoute allowedRoles={['admin', 'user', 'developer']}>
+                <ProtectedRoute allowedRoles={allRolesAllowed()}>
                   <AppLayout />
                 </ProtectedRoute>
               }
@@ -64,12 +67,17 @@ function App() {
             </Route>
             { /* Routes here have no layout ON PURPOSE */ }
             <Route path="/login" element={<Login />} />
-            <Route path="/logout" element={<Logout />} />
+            <Route path="/logout" element={
+              <ProtectedRoute allowedRoles={allRolesAllowed()}>
+                <Logout />
+              </ProtectedRoute>
+            } />
             <Route path="/verify-2fa" element={<Verify2FA />} />
           </Routes>
-        </Router>
-      </ThemeProvider>
-    </AuthProvider>
+        </AuthProvider>
+      </Router>
+      <Toaster closeButton />
+    </ThemeProvider>
   );
 }
 

@@ -1,38 +1,15 @@
 import { LoginForm } from '@/forms/auth/forms';
 import { loginSchema } from '@/forms/auth/schemas';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { signIn } from '@/services/auth';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import { useNavigate } from 'react-router';
+import { Navigate } from 'react-router';
 import { useAuth } from '@/hooks/use-auth';
-
-export function Login() {
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    const storedUserData = localStorage.getItem('userData');
-    const hasAccessToken = storedUserData?.includes('accessToken');
-    const hasNodeRedToken = storedUserData?.includes('nodeRedToken');
-    if (storedUserData && hasAccessToken && hasNodeRedToken) {
-      navigate('/app');
-    }
-  }, [navigate]);
-
-  return (
-    <div className="min-h-screen flex">
-      <div className="w-full flex items-center justify-center p-8">
-        <LoginCard />
-      </div>
-    </div>
-  );
-}
 
 function LoginCard() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const navigate = useNavigate();
   const { authenticate } = useAuth();
 
   const form = useForm({
@@ -43,26 +20,21 @@ function LoginCard() {
     },
   });
 
-  function onSubmit(values) {
+  async function onSubmit(values) {
     setIsLoading(true);
-    signIn(values)
-      .then(async (response) => {
-        const { message: _, ...userData } = response;
-        localStorage.setItem('token', response.nodeRedToken);
-        await authenticate(userData);
-        navigate('/app');
-      })
-      .catch((err) => {
-        if (err.response && err.response.status === 400) {
-          setError('Invalid email or password');
-        } else {
-          setError('An error occurred. Please try again later.');
-          console.error(err);
-        }
-      })
-      .finally(() => {
-        setIsLoading(false);
-      });
+
+    try {
+      await authenticate(values);
+    } catch (err) {
+      if (err.response && err.response.status === 400) {
+        setError('Invalid email or password');
+      } else {
+        setError('An error occurred. Please try again later.');
+        console.error(err);
+      }
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -76,4 +48,20 @@ function LoginCard() {
       </CardContent>
     </Card>
   );
+}
+
+export function Login() {
+  const { isAuthenticated } = useAuth();
+
+  if (isAuthenticated) {
+    return <Navigate to="/app" replace />;
+  } else {
+    return (
+      <div className="min-h-screen flex">
+        <div className="w-full flex items-center justify-center p-8">
+          <LoginCard />
+        </div>
+      </div>
+    );
+  }
 }
