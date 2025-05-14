@@ -215,6 +215,7 @@ export function DashboardDetails() {
                       dashboardUid={uid} 
                       panel={panel} 
                       height={300}
+                      timeRange={parsedTimeRange}  // Añade el timeRange para que se muestre el mismo rango que el dashboard
                     />
                   </CardContent>
                   <CardFooter className="border-t p-2 text-xs text-muted-foreground">
@@ -349,6 +350,7 @@ export function DashboardDetails() {
                       dashboardUid={uid} 
                       panel={panel} 
                       height={200}
+                      timeRange={parsedTimeRange}  // Añade el timeRange para que se muestre el mismo rango que el dashboard
                     />
                   </CardContent>
                   <CardFooter className="p-4">
@@ -396,6 +398,7 @@ export function DashboardDetails() {
                         dashboardUid={uid} 
                         panel={panel} 
                         height={300}
+                        timeRange={parsedTimeRange}  // Añade el timeRange para que se muestre el mismo rango que el dashboard
                       />
                     </CardContent>
                     <CardFooter className="border-t p-2 text-xs text-muted-foreground">
