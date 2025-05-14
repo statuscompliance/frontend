@@ -29,18 +29,11 @@ const panelTypes = [
   { value: 'pie', label: 'Pie Chart' },
 ];
 
-// Available aggregation functions
-const aggregationFunctions = ['COUNT', 'SUM', 'AVG', 'MIN', 'MAX'];
-
 // Available operators for WHERE conditions
 const whereOperators = ['=', '>', '<', '>=', '<=', '<>', 'LIKE', 'IN', 'NOT IN'];
 
-// Hidden but still used by the form internally
 const tableAttributes = {
-  'Computations': ['id', 'name', 'status', 'created_at', 'updated_at', 'value'],
-  'Configurations': ['id', 'name', 'type', 'value', 'created_at'],
-  'Results': ['id', 'computation_id', 'value', 'status', 'created_at'],
-  'Metrics': ['id', 'name', 'value', 'timestamp']
+  'Points': ['id', 'agreementId', 'guaranteeId', 'guaranteeValue', 'guaranteeResult', 'timestamp', 'metrics', 'scope', 'computationGroup', 'createdAt', 'updatedAt']
 };
 
 export function AddPanelForm({ dashboardUid, onClose, onSuccess }) {
@@ -58,12 +51,12 @@ export function AddPanelForm({ dashboardUid, onClose, onSuccess }) {
       title: '',
       type: 'graph',
       description: '',
-      table: 'Computations', // Hidden from UI but kept for query building
+      table: 'Points',
       sqlQuery: {
-        aggregations: [{ func: 'COUNT', attr: 'id' }],
+        selectedFields: ['id', 'agreementId', 'guaranteeId', 'guaranteeValue', 'guaranteeResult', 'timestamp', 'metrics', 'scope', 'computationGroup'], // Todos los atributos excepto createdAt y updatedAt
         whereConditions: [],
         whereLogic: 'AND',
-        table: 'Computations'
+        table: 'Points'
       },
       showLegend: true,
       unit: '',
@@ -113,7 +106,7 @@ export function AddPanelForm({ dashboardUid, onClose, onSuccess }) {
   const generateSqlPreview = async () => {
     try {
       const queryData = getValues('sqlQuery');
-      if (queryData.aggregations.length === 0) return;
+      if (queryData.selectedFields.length === 0) return;
       
       setPreviewLoading(true);
       const response = await queriesService.buildSql(queryData);
@@ -176,20 +169,28 @@ export function AddPanelForm({ dashboardUid, onClose, onSuccess }) {
     }
   };
 
-  // Add an aggregation field
-  const addAggregation = () => {
-    const currentAggregations = getValues('sqlQuery.aggregations') || [];
-    setValue('sqlQuery.aggregations', [...currentAggregations, { func: 'COUNT', attr: tableAttributes[watchTable][0] }]);
+  // Add a field to select
+  const addField = () => {
+    const currentFields = getValues('sqlQuery.selectedFields') || [];
+    
+    const availableFields = tableAttributes[watchTable].filter(field => 
+      !currentFields.includes(field) && field !== 'createdAt' && field !== 'updatedAt'
+    );
+    if (availableFields.length > 0) {
+      setValue('sqlQuery.selectedFields', [...currentFields, availableFields[0]]);
+    } else {
+      toast.info('Todos los campos ya han sido seleccionados');
+    }
   };
 
-  // Remove an aggregation at the specified index
-  const removeAggregation = (index) => {
-    const currentAggregations = getValues('sqlQuery.aggregations') || [];
-    if (currentAggregations.length <= 1) {
-      toast.error('At least one aggregation is required');
+  // Remove a field at the specified index
+  const removeField = (index) => {
+    const currentFields = getValues('sqlQuery.selectedFields') || [];
+    if (currentFields.length <= 1) {
+      toast.error('Al menos un campo debe estar seleccionado');
       return;
     }
-    setValue('sqlQuery.aggregations', currentAggregations.filter((_, i) => i !== index));
+    setValue('sqlQuery.selectedFields', currentFields.filter((_, i) => i !== index));
   };
 
   // Add a WHERE condition
@@ -346,66 +347,47 @@ export function AddPanelForm({ dashboardUid, onClose, onSuccess }) {
                 <Card>
                   <CardContent className="pt-6">
                     <div className="space-y-4">
-                      {/* Aggregations Section */}
+                      {/* Fields Selection Section */}
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
-                          <FormLabel>Aggregations*</FormLabel>
+                          <FormLabel>Fields*</FormLabel>
                           <Button
                             type="button"
-                            onClick={addAggregation}
+                            onClick={addField}
                             variant="outline"
                             size="sm"
                           >
                             <PlusCircle className="mr-1 h-4 w-4" /> Add
                           </Button>
                         </div>
-                        {watchSqlQuery.aggregations?.map((agg, index) => (
+                        {watchSqlQuery.selectedFields?.map((fieldName, index) => (
                           <div key={index} className="flex flex-wrap items-center space-x-2">
                             <Select
-                              value={agg.func}
+                              value={fieldName}
                               onValueChange={(value) => {
-                                const updatedAggs = [...getValues('sqlQuery.aggregations')];
-                                updatedAggs[index].func = value;
-                                setValue('sqlQuery.aggregations', updatedAggs);
-                              }}
-                            >
-                              <SelectTrigger className="w-[110px]">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {aggregationFunctions.map((func) => (
-                                  <SelectItem key={func} value={func}>
-                                    {func}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <span>(</span>
-                            <Select
-                              value={agg.attr}
-                              onValueChange={(value) => {
-                                const updatedAggs = [...getValues('sqlQuery.aggregations')];
-                                updatedAggs[index].attr = value;
-                                setValue('sqlQuery.aggregations', updatedAggs);
+                                const updatedFields = [...getValues('sqlQuery.selectedFields')];
+                                updatedFields[index] = value;
+                                setValue('sqlQuery.selectedFields', updatedFields);
                               }}
                             >
                               <SelectTrigger className="flex-1">
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                {tableAttributes[watchTable]?.map((attr) => (
+                                {tableAttributes[watchTable]?.filter(attr => 
+                                  attr !== 'createdAt' && attr !== 'updatedAt'
+                                ).map((attr) => (
                                   <SelectItem key={attr} value={attr}>
                                     {attr}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
                             </Select>
-                            <span>)</span>
                             <Button
                               type="button"
                               variant="ghost"
                               size="icon"
-                              onClick={() => removeAggregation(index)}
+                              onClick={() => removeField(index)}
                             >
                               <Trash className="h-4 w-4 text-destructive" />
                             </Button>
@@ -413,10 +395,10 @@ export function AddPanelForm({ dashboardUid, onClose, onSuccess }) {
                         ))}
                       </div>
 
-                      {/* Where Conditions Section */}
+                      {/* Conditions Section */}
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
-                          <FormLabel>Where Conditions</FormLabel>
+                          <FormLabel>Conditions</FormLabel>
                           <Button
                             type="button"
                             onClick={addWhereCondition}

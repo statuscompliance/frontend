@@ -5,7 +5,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const GRAFANA_URL = import.meta.env.VITE_GRAFANA_URL || 'http://localhost:3100';
 
-export function DashboardPanel({ dashboardUid, panel, height = 300, preview = false }) {
+export function DashboardPanel({ dashboardUid, panel, height = 300, preview = false, timeRange = null }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [iframeUrl, setIframeUrl] = useState('');
@@ -22,34 +22,42 @@ export function DashboardPanel({ dashboardUid, panel, height = 300, preview = fa
       let baseUrl;
       
       if (preview) {
-        // En modo preview usamos una URL especial si está disponible
-        baseUrl = `${GRAFANA_URL}/d-solo/preview`;
+        // En modo preview usamos una vista previa local en lugar de un iframe
+        setLoading(false);
+        return;
       } else {
         // URL normal para paneles existentes
         baseUrl = `${GRAFANA_URL}/d-solo/${dashboardUid}`;
       }
 
-      // Parámetros comunes para la URL de Grafana
+      // Preparar parámetros de tiempo para Grafana
+      let fromTime = 'now-6h';
+      let toTime = 'now';
+      
+      // Si se proporciona un rango de tiempo, úsalo
+      if (timeRange && timeRange.from && timeRange.to) {
+        // Si es un timestamp o fecha, conviértelo al formato ISO
+        if (typeof timeRange.from === 'object' && timeRange.from instanceof Date) {
+          fromTime = timeRange.from.toISOString();
+        } else {
+          fromTime = timeRange.from;
+        }
+        
+        if (typeof timeRange.to === 'object' && timeRange.to instanceof Date) {
+          toTime = timeRange.to.toISOString();
+        } else {
+          toTime = timeRange.to;
+        }
+      }
+
+      // Parámetros para la URL de Grafana
       const params = new URLSearchParams({
         orgId: 1,
         panelId: panel.id,
-        from: 'now-6h',
-        to: 'now',
+        from: fromTime,
+        to: toTime,
         theme: 'light',
       });
-
-      // Si es una preview, podemos añadir el panel y su configuración
-      if (preview) {
-        // Convertimos los datos del panel a un formato que Grafana pueda leer
-        // Esto dependerá de la API específica de tu backend
-        params.append('panelData', JSON.stringify({
-          type: panel.type,
-          title: panel.title,
-          description: panel.description,
-          options: panel.options,
-          rawSql: panel.rawSql
-        }));
-      }
 
       setIframeUrl(`${baseUrl}?${params.toString()}`);
     } catch (err) {
@@ -58,7 +66,7 @@ export function DashboardPanel({ dashboardUid, panel, height = 300, preview = fa
     } finally {
       setLoading(false);
     }
-  }, [dashboardUid, panel, preview]);
+  }, [dashboardUid, panel, preview, timeRange]);
 
   // Manejador para cuando el iframe termina de cargar
   const handleIframeLoad = () => {
@@ -80,6 +88,34 @@ export function DashboardPanel({ dashboardUid, panel, height = 300, preview = fa
           {typeof error === 'object' ? JSON.stringify(error) : error}
         </AlertDescription>
       </Alert>
+    );
+  }
+
+  // Vista previa local para paneles en modo preview
+  if (preview) {
+    return (
+      <div style={{ height: `${height}px` }} className="flex flex-col items-center justify-center border rounded-md bg-muted/10 p-4">
+        <div className="mb-4 text-center">
+          <h3 className="font-medium">{panel.title || 'Panel Preview'}</h3>
+          {panel.description && <p className="mt-1 text-sm text-muted-foreground">{panel.description}</p>}
+        </div>
+        <div className="h-[70%] w-full flex items-center justify-center">
+          <div className="max-w-md text-center text-sm text-muted-foreground">
+            <p className="mb-2">Vista previa del panel tipo: <strong>{panel.type}</strong></p>
+            {panel.rawSql && (
+              <div className="mt-4 text-left">
+                <p className="mb-1 font-medium">SQL Query:</p>
+                <pre className="max-h-[100px] overflow-auto rounded-md bg-muted p-2 text-xs">
+                  {panel.rawSql}
+                </pre>
+              </div>
+            )}
+            <p className="mt-4 text-xs">
+              Esta es una vista previa. El panel se visualizará correctamente cuando se añada al dashboard.
+            </p>
+          </div>
+        </div>
+      </div>
     );
   }
 
