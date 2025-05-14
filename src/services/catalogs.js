@@ -2,15 +2,15 @@ import { apiClient } from '@/api/apiClient';
 
 /**
  * Gets all catalogs
- * @param {string} status - Optional status filter ('finalized' or 'draft')
+ * @param {string} [status] - Optional status filter: 'draft' or 'finalized'
  * @returns {Promise} - Promise with the list of catalogs
  */
-export function getAllCatalogs(status = null) {
-  let url = '/catalogs';
-  if (status) {
-    url += `?status=${encodeURIComponent(status)}`;
+export function getAllCatalogs(status) {
+  const config = {};
+  if (status === 'draft' || status === 'finalized') {
+    config.params = { status };
   }
-  return apiClient.get(url);
+  return apiClient.get('/catalogs', config);
 }
 
 /**

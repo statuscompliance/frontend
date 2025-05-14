@@ -2,15 +2,15 @@ import { apiClient } from '@/api/apiClient';
 
 /**
  * Gets all controls
- * * @param {string} status - Optional status filter ('finalized' or 'draft')
+ * @param {string} [status] - Optional status filter: 'draft' or 'finalized'
  * @returns {Promise} - Promise with the list of controls
  */
-export function getAllControls(status = null) {
-  let url = '/controls';
-  if (status) {
-    url += `?status=${encodeURIComponent(status)}`;
+export function getAllControls(status) {
+  const config = {};
+  if (status === 'draft' || status === 'finalized') {
+    config.params = { status };
   }
-  return apiClient.get(url);
+  return apiClient.get('/controls', config);
 }
 
 /**
