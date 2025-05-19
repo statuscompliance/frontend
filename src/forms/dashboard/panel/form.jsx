@@ -11,22 +11,25 @@ import { dashboardsService } from '@/services/grafana/dashboards';
 import { queriesService } from '@/services/grafana/queries';
 import { getAllControls } from '@/services/controls';
 import { Card, CardContent } from '@/components/ui/card';
-import { PlusCircle, Trash } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { PlusCircle, Trash, ChevronDown, ChevronRight } from 'lucide-react';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Switch } from '@/components/ui/switch';
 import { panelSchema } from './schemas';
 import { addPanelToControl } from '@/services/controls';
-import { DashboardPanel } from '@/components/dashboard/dashboard-panel';
+import { PanelPreview } from '@/components/dashboard/panel-preview';
+// import { Tabs, TabsContent, TabsList, TabsTrigger s} from '@/components/ui/tabs';
 
 // Available panel types with icons or descriptions
 const panelTypes = [
-  { value: 'graph', label: 'Line Graph' },
+  { value: 'timeseries', label: 'Time Series' },
   { value: 'gauge', label: 'Gauge' },
   { value: 'table', label: 'Table' },
   { value: 'stat', label: 'Stat' },
-  { value: 'timeseries', label: 'Time Series' },
   { value: 'bar', label: 'Bar Chart' },
   { value: 'pie', label: 'Pie Chart' },
+  { value: 'geomap', label: 'Map' },
+  { value: 'graph', label: 'Graph' },
 ];
 
 // Available operators for WHERE conditions
@@ -36,13 +39,17 @@ const tableAttributes = {
   'Points': ['id', 'agreementId', 'guaranteeId', 'guaranteeValue', 'guaranteeResult', 'timestamp', 'metrics', 'scope', 'computationGroup', 'createdAt', 'updatedAt']
 };
 
-export function AddPanelForm({ dashboardUid, onClose, onSuccess }) {
+export function AddPanelForm({ dashboardUid, onClose, onSuccess, dashboardTimeRange }) {
   const [loading, setLoading] = useState(false);
   const [previewLoading, setPreviewLoading] = useState(false);
-  const [previewPanel, setPreviewPanel] = useState(null);
   const [rawSql, setRawSql] = useState('');
   const [controls, setControls] = useState([]);
   const [loadingControls, setLoadingControls] = useState(false);
+  const [showTempDashboardPreview, setShowTempDashboardPreview] = useState(false);
+  const [panelConfigForPreview, setPanelConfigForPreview] = useState(null);
+  // Nuevos estados para controlar la expansión de las secciones
+  const [fieldsExpanded, setFieldsExpanded] = useState(false);
+  const [conditionsExpanded, setConditionsExpanded] = useState(false);
 
   // Setup form with zod validation
   const form = useForm({
@@ -53,10 +60,11 @@ export function AddPanelForm({ dashboardUid, onClose, onSuccess }) {
       description: '',
       table: 'Points',
       sqlQuery: {
-        selectedFields: ['id', 'agreementId', 'guaranteeId', 'guaranteeValue', 'guaranteeResult', 'timestamp', 'metrics', 'scope', 'computationGroup'], // Todos los atributos excepto createdAt y updatedAt
-        whereConditions: [],
-        whereLogic: 'AND',
-        table: 'Points'
+        model: 'Point',
+        operation: 'findAll',
+        options: {
+          attributes: ['id', 'agreementId', 'guaranteeId', 'guaranteeValue', 'guaranteeResult', 'timestamp', 'metrics', 'scope', 'computationGroup'],
+        }
       },
       showLegend: true,
       unit: '',
@@ -64,7 +72,7 @@ export function AddPanelForm({ dashboardUid, onClose, onSuccess }) {
       min: undefined,
       max: undefined,
       thresholds: [],
-      controlId: '' // New field for control association
+      controlId: ''
     }
   });
 
@@ -92,9 +100,11 @@ export function AddPanelForm({ dashboardUid, onClose, onSuccess }) {
     fetchControls();
   }, []);
   
-  // When table changes, update the sqlQuery table as well
+  // When table changes, update the sqlQuery model as well
   useEffect(() => {
-    setValue('sqlQuery.table', watchTable);
+    // Map table name to model name (removes trailing 's')
+    const modelName = watchTable.endsWith('s') ? watchTable.slice(0, -1) : watchTable;
+    setValue('sqlQuery.model', modelName);
   }, [watchTable, setValue]);
 
   // Generate SQL preview when query changes
@@ -106,7 +116,7 @@ export function AddPanelForm({ dashboardUid, onClose, onSuccess }) {
   const generateSqlPreview = async () => {
     try {
       const queryData = getValues('sqlQuery');
-      if (queryData.selectedFields.length === 0) return;
+      if (!queryData.options.attributes || queryData.options.attributes.length === 0) return;
       
       setPreviewLoading(true);
       const response = await queriesService.buildSql(queryData);
@@ -114,15 +124,15 @@ export function AddPanelForm({ dashboardUid, onClose, onSuccess }) {
       // Asegúrate de que rawSql sea una cadena de texto
       let sqlText = '';
       if (typeof response === 'object') {
-        if (response.data) {
-          sqlText = typeof response.data === 'string' 
-            ? response.data 
-            : JSON.stringify(response.data, null, 2);
+        if (response) {
+          sqlText = typeof response.query === 'string' 
+            ? response.query 
+            : JSON.stringify(response.query, null, 2);
         } else {
-          sqlText = JSON.stringify(response, null, 2);
+          sqlText = JSON.stringify(response.query, null, 2);
         }
       } else {
-        sqlText = String(response);
+        sqlText = String(response.query);
       }
       
       setRawSql(sqlText);
@@ -134,20 +144,31 @@ export function AddPanelForm({ dashboardUid, onClose, onSuccess }) {
     }
   };
 
-  const generatePanelPreview = async () => {
+  const generateTempDashboardPreview = async () => {
     try {
       if (!rawSql) await generateSqlPreview();
       
       setPreviewLoading(true);
-      // Create a temporary panel object for preview
       const panelData = getValues();
       
-      // For the preview, we need to create a panel-like object
-      const previewPanelData = {
-        id: 999, // Temporary ID
-        type: panelData.type,
+      // Create complete configuration for temporary dashboard preview
+      const previewConfig = {
         title: panelData.title || 'Panel Preview',
+        type: panelData.type,
         description: panelData.description || '',
+        sql: rawSql || '',
+        table: panelData.table,
+        controlId: panelData.controlId === 'none' ? '' : panelData.controlId,
+        dataSource: {
+          type: 'grafana-postgresql-datasource',
+          uid: 'P5E4ECD82955BB660'
+        },
+        sqlQuery: {
+          ...panelData.sqlQuery,
+          rawSql: rawSql
+        },
+        whereConditions: panelData.sqlQuery?.whereConditions || [],
+        selectedFields: panelData.sqlQuery?.selectedFields || [],
         options: {
           showLegend: panelData.showLegend,
           unit: panelData.unit || '',
@@ -156,13 +177,28 @@ export function AddPanelForm({ dashboardUid, onClose, onSuccess }) {
           max: panelData.max,
           thresholds: panelData.thresholds || []
         },
-        // Asegúrate de que rawSql sea una cadena
-        rawSql: rawSql || ''
+        dimensions: {
+          x: 0, 
+          y: 0,
+          w: 12,
+          h: 8
+        },
+        targets: [
+          {
+            rawSql: rawSql,
+            format: 'table'
+          }
+        ],
+        time: dashboardTimeRange || { from: 'now-7d', to: 'now' }
       };
       
-      setPreviewPanel(previewPanelData);
+      // Set configuration for dashboard preview component
+      setPanelConfigForPreview(previewConfig);
+      setShowTempDashboardPreview(true);
+      
+      toast.success('Creating temporary dashboard for preview...');
     } catch (error) {
-      console.error('Error generating panel preview:', error);
+      console.error('Error generating temp dashboard preview:', error);
       toast.error('Failed to generate panel preview');
     } finally {
       setPreviewLoading(false);
@@ -171,13 +207,13 @@ export function AddPanelForm({ dashboardUid, onClose, onSuccess }) {
 
   // Add a field to select
   const addField = () => {
-    const currentFields = getValues('sqlQuery.selectedFields') || [];
+    const currentFields = getValues('sqlQuery.options.attributes') || [];
     
     const availableFields = tableAttributes[watchTable].filter(field => 
       !currentFields.includes(field) && field !== 'createdAt' && field !== 'updatedAt'
     );
     if (availableFields.length > 0) {
-      setValue('sqlQuery.selectedFields', [...currentFields, availableFields[0]]);
+      setValue('sqlQuery.options.attributes', [...currentFields, availableFields[0]]);
     } else {
       toast.info('Todos los campos ya han sido seleccionados');
     }
@@ -185,18 +221,18 @@ export function AddPanelForm({ dashboardUid, onClose, onSuccess }) {
 
   // Remove a field at the specified index
   const removeField = (index) => {
-    const currentFields = getValues('sqlQuery.selectedFields') || [];
+    const currentFields = getValues('sqlQuery.options.attributes') || [];
     if (currentFields.length <= 1) {
       toast.error('Al menos un campo debe estar seleccionado');
       return;
     }
-    setValue('sqlQuery.selectedFields', currentFields.filter((_, i) => i !== index));
+    setValue('sqlQuery.options.attributes', currentFields.filter((_, i) => i !== index));
   };
 
   // Add a WHERE condition
   const addWhereCondition = () => {
-    const currentConditions = getValues('sqlQuery.whereConditions') || [];
-    setValue('sqlQuery.whereConditions', [
+    const currentConditions = getValues('sqlQuery.options.where') || [];
+    setValue('sqlQuery.options.where', [
       ...currentConditions, 
       { key: tableAttributes[watchTable][0], operator: '=', value: '' }
     ]);
@@ -204,8 +240,8 @@ export function AddPanelForm({ dashboardUid, onClose, onSuccess }) {
 
   // Remove a WHERE condition at the specified index
   const removeWhereCondition = (index) => {
-    const currentConditions = getValues('sqlQuery.whereConditions') || [];
-    setValue('sqlQuery.whereConditions', currentConditions.filter((_, i) => i !== index));
+    const currentConditions = getValues('sqlQuery.options.where') || [];
+    setValue('sqlQuery.options.where', currentConditions.filter((_, i) => i !== index));
   };
 
   // Submit the form to create a new panel
@@ -347,75 +383,108 @@ export function AddPanelForm({ dashboardUid, onClose, onSuccess }) {
                 <Card>
                   <CardContent className="pt-6">
                     <div className="space-y-4">
-                      {/* Fields Selection Section */}
+                      {/* Selected Fields Section - ahora con toggle */}
                       <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <FormLabel>Fields*</FormLabel>
-                          <Button
-                            type="button"
-                            onClick={addField}
-                            variant="outline"
-                            size="sm"
-                          >
-                            <PlusCircle className="mr-1 h-4 w-4" /> Add
-                          </Button>
-                        </div>
-                        {watchSqlQuery.selectedFields?.map((fieldName, index) => (
-                          <div key={index} className="flex flex-wrap items-center space-x-2">
-                            <Select
-                              value={fieldName}
-                              onValueChange={(value) => {
-                                const updatedFields = [...getValues('sqlQuery.selectedFields')];
-                                updatedFields[index] = value;
-                                setValue('sqlQuery.selectedFields', updatedFields);
-                              }}
-                            >
-                              <SelectTrigger className="flex-1">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {tableAttributes[watchTable]?.filter(attr => 
-                                  attr !== 'createdAt' && attr !== 'updatedAt'
-                                ).map((attr) => (
-                                  <SelectItem key={attr} value={attr}>
-                                    {attr}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                        <div 
+                          className="flex cursor-pointer items-center justify-between" 
+                          onClick={() => setFieldsExpanded(!fieldsExpanded)}
+                        >
+                          <div className="flex items-center space-x-2">
+                            {fieldsExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                            <FormLabel className="cursor-pointer">Selected Fields</FormLabel>
+                          </div>
+                          {fieldsExpanded && (
                             <Button
                               type="button"
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => removeField(index)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                addField();
+                              }}
+                              variant="outline"
+                              size="sm"
                             >
-                              <Trash className="h-4 w-4 text-destructive" />
+                              <PlusCircle className="mr-1 h-4 w-4" /> Add
                             </Button>
+                          )}
+                        </div>
+
+                        {fieldsExpanded && watchSqlQuery.options?.attributes?.length > 0 ? (
+                          <div className="space-y-2">
+                            {watchSqlQuery.options.attributes.map((field, index) => (
+                              <div key={index} className="flex items-center space-x-2">
+                                <Select
+                                  value={field}
+                                  onValueChange={(value) => {
+                                    const updatedFields = [...getValues('sqlQuery.options.attributes')];
+                                    updatedFields[index] = value;
+                                    setValue('sqlQuery.options.attributes', updatedFields);
+                                  }}
+                                >
+                                  <SelectTrigger className="flex-1">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {tableAttributes[watchTable]?.map((attr) => (
+                                      <SelectItem key={attr} value={attr}>
+                                        {attr}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => removeField(index)}
+                                >
+                                  <Trash className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </div>
+                            ))}
                           </div>
-                        ))}
+                        ) : fieldsExpanded ? (
+                          <div className="text-sm text-muted-foreground">
+                            No fields selected. Please add at least one field.
+                          </div>
+                        ) : (
+                          <div className="text-sm text-muted-foreground">
+                            {watchSqlQuery.options?.attributes?.length || 0} field(s) selected. Click to expand.
+                          </div>
+                        )}
                       </div>
 
                       {/* Conditions Section */}
                       <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <FormLabel>Conditions</FormLabel>
-                          <Button
-                            type="button"
-                            onClick={addWhereCondition}
-                            variant="outline"
-                            size="sm"
-                          >
-                            <PlusCircle className="mr-1 h-4 w-4" /> Add
-                          </Button>
+                        <div 
+                          className="flex cursor-pointer items-center justify-between" 
+                          onClick={() => setConditionsExpanded(!conditionsExpanded)}
+                        >
+                          <div className="flex items-center space-x-2">
+                            {conditionsExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                            <FormLabel className="cursor-pointer">Conditions</FormLabel>
+                          </div>
+                          {conditionsExpanded && (
+                            <Button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                addWhereCondition();
+                              }}
+                              variant="outline"
+                              size="sm"
+                            >
+                              <PlusCircle className="mr-1 h-4 w-4" /> Add
+                            </Button>
+                          )}
                         </div>
 
-                        {watchSqlQuery.whereConditions?.length > 0 ? (
+                        {conditionsExpanded && watchSqlQuery.options?.where?.length > 0 ? (
                           <>
                             <div className="mb-2 flex items-center space-x-2">
                               <FormLabel className="text-sm">Logic:</FormLabel>
                               <Select
-                                value={watchSqlQuery.whereLogic || 'AND'}
-                                onValueChange={(value) => setValue('sqlQuery.whereLogic', value)}
+                                value={watchSqlQuery.options.whereLogic || 'AND'}
+                                onValueChange={(value) => setValue('sqlQuery.options.whereLogic', value)}
                               >
                                 <SelectTrigger className="w-[100px]">
                                   <SelectValue />
@@ -427,14 +496,14 @@ export function AddPanelForm({ dashboardUid, onClose, onSuccess }) {
                               </Select>
                             </div>
 
-                            {watchSqlQuery.whereConditions.map((condition, index) => (
+                            {watchSqlQuery.options.where.map((condition, index) => (
                               <div key={index} className="flex flex-wrap items-center space-x-2">
                                 <Select
                                   value={condition.key}
                                   onValueChange={(value) => {
-                                    const updatedConditions = [...getValues('sqlQuery.whereConditions')];
+                                    const updatedConditions = [...getValues('sqlQuery.options.where')];
                                     updatedConditions[index].key = value;
-                                    setValue('sqlQuery.whereConditions', updatedConditions);
+                                    setValue('sqlQuery.options.where', updatedConditions);
                                   }}
                                 >
                                   <SelectTrigger className="w-[110px]">
@@ -448,16 +517,16 @@ export function AddPanelForm({ dashboardUid, onClose, onSuccess }) {
                                     ))}
                                   </SelectContent>
                                 </Select>
-
+        
                                 <Select
                                   value={condition.operator}
                                   onValueChange={(value) => {
-                                    const updatedConditions = [...getValues('sqlQuery.whereConditions')];
+                                    const updatedConditions = [...getValues('sqlQuery.options.where')];
                                     updatedConditions[index].operator = value;
-                                    setValue('sqlQuery.whereConditions', updatedConditions);
+                                    setValue('sqlQuery.options.where', updatedConditions);
                                   }}
                                 >
-                                  <SelectTrigger className="w-[80px]">
+                                  <SelectTrigger className="w-[90px]">
                                     <SelectValue />
                                   </SelectTrigger>
                                   <SelectContent>
@@ -468,17 +537,18 @@ export function AddPanelForm({ dashboardUid, onClose, onSuccess }) {
                                     ))}
                                   </SelectContent>
                                 </Select>
-
+                                
                                 <Input
+                                  className="min-w-[150px] flex-1"
+                                  placeholder="Value"
                                   value={condition.value}
                                   onChange={(e) => {
-                                    const updatedConditions = [...getValues('sqlQuery.whereConditions')];
+                                    const updatedConditions = [...getValues('sqlQuery.options.where')];
                                     updatedConditions[index].value = e.target.value;
-                                    setValue('sqlQuery.whereConditions', updatedConditions);
+                                    setValue('sqlQuery.options.where', updatedConditions);
                                   }}
-                                  placeholder="Value"
-                                  className="flex-1"
                                 />
+                                
                                 <Button
                                   type="button"
                                   variant="ghost"
@@ -490,9 +560,13 @@ export function AddPanelForm({ dashboardUid, onClose, onSuccess }) {
                               </div>
                             ))}
                           </>
-                        ) : (
+                        ) : conditionsExpanded ? (
                           <div className="text-sm text-muted-foreground">
                             No conditions added yet. Add a condition to filter your data.
+                          </div>
+                        ) : (
+                          <div className="text-sm text-muted-foreground">
+                            {watchSqlQuery.options?.where?.length || 0} condition(s) defined. Click to expand.
                           </div>
                         )}
                       </div>
@@ -601,23 +675,44 @@ export function AddPanelForm({ dashboardUid, onClose, onSuccess }) {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <FormLabel>Preview</FormLabel>
-                    <Button type="button" onClick={generatePanelPreview} variant="outline" size="sm">
-                      Generate Preview
-                    </Button>
+                    <div className="flex space-x-2">
+                      <Button 
+                        type="button" 
+                        onClick={generateTempDashboardPreview}
+                        variant="default" 
+                        size="sm"
+                      >
+                        Preview
+                      </Button>
+                    </div>
                   </div>
-                  <div className="h-[370px] flex items-center justify-center border rounded-lg bg-muted/20 p-4">
-                    {previewLoading ? (
-                      <div className="text-center">Loading preview...</div>
-                    ) : previewPanel ? (
-                      <div className="h-full w-full">
-                        <DashboardPanel dashboardUid={dashboardUid} panel={previewPanel} height={500} preview={true} />
+                  
+                  <Card className="border-primary-800">
+                    <CardContent className="p-4">
+                      <div className="h-[370px] flex items-center justify-center">
+                        {previewLoading ? (
+                          <div className="text-center">
+                            <Skeleton className="mb-4 h-40 w-full" />
+                            <p>Creating temporary dashboard...</p>
+                          </div>
+                        ) : showTempDashboardPreview && panelConfigForPreview ? (
+                          <div className="h-full w-full">
+                            <PanelPreview 
+                              panelConfig={panelConfigForPreview} 
+                              height={330} 
+                              baseDashboardUid={dashboardUid}
+                              customTimeRange={dashboardTimeRange || { from: 'now-24h', to: 'now' }}
+                            />
+                          </div>
+                        ) : (
+                          <div className="p-4 text-center text-muted-foreground">
+                            <p className="mb-2">Click &apos;Preview&apos; to see your panel with live data</p>
+                            <p className="text-xs">This will create a temporary dashboard in Grafana</p>
+                          </div>
+                        )}
                       </div>
-                    ) : (
-                      <div className="text-center text-muted-foreground">
-                        Click &apos;Generate Preview&apos; to see how your panel will look
-                      </div>
-                    )}
-                  </div>
+                    </CardContent>
+                  </Card>
                 </div>
               </div>
             </div>
