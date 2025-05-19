@@ -28,7 +28,6 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs';
-import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 // Schema for dashboard configuration
@@ -67,15 +66,14 @@ const chartTypes = [
 export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalogId, onSubmit, isSubmitting, apiError = null }) {
   const [selectedChart, setSelectedChart] = useState(null);
   const [submitError, setSubmitError] = useState(null);
-
   // Setup form with zod resolver
   const form = useForm({
     resolver: zodResolver(dashboardConfigSchema),
     defaultValues: {
-      title: initialConfig.title || `${catalogId} Dashboard`,
+      title: '',
       description: initialConfig.description || '',
       charts: initialConfig.charts || [],
-      showSummaryStats: initialConfig.showSummaryStats !== false,
+      showSummaryStats: true, // Siempre establecido a true
     },
   });
 
@@ -88,10 +86,10 @@ export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalo
   useEffect(() => {
     if (initialConfig && Object.keys(initialConfig).length > 0) {
       form.reset({
-        title: initialConfig.title || `${catalogId} Dashboard`,
+        title: initialConfig.title || '',
         description: initialConfig.description || '',
         charts: initialConfig.charts || [],
-        showSummaryStats: initialConfig.showSummaryStats !== false,
+        showSummaryStats: true, // Siempre establecido a true
       });
     }
   }, [initialConfig, catalogId, form]);
@@ -141,8 +139,6 @@ export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalo
 
   return (
     <div className="py-4">
-      <h2 className="mb-6 text-left text-xl font-semibold">Configure Dashboard</h2>
-      
       {submitError && (
         <Alert variant="destructive" className="mb-6">
           <AlertCircle className="h-4 w-4" />
@@ -156,8 +152,8 @@ export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalo
       )}
       
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-          <div className="grid grid-cols-2 gap-6">
+        <form onSubmit={form.handleSubmit(handleSubmit)} className="text-left space-y-6">
+          <div className="grid grid-cols-1 gap-6">
             <div>
               <FormField
                 control={form.control}
@@ -169,29 +165,6 @@ export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalo
                       <Input placeholder="Enter dashboard title" {...field} />
                     </FormControl>
                     <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            
-            <div>
-              <FormField
-                control={form.control}
-                name="showSummaryStats"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between border rounded-lg p-3 shadow-sm">
-                    <div className="space-y-0.5">
-                      <FormLabel>Show Summary Statistics</FormLabel>
-                      <p className="text-sm text-gray-500">
-                        Display summary metrics at the top of the dashboard
-                      </p>
-                    </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
                   </FormItem>
                 )}
               />
@@ -218,7 +191,7 @@ export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalo
 
           <div className="border-t pt-6">
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-lg font-medium">Dashboard Charts</h3>
+              <h4 className="text-lg font-medium">Charts</h4>
               <Button 
                 type="button" 
                 onClick={handleAddChart}
