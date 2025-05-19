@@ -2,7 +2,7 @@ import * as z from 'zod';
 
 export const panelSchema = z.object({
   title: z.string().min(1, { message: 'Title is required' }),
-  type: z.enum(['graph', 'gauge', 'table', 'stat', 'timeseries', 'bar', 'pie'], { 
+  type: z.enum(['graph', 'gauge', 'table', 'stat', 'timeseries', 'bar', 'pie', 'geomap'], { 
     message: 'Panel type must be selected' 
   }),
   description: z.string().optional(),
