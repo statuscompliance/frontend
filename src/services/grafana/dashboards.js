@@ -107,6 +107,25 @@ export const dashboardsService = {
   createTemplate: (data) => {
     return apiClient.post('/grafana/dashboard/template', data);
   },
+
+  /**
+   * Creates a temporary dashboard for panel previewing
+   * @param {object} panelConfig - Configuration for the panel to preview
+   * @param {string} [baseDashboardUid] - Optional UID of a dashboard to clone from
+   * @param {object} [options] - Additional options
+   * @returns {Promise} - Promise with the created temporary dashboard
+   */
+  createTemporaryDashboard: (panelConfig, baseDashboardUid = null, options = {}) => {
+    const data = {
+      panelConfig,
+      isTemporary: true,
+      title: `tmp-${baseDashboardUid}`,
+      baseDashboardUid,
+      timeRange: options.timeRange || { from: 'now-6h', to: 'now' },
+      autoCleanup: options.autoCleanup !== false // Enable automatic cleanup by default
+    };
+    return apiClient.post('/grafana/dashboard/temp', data);
+  },
 };
 
 export default dashboardsService;
