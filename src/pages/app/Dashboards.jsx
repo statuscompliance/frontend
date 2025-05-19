@@ -65,7 +65,6 @@ export function Dashboards() {
   };
 
   const handleDashboardFormSubmit = async (data) => {
-    console.log('DashboardForm data:', data);
     try {
       setLoading(true);
       await dashboardsService.createTemplate(data);

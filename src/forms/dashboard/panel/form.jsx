@@ -12,7 +12,7 @@ import { queriesService } from '@/services/grafana/queries';
 import { getAllControls } from '@/services/controls';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { PlusCircle, Trash, ChevronDown, ChevronRight } from 'lucide-react';
+import { PlusCircle, Trash, ChevronDown, ChevronRight, LineChart, GaugeCircle, Table2, Activity, BarChart4, Globe, TrendingUp } from 'lucide-react';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Switch } from '@/components/ui/switch';
 import { panelSchema } from './schemas';
@@ -22,21 +22,20 @@ import { PanelPreview } from '@/components/dashboard/panel-preview';
 
 // Available panel types with icons or descriptions
 const panelTypes = [
-  { value: 'timeseries', label: 'Time Series' },
-  { value: 'gauge', label: 'Gauge' },
-  { value: 'table', label: 'Table' },
-  { value: 'stat', label: 'Stat' },
-  { value: 'bar', label: 'Bar Chart' },
-  { value: 'pie', label: 'Pie Chart' },
-  { value: 'geomap', label: 'Map' },
-  { value: 'graph', label: 'Graph' },
+  { value: 'timeseries', label: 'Time Series', icon: LineChart },
+  { value: 'gauge', label: 'Gauge', icon: GaugeCircle },
+  { value: 'table', label: 'Table', icon: Table2 },
+  { value: 'stat', label: 'Stat', icon: Activity },
+  { value: 'bar', label: 'Bar Chart', icon: BarChart4 },
+  { value: 'geomap', label: 'Map', icon: Globe },
+  { value: 'graph', label: 'Graph', icon: TrendingUp },
 ];
 
 // Available operators for WHERE conditions
 const whereOperators = ['=', '>', '<', '>=', '<=', '<>', 'LIKE', 'IN', 'NOT IN'];
 
 const tableAttributes = {
-  'Points': ['id', 'agreementId', 'guaranteeId', 'guaranteeValue', 'guaranteeResult', 'timestamp', 'metrics', 'scope', 'computationGroup', 'createdAt', 'updatedAt']
+  'Point': ['id', 'agreementId', 'guaranteeId', 'guaranteeValue', 'guaranteeResult', 'timestamp', 'metrics', 'scope', 'computationGroup', 'createdAt', 'updatedAt']
 };
 
 export function AddPanelForm({ dashboardUid, onClose, onSuccess, dashboardTimeRange }) {
@@ -58,7 +57,7 @@ export function AddPanelForm({ dashboardUid, onClose, onSuccess, dashboardTimeRa
       title: '',
       type: 'graph',
       description: '',
-      table: 'Points',
+      table: 'Point',
       sqlQuery: {
         model: 'Point',
         operation: 'findAll',
@@ -325,7 +324,10 @@ export function AddPanelForm({ dashboardUid, onClose, onSuccess, dashboardTimeRa
                       <SelectContent>
                         {panelTypes.map((type) => (
                           <SelectItem key={type.value} value={type.value}>
-                            {type.label}
+                            <div className="flex items-center">
+                              <type.icon className="mr-2 h-4 w-4" />
+                              {type.label}
+                            </div>
                           </SelectItem>
                         ))}
                       </SelectContent>
