@@ -59,7 +59,6 @@ const defaultChartConfig = {
 };
 
 const chartTypes = [
-  { value: 'pie', label: 'Pie Chart', icon: PieChart },
   { value: 'bar', label: 'Bar Chart', icon: BarChart },
   { value: 'line', label: 'Line Chart', icon: LineChart },
   { value: 'table', label: 'Table', icon: Table2 },

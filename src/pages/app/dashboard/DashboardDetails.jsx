@@ -37,7 +37,7 @@ export function DashboardDetails() {
         setLoading(true);
         const response = await dashboardsService.getById(id);
         setDashboard(response);
-        
+
         if (response?.dashboard?.panels && response.dashboard.panels.length > 0) {
           setPanels(response.dashboard.panels);
         } else {
@@ -215,7 +215,7 @@ export function DashboardDetails() {
                       dashboardUid={uid} 
                       panel={panel} 
                       height={300}
-                      timeRange={parsedTimeRange}  // Añade el timeRange para que se muestre el mismo rango que el dashboard
+                      timeRange={parsedTimeRange}
                     />
                   </CardContent>
                   <CardFooter className="border-t p-2 text-xs text-muted-foreground">
@@ -620,6 +620,7 @@ export function DashboardDetails() {
           dashboardUid={uid}
           onClose={() => setShowAddPanelForm(false)}
           onSuccess={handlePanelAdded}
+          dashboardTimeRange={parsedTimeRange}
         />
       )}
     </Page>
