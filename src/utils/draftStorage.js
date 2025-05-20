@@ -4,6 +4,7 @@
 
 const CATALOG_DRAFT_KEY = 'catalog_draft_id';
 const CONTROLS_DRAFT_KEY = 'control_draft_ids';
+const DASHBOARD_UID_KEY = 'dashboard_draft_uid';
 
 /**
  * Saves a catalog draft ID to localStorage
@@ -52,6 +53,7 @@ export function getDraftControlIds() {
 export function clearDraftData() {
   localStorage.removeItem(CATALOG_DRAFT_KEY);
   localStorage.removeItem(CONTROLS_DRAFT_KEY);
+  localStorage.removeItem(DASHBOARD_UID_KEY);
 }
 
 /**
@@ -83,3 +85,20 @@ export function initializeControlIdsStorage() {
     localStorage.setItem(CONTROLS_DRAFT_KEY, JSON.stringify([]));
   }
 }
+
+// Save the temporary dashboard UID
+export const saveDraftDashboardUid = (uid) => {
+  if (uid) {
+    localStorage.setItem(DASHBOARD_UID_KEY, uid);
+  }
+};
+
+// Get the temporary dashboard UID
+export const getDraftDashboardUid = () => {
+  return localStorage.getItem(DASHBOARD_UID_KEY);
+};
+
+// Clear the temporary dashboard UID
+export const clearDraftDashboardUid = () => {
+  localStorage.removeItem(DASHBOARD_UID_KEY);
+};
