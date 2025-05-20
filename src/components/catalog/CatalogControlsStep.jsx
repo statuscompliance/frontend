@@ -22,6 +22,8 @@ import {
 import { getScopeSetsByControlId } from '@/services/scopes';
 import { Badge } from '@/components/ui/badge';
 import { saveDraftControlId, saveDraftControlIds, saveDraftCatalogId, initializeControlIdsStorage } from '@/utils/draftStorage';
+import { dashboardsService } from '@/services/grafana/dashboards';
+import { saveDraftDashboardUid } from '@/utils/draftStorage';
 
 export function CatalogControlsStep({ initialControls = [], catalogId, onSubmit, isSubmitting, apiError = null }) {
   const [controls, setControls] = useState([]);
@@ -192,7 +194,6 @@ export function CatalogControlsStep({ initialControls = [], catalogId, onSubmit,
           // If no catalogId, manually add the new control to the current list
           setControls(prevControls => [...prevControls, newControl]);
         }
-        toast.success(`Draft control "${newControl.name}" added successfully`);
       } catch (error) {
         console.error('Error updating controls list:', error);
         toast.error('Control was created but the list could not be updated');
@@ -227,7 +228,7 @@ export function CatalogControlsStep({ initialControls = [], catalogId, onSubmit,
       await deleteControl(currentControl.id);
       // After deletion, refresh the draft controls list
       await fetchDraftControls();
-      toast.success('Draft control deleted successfully');
+      toast.success('Control deleted successfully');
     } catch (error) {
       console.error('Error deleting draft control:', error);
       toast.error('Failed to delete draft control');
@@ -238,7 +239,7 @@ export function CatalogControlsStep({ initialControls = [], catalogId, onSubmit,
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setSubmitError(null);
     
     if (controls.length === 0) {
@@ -254,6 +255,34 @@ export function CatalogControlsStep({ initialControls = [], catalogId, onSubmit,
     
     if (catalogId) {
       saveDraftCatalogId(catalogId);
+    }
+    
+    try {
+      const dashboardName = `tmp-${Date.now()}-${catalogId}`;
+      
+      // Use the start date of the first control or the current date
+      let startDate = 'now-24h';
+      if (controls.length > 0 && controls[0].startDate) {
+        startDate = new Date(controls[0].startDate).toISOString();
+      }
+      
+      // Create the template dashboard
+      const dashboardResponse = await dashboardsService.createTemplate({
+        name: dashboardName,
+        timeRange: {
+          from: startDate,
+          to: 'now'
+        }
+      });
+
+      // Store the dashboard UID in localStorage
+      if (dashboardResponse?.dashboard && dashboardResponse.dashboard?.uid) {
+        const dashboardUid = dashboardResponse?.dashboard?.uid;
+        saveDraftDashboardUid(dashboardUid);
+      }
+    } catch (error) {
+      console.error('Error creating template dashboard:', error);
+      toast.warning('Could not create template dashboard, panels may not display correctly');
     }
     
     onSubmit(controls);
