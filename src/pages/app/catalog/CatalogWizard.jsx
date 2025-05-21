@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import Page from '@/components/basic-page.jsx';
 import { createDraftCatalog, updateCatalog, getCatalogById, deleteCatalog } from '@/services/catalogs';
 import { getControlById, deleteControl } from '@/services/controls';
+import { dashboardsService } from '@/services/grafana/dashboards';
 import { CatalogInfoStep } from '@/components/catalog/CatalogInfoStep';
 import { CatalogControlsStep } from '@/components/catalog/CatalogControlsStep';
 import { CatalogDashboardStep } from '@/components/catalog/CatalogDashboardStep';
@@ -16,7 +17,9 @@ import {
   clearDraftData, 
   hasDraftData,
   saveDraftCatalogId,
-  initializeControlIdsStorage
+  initializeControlIdsStorage,
+  hasDraftDashboardUid,
+  getDraftDashboardUid
 } from '@/utils/draftStorage';
 import {
   AlertDialog,
@@ -147,13 +150,28 @@ export function CatalogWizard() {
             }));
             
             if (hasDrafts && !showDraftDialog) {
-              setCurrentStep(1); // Controls step - Changed from Dashboard step (2)
+              // Check if we have a dashboard draft and redirect to dashboard step if so
+              if (hasDraftDashboardUid()) {
+                setCurrentStep(2); // Dashboard step
+              } else {
+                setCurrentStep(1); // Controls step
+              }
             }
           } else if (hasDrafts && !showDraftDialog) {
-            setCurrentStep(1);
+            // Check if we have a dashboard draft and redirect to dashboard step if so
+            if (hasDraftDashboardUid()) {
+              setCurrentStep(2); // Dashboard step
+            } else {
+              setCurrentStep(1); // Controls step
+            }
           }
         } else if (hasDrafts && !showDraftDialog) {
-          setCurrentStep(1);
+          // Check if we have a dashboard draft and redirect to dashboard step if so
+          if (hasDraftDashboardUid()) {
+            setCurrentStep(2); // Dashboard step
+          } else {
+            setCurrentStep(1); // Controls step
+          }
         }
         
         controlsFetchCompleted.current = true;
@@ -171,6 +189,11 @@ export function CatalogWizard() {
 
   const handleContinueDraft = () => {
     setShowDraftDialog(false);
+    
+    // Check if we have a dashboard draft and directly go to dashboard step if needed
+    if (hasDraftDashboardUid()) {
+      setCurrentStep(2); // Dashboard step
+    }
   };
 
   const handleDiscardDraft = async () => {
@@ -194,6 +217,17 @@ export function CatalogWizard() {
           await deleteControl(controlId);
         } catch (err) {
           console.error(`Error deleting draft control ${controlId}:`, err);
+        }
+      }
+      
+      // Delete dashboard draft if it exists
+      const dashboardUid = getDraftDashboardUid();
+      console.log('Draft dashboard UID:', dashboardUid);
+      if (dashboardUid) {
+        try {
+          await dashboardsService.delete(dashboardUid);
+        } catch (err) {
+          console.error(`Error deleting draft dashboard ${dashboardUid}:`, err);
         }
       }
       

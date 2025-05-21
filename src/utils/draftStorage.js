@@ -98,6 +98,11 @@ export const getDraftDashboardUid = () => {
   return localStorage.getItem(DASHBOARD_UID_KEY);
 };
 
+// Check if there is a draft dashboard UID in localStorage
+export const hasDraftDashboardUid = () => {
+  return !!localStorage.getItem(DASHBOARD_UID_KEY);
+};
+
 // Clear the temporary dashboard UID
 export const clearDraftDashboardUid = () => {
   localStorage.removeItem(DASHBOARD_UID_KEY);

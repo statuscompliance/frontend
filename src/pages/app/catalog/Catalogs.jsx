@@ -40,7 +40,12 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { CatalogForm } from '@/forms/catalog/forms';
 import { useAuth } from '@/hooks/use-auth';
-import { hasDraftData, getDraftCatalogId, getDraftControlIds, clearDraftData } from '@/utils/draftStorage';
+import { hasDraftData, 
+  getDraftCatalogId, 
+  getDraftControlIds, 
+  clearDraftData, 
+  getDraftDashboardUid 
+} from '@/utils/draftStorage';
 import { deleteControl } from '@/services/controls';
 
 const columnHelper = createColumnHelper();
@@ -66,7 +71,7 @@ export function Catalogs() {
   const fetchCatalogs = async () => {
     try {
       setLoading(true);
-      const response = await getAllCatalogs('finalized');
+      const response = await getAllCatalogs();
       setCatalogs(response);
       setError(null);
     } catch (err) {
@@ -119,6 +124,17 @@ export function Catalogs() {
           await deleteControl(controlId);
         } catch (err) {
           console.error(`Error deleting draft control ${controlId}:`, err);
+        }
+      }
+
+      // Delete dashboard draft if it exists
+      const dashboardUid = getDraftDashboardUid();
+      console.log('Draft dashboard UID:', dashboardUid);
+      if (dashboardUid) {
+        try {
+          await dashboardsService.delete(dashboardUid);
+        } catch (err) {
+          console.error(`Error deleting draft dashboard ${dashboardUid}:`, err);
         }
       }
       
