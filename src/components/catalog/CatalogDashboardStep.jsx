@@ -184,6 +184,10 @@ export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalo
     setSelectedPanel(fields.length);
     setShowAddPanelForm(false);
     toast.success('Panel added to dashboard');
+    
+    if (tempDashboardUid) {
+      loadDashboardPanels(tempDashboardUid);
+    }
   };
 
   const handlePanelRemoved = (panelId) => {
