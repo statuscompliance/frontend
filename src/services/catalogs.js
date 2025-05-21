@@ -5,12 +5,9 @@ import { apiClient } from '@/api/apiClient';
  * @param {string} [status] - Optional status filter: 'draft' or 'finalized'
  * @returns {Promise} - Promise with the list of catalogs
  */
-export function getAllCatalogs(status) {
-  const config = {};
-  if (status === 'draft' || status === 'finalized') {
-    config.params = { status };
-  }
-  return apiClient.get('/catalogs', config);
+export function getAllCatalogs(statusValue = 'finalized') {
+  const url = `/catalogs${statusValue !== null ? `?status=${encodeURIComponent(statusValue)}` : ''}`;
+  return apiClient.get(url);
 }
 
 /**
