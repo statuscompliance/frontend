@@ -136,9 +136,24 @@ export function deletePanelFromControl(controlId, panelId) {
  * Creates a new draft control
  * @param {object} controlData - Control data
  * @returns {Promise} - Promise with the created draft control
+ * @throws {Error} - Error with message from the server
  */
 export function createDraftControl(controlData) {
-  return apiClient.post('/controls/drafts', controlData);
+  return apiClient.post('/controls/drafts', controlData)
+    .then(response => response.data || response)
+    .catch(error => {
+      // Extract the specific error message if available
+      if (error.response && error.response.data) {
+        const errorData = error.response.data;
+        // Throw a new error with the specific message
+        throw {
+          status: error.response.status,
+          message: errorData.error || errorData.message || 'Failed to create draft control'
+        };
+      }
+      // Rethrow the original error if no detailed info
+      throw error;
+    });
 }
 
 /**
