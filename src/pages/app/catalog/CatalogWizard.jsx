@@ -222,7 +222,6 @@ export function CatalogWizard() {
       
       // Delete dashboard draft if it exists
       const dashboardUid = getDraftDashboardUid();
-      console.log('Draft dashboard UID:', dashboardUid);
       if (dashboardUid) {
         try {
           await dashboardsService.delete(dashboardUid);
