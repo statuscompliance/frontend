@@ -245,6 +245,7 @@ export function AddPanelForm({ dashboardUid, onClose, onSuccess, dashboardTimeRa
 
   // Submit the form to create a new panel
   const onSubmit = async (data) => {
+    console.log('Form data:', data);
     setLoading(true);
 
     try {
@@ -254,6 +255,7 @@ export function AddPanelForm({ dashboardUid, onClose, onSuccess, dashboardTimeRa
         controlId: data.controlId === 'none' ? '' : data.controlId, // Convertir "none" a string vacío
         rawSql: typeof rawSql === 'string' ? rawSql : JSON.stringify(rawSql)
       };
+      console.log('Panel data to be sent:', panelData);
       
       // Send the panel data to the API
       const response = await dashboardsService.addPanel(dashboardUid, panelData);
@@ -354,7 +356,7 @@ export function AddPanelForm({ dashboardUid, onClose, onSuccess, dashboardTimeRa
                       <SelectContent className="max-h-60 overflow-y-auto">
                         <SelectItem value="none">None</SelectItem>
                         {controls.map((control) => (
-                          <SelectItem key={control.id} value={control.id}>
+                          <SelectItem key={control.id} value={control.name}>
                             {control.name}
                           </SelectItem>
                         ))}
