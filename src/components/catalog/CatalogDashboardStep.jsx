@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -93,10 +93,11 @@ export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalo
     } else {
       toast.error('No dashboard template found. Please go back to the Controls step.');
     }
-  }, [fields.length, loadDashboardPanels]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fields.length]);
 
   // Function to load existing panels from the dashboard
-  const loadDashboardPanels = useCallback(async (dashboardUid) => {
+  const loadDashboardPanels = async (dashboardUid) => {
     try {
       const response = await dashboardsService.getPanels(dashboardUid);
       const panels = Array.isArray(response) ? response : (response.data || []);
@@ -116,7 +117,7 @@ export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalo
     } catch (error) {
       console.error('Error loading dashboard panels:', error);
     }
-  }, [form]);
+  };
 
   // Update form values when initialConfig changes
   useEffect(() => {
