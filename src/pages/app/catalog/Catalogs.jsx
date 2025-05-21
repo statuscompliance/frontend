@@ -47,6 +47,7 @@ import { hasDraftData,
   getDraftDashboardUid 
 } from '@/utils/draftStorage';
 import { deleteControl } from '@/services/controls';
+import { deleteScopeSetsByControlId } from '@/services/scopes';
 
 const columnHelper = createColumnHelper();
 
@@ -121,6 +122,7 @@ export function Catalogs() {
       const controlIds = getDraftControlIds();
       for (const controlId of controlIds) {
         try {
+          await deleteScopeSetsByControlId(controlId);
           await deleteControl(controlId);
         } catch (err) {
           console.error(`Error deleting draft control ${controlId}:`, err);
@@ -129,7 +131,6 @@ export function Catalogs() {
 
       // Delete dashboard draft if it exists
       const dashboardUid = getDraftDashboardUid();
-      console.log('Draft dashboard UID:', dashboardUid);
       if (dashboardUid) {
         try {
           await dashboardsService.delete(dashboardUid);

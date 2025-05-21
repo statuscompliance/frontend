@@ -182,13 +182,21 @@ export function NewControlForm({ catalogId, onClose, onSuccess, customSubmit = n
       }
     } catch (error) {
       console.error('Error creating control and scopes:', error);
-      const errorMessage = error.response?.data || 'Failed to create control and associate scopes';
-      toast.error(errorMessage);
+      // Handle specific error cases
+      if (error.status === 400) {
+        const errorMessage = error.message || 'Validation error in control data';
+        toast.error(errorMessage);
+      } else {
+        const errorMessage = error.response?.data?.msg || 
+                            error.response?.data?.message ||
+                            'Failed to create control and associate scopes';
+        toast.error(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
   };
-  
+
   // Function to format date for display in the calendar field
   const formatDate = (date) => {
     if (!date) return '';
