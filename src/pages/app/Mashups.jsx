@@ -36,6 +36,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useAuth } from '@/hooks/use-auth';
 import { Link } from 'react-router-dom';
+import { NODERED_BASE_URL } from '@/api/nodeRedClient';
 
 const columnHelper = createColumnHelper();
 
@@ -52,7 +53,6 @@ export function Mashups() {
     numNodes: false,
   });
   const { userData } = useAuth();
-  const nodeRedUrl = import.meta.env.VITE_NODE_RED_URL || 'http://localhost:1880';
 
   // Fetch flows on component mount
   useEffect(() => {
@@ -245,7 +245,7 @@ export function Mashups() {
         </DropdownMenu>
         <Button 
           className="border-2 border-sidebar-accent bg-sidebar-accent hover:bg-secondary hover:text-sidebar-accent"
-          onClick={() => window.open(nodeRedUrl, '_blank')}
+          onClick={() => window.open(NODERED_BASE_URL, '_blank')}
         >
           <ExternalLink className="mr-2 h-4 w-4" /> Open Node-RED
         </Button>

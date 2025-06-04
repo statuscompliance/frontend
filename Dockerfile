@@ -8,7 +8,8 @@ RUN npm ci --no-audit --legacy-peer-deps && npm run build
  
 FROM nginx:stable-alpine-slim
 
-COPY .docker/nginx.conf /etc/nginx/conf.d/default.conf
+COPY .docker/nginx.conf /etc/nginx/templates/default.conf.template
+
 RUN rm -rf /usr/share/nginx/html/*
 COPY --from=build /frontend/dist/ /usr/share/nginx/html/
 
