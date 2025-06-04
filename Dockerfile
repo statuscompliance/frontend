@@ -4,7 +4,7 @@ WORKDIR /frontend
  
 COPY . .
  
-RUN npm ci --no-audit --legacy-peer-deps && npm run build
+RUN npm ci --no-audit && npm run build
  
 FROM nginx:stable-alpine-slim
 
