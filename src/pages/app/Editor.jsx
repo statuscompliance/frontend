@@ -7,6 +7,7 @@ import { Loader2, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CircleAlert } from 'lucide-react';
+import { NODERED_BASE_URL } from '@/api/nodeRedClient';
 
 export function Editor() {
   const { id } = useParams();
@@ -16,7 +17,7 @@ export function Editor() {
   const flowName = location.state?.flowName || 'Flow';
   
   // URL del editor de Node-RED, obtenida de variables de entorno
-  const nodeRedUrl = `${import.meta.env.VITE_NODE_RED_URL || 'http://localhost:1880'}/#flow/${id}`;
+  const nodeRedUrl = `${NODERED_BASE_URL}/#flow/${id}`;
   
   // Manejo de carga del iframe
   const handleIframeLoad = () => {
