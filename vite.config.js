@@ -24,8 +24,8 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/api/v1': {
-        target: process.env.VITE_BASE_URL || 'http://127.0.0.1:3001',
+      '/backend': {
+        target: process.env.VITE_BASE_URL || 'http://127.0.0.1:3001/api/v1',
         changeOrigin: true
       },
       '/node-red': {
