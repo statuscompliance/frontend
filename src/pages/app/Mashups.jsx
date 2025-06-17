@@ -17,7 +17,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Edit, Trash, MoreHorizontal, ChevronDown, Loader2, ExternalLink } from 'lucide-react';
+import { Edit, Trash, MoreHorizontal, ChevronDown, Loader2, ExternalLink, Play } from 'lucide-react';
 import { toast } from 'sonner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import Page from '@/components/basic-page.jsx';
@@ -96,6 +96,15 @@ export function Mashups() {
     }
   }, [flows, flowToDelete]);
 
+  const handleTest = useCallback(async (flow) => {
+    try {
+      // Implementation for testing the flow would go here
+      toast.success(`Testing flow "${flow.label || 'Untitled Flow'}"`);
+    } catch (err) {
+      toast.error('Failed to test flow: ' + err.message);
+    }
+  }, []);
+
   const columns = useMemo(
     () => [
       {
@@ -162,15 +171,19 @@ export function Mashups() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                <DropdownMenuItem onClick={() => handleTest(flow)} className="">
+                  <Play className="mr-2 h-4 w-4 text-green-600" />
+                  Test
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => window.open(`/red#flow/${flow.id}`, '_blank')}>
                   <Edit className="mr-2 h-4 w-4" />
                   Edit in Node-RED
                 </DropdownMenuItem>
                 <DropdownMenuItem 
                   onClick={() => handleDeleteConfirm(flow)}
-                  className="text-red-600"
+                  className=""
                 >
-                  <Trash className="mr-2 h-4 w-4" />
+                  <Trash className="mr-2 h-4 w-4 text-red-600" />
                   Delete
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -179,7 +192,7 @@ export function Mashups() {
         },
       },
     ],
-    [handleDeleteConfirm, userData.authority]
+    [handleDeleteConfirm, handleTest, userData.authority]
   );
 
   const table = useReactTable({

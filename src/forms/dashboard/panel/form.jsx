@@ -153,6 +153,7 @@ export function AddPanelForm({ dashboardUid, onClose, onSuccess, dashboardTimeRa
       // Create complete configuration for temporary dashboard preview
       const previewConfig = {
         title: panelData.title || 'Panel Preview',
+        displayName: panelData.title || '',
         type: panelData.type,
         description: panelData.description || '',
         sql: rawSql || '',
@@ -214,7 +215,7 @@ export function AddPanelForm({ dashboardUid, onClose, onSuccess, dashboardTimeRa
     if (availableFields.length > 0) {
       setValue('sqlQuery.options.attributes', [...currentFields, availableFields[0]]);
     } else {
-      toast.info('Todos los campos ya han sido seleccionados');
+      toast.info('All available fields have been selected');
     }
   };
 
@@ -222,7 +223,7 @@ export function AddPanelForm({ dashboardUid, onClose, onSuccess, dashboardTimeRa
   const removeField = (index) => {
     const currentFields = getValues('sqlQuery.options.attributes') || [];
     if (currentFields.length <= 1) {
-      toast.error('Al menos un campo debe estar seleccionado');
+      toast.error('At least one field must be selected');
       return;
     }
     setValue('sqlQuery.options.attributes', currentFields.filter((_, i) => i !== index));
@@ -394,7 +395,7 @@ export function AddPanelForm({ dashboardUid, onClose, onSuccess, dashboardTimeRa
                 name="controlId"
                 render={({ field }) => (
                   <FormItem className="min-w-[200px] flex-1">
-                    <FormLabel>Associate with Control (Optional)</FormLabel>
+                    <FormLabel>Associate with Control*</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
