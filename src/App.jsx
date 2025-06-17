@@ -17,6 +17,12 @@ import { Dashboards } from '@/pages/app/Dashboards';
 import { DashboardDetails } from '@/pages/app/dashboard/DashboardDetails';
 import { FolderDetails } from '@/pages/app/dashboard/FolderDetails';
 import { Editor } from '@/pages/app/Editor';
+import { Datasources } from '@/pages/app/datasource/Datasources';
+import { DatasourceCreate } from '@/pages/app/datasource/DatasourceCreate';
+import { DatasourceEdit } from '@/pages/app/datasource/DatasourceEdit';
+import { Linkers } from '@/pages/app/linker/Linkers';
+import { LinkerCreate } from '@/pages/app/linker/LinkerCreate';
+import { LinkerEdit } from '@/pages/app/linker/LinkerEdit';
 import MainLayout from '@/layouts/MainLayout';
 import AppLayout from '@/layouts/AppLayout';
 import { Toaster } from '@/components/ui/sonner';
@@ -57,6 +63,16 @@ function App() {
                 <Route index element={<Dashboards />} />
                 <Route path=":id" element={<DashboardDetails />} />
                 <Route path="folders/:id" element={<FolderDetails />} />
+              </Route>
+              <Route path="datasources">
+                <Route index element={<Datasources />} />
+                <Route path="new" element={<DatasourceCreate />} />
+                <Route path=":id/edit" element={<DatasourceEdit />} />
+              </Route>
+              <Route path="linkers">
+                <Route index element={<Linkers />} />
+                <Route path="new" element={<LinkerCreate />} />
+                <Route path=":id/edit" element={<LinkerEdit />} />
               </Route>
               <Route path="scopes" element={<Scopes />} />
               <Route path="mashups" element={<Mashups />} />

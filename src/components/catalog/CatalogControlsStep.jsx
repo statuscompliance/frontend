@@ -368,11 +368,12 @@ export function CatalogControlsStep({ initialControls = [], catalogId, onSubmit,
                 </div>
               </CardHeader>
               <CardContent className="p-4 pt-2">
-                <p className="text-sm">{control.description}</p>
+                <p className="text-left text-sm">{control.description}</p>
                 
                 
                 
                 <div className="grid mt-2 gap-1 text-xs text-gray-500">
+                  <p className="text-left">Linker: SharePoint Linker</p>
                   
                   <div className='flex'>Start Date: {new Date(control.startDate).toLocaleDateString()}</div>
                   {control.endDate && <div className='flex'>End Date: {new Date(control.endDate).toLocaleDateString()}</div>}

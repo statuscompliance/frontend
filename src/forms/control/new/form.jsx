@@ -19,6 +19,7 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { controlSchema } from './schemas';
 import { saveDraftCatalogId } from '@/utils/draftStorage';
+import { getAllLinkers } from '@/services/linkers';
 
 export function NewControlForm({ catalogId, onClose, onSuccess, customSubmit = null }) {
   const [loading, setLoading] = useState(false);
@@ -30,6 +31,7 @@ export function NewControlForm({ catalogId, onClose, onSuccess, customSubmit = n
   const [scopeValue, setScopeValue] = useState('');
   const [selectedParam, setSelectedParam] = useState('');
   const [paramValue, setParamValue] = useState('');
+  const [availableLinkers, setAvailableLinkers] = useState([]);
 
   // Setup form with zod validation
   const form = useForm({
@@ -43,7 +45,8 @@ export function NewControlForm({ catalogId, onClose, onSuccess, customSubmit = n
       mashupId: '',
       params: {},
       scopes: {},
-      catalogId: catalogId
+      catalogId: catalogId,
+      linkerId: '', // Añadido linkerId
     }
   });
 
@@ -51,6 +54,7 @@ export function NewControlForm({ catalogId, onClose, onSuccess, customSubmit = n
   const watchMashupId = watch('mashupId');
   const watchParams = watch('params');
   const watchScopes = watch('scopes');
+  const watchLinkerId = form.watch('linkerId');
 
   useEffect(() => {
     // Fetch available scopes for the dropdown
@@ -75,8 +79,20 @@ export function NewControlForm({ catalogId, onClose, onSuccess, customSubmit = n
       }
     };
 
+    // Fetch available linkers for the dropdown
+    const fetchLinkers = async () => {
+      try {
+        const response = await getAllLinkers();
+        setAvailableLinkers(response);
+      } catch (error) {
+        console.error('Error fetching linkers:', error);
+        toast.error('Failed to fetch available linkers');
+      }
+    };
+
     fetchScopes();
     fetchMashups();
+    fetchLinkers();
   }, []);
 
   // When mashupId changes, fetch the params
@@ -379,6 +395,35 @@ export function NewControlForm({ catalogId, onClose, onSuccess, customSubmit = n
                       {availableMashups.map((mashup) => (
                         <SelectItem className="hover:cursor-pointer" key={mashup.id} value={mashup.id}>
                           {mashup.label || mashup.name} {mashup.url && `(${mashup.url})`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Nuevo campo para seleccionar Linker */}
+            <FormField
+              control={form.control}
+              name="linkerId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Linker*</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecciona un linker" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent className="max-h-60 overflow-y-auto">
+                      {availableLinkers.map((linker) => (
+                        <SelectItem key={linker.id} value={linker.id}>
+                          {linker.name}
                         </SelectItem>
                       ))}
                     </SelectContent>

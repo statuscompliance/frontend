@@ -153,6 +153,7 @@ export function AddPanelForm({ dashboardUid, onClose, onSuccess, dashboardTimeRa
       // Create complete configuration for temporary dashboard preview
       const previewConfig = {
         title: panelData.title || 'Panel Preview',
+        displayName: panelData.title || '',
         type: panelData.type,
         description: panelData.description || '',
         sql: rawSql || '',
@@ -346,7 +347,7 @@ export function AddPanelForm({ dashboardUid, onClose, onSuccess, dashboardTimeRa
                 name="controlId"
                 render={({ field }) => (
                   <FormItem className="min-w-[200px] flex-1">
-                    <FormLabel>Associate with Control (Optional)</FormLabel>
+                    <FormLabel>Associate with Control*</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
