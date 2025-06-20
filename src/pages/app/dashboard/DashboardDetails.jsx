@@ -15,9 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
 import { parseTimeRange } from '@/utils/timeRangeParser';
 import { useAuth } from '@/hooks/use-auth';
-
-
-const GRAFANA_URL = import.meta.env.VITE_GRAFANA_URL || 'http://localhost:3100';
+import { GRAFANA_BASE_URL } from '@/api/grafanaClient';
 
 export function DashboardDetails() {
   const { id } = useParams();
@@ -121,7 +119,7 @@ export function DashboardDetails() {
     to: isNaN(new Date(timeRange.to).getTime()) ? parseTimeRange(timeRange).to : timeRange.to
   };
   
-  const externalGrafanaUrl = url ? `${GRAFANA_URL}${url}` : '';
+  const externalGrafanaUrl = url ? `${GRAFANA_BASE_URL}${url}` : '';
 
   return (
     <Page dashboard={dashboardData}>

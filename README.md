@@ -46,9 +46,9 @@ npm install
 Create a `.env` file in the root directory with the following content:
 
 ```
-VITE_API_BASE_URL=http://localhost:3001/api/v1
-VITE_NODE_RED_URL=http://localhost:1880
-VITE_GRAFANA_URL=http://localhost:3100
+VITE_API_BASE_URL=http://127.0.0.1:3001/api/v1
+VITE_NODE_RED_URL=http://127.0.0.1:1880
+VITE_GRAFANA_URL=http://127.0.0.1:3100
 ```
 
 ## Running the Application
