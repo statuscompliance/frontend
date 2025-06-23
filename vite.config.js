@@ -31,13 +31,14 @@ export default defineConfig({
       '/node-red': {
         target: process.env.VITE_NODE_RED_URL || 'http://127.0.0.1:1880',
         changeOrigin: true,
-        ws: true
+        ws: true,
+        rewrite: path => path.replace(/^\/node-red/, '')
       },
       '/grafana': {
         target: process.env.VITE_GRAFANA_URL || 'http://127.0.0.1:3100',
         changeOrigin: true,
         ws: true
-        // rewrite: path => path.replace(/^\/grafana/, '')
+        rewrite: path => path.replace(/^\/grafana/, '')
       }
     }
   }
