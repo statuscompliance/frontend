@@ -1,37 +1,53 @@
 import { nodeRedClient } from '@/api/nodeRedClient';
-
 /**
- * Gets all Node-RED flows that contain API URLs
- * @returns {Promise} - Promise with the list of flows that contain API URLs
+ * Gets all Node-RED flows (tabs) and identifies their primary input types.
+ * @returns {Promise<Array>} - Promise with the list of Node-RED flow tabs,
+ * each enriched with 'mainInputType' and 'numNodes'.
  */
-export function getAllApiFlows() {
+export async function getAllNodeRedFlows() {
   return nodeRedClient.get('/flows')
     .then(response => {
-      const apiTabIds = new Set();
+      const flowsData = response.data;
       const nodeCounts = {};
-      const tabIdToUrl = {};
+      const tabInputTypes = {};
 
-      for (const flow of response.data) {
-        if (flow.type !== 'tab' && flow.z) {
-          nodeCounts[flow.z] = (nodeCounts[flow.z] || 0) + 1;
-          if (flow.type === 'http in') {
-            apiTabIds.add(flow.z);
-            tabIdToUrl[flow.z] = flow.url;
+      const inputNodeTypes = new Set([
+        'http in',
+        'mqtt in',
+        'websocket in',
+        'inject',
+        'cron',
+        'file in',
+        'tcp in',
+        'udp in'
+      ]);
+
+      for (const node of flowsData) {
+        if (node.type !== 'tab' && node.z) {
+          nodeCounts[node.z] = (nodeCounts[node.z] || 0) + 1;
+
+          if (inputNodeTypes.has(node.type)) {
+            if (!tabInputTypes[node.z] || node.type === 'http in') {
+              tabInputTypes[node.z] = node.type;
+            }
           }
         }
       }
 
-      const mashupsInfo = response.data.reduce((tabs, flow) => {
+      const allFlowsInfo = flowsData.reduce((tabs, flow) => {
         if (flow.type === 'tab') {
-          flow.numNodes = nodeCounts[flow.id] || 0;
-          if (apiTabIds.has(flow.id)) {
-            flow.url = tabIdToUrl[flow.id];
-            tabs.push(flow);
-          }
+          flow.numNodes = nodeCounts[flow.id] || 0; 
+          flow.mainInputType = tabInputTypes[flow.id] || 'None/Other';
+          tabs.push(flow);
         }
         return tabs;
       }, []);
-      return { data: mashupsInfo };
+
+      return { data: allFlowsInfo };
+    })
+    .catch(error => {
+      console.error("Error fetching all Node-RED flows:", error);
+      throw error;
     });
 }
 
@@ -43,7 +59,6 @@ export function getAllApiFlows() {
 export function getFlowById(id) {
   return nodeRedClient.get(`/flow/${id}`);
 }
-
 
 /**
  * Gets the flat params from all nodes in a flow by flowId.

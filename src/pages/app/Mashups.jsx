@@ -1,4 +1,5 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
+// src/pages/app/Mashups.jsx
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
@@ -17,12 +18,12 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Edit, Trash, MoreHorizontal, ChevronDown, Loader2, ExternalLink } from 'lucide-react';
+import { Edit, Trash, MoreHorizontal, ChevronDown, Loader2, ExternalLink, Play } from 'lucide-react';
 import { toast } from 'sonner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import Page from '@/components/basic-page.jsx';
-import { 
-  getAllApiFlows
+import {
+  getAllNodeRedFlows // Asegúrate de usar la nueva función
 } from '@/services/mashups';
 import {
   AlertDialog,
@@ -36,6 +37,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useAuth } from '@/hooks/use-auth';
 import { Link } from 'react-router-dom';
+import { TestMashupWorkflowModal } from '@/components/mashups/testMashupWorkflowModal';
 
 const columnHelper = createColumnHelper();
 
@@ -50,11 +52,16 @@ export function Mashups() {
     id: false,
     url: false,
     numNodes: false,
+    mainInputType: false, // Asegúrate de que esta columna también esté en tu estado
   });
+
+  // NEW: Estado para el modal de test y el mashup seleccionado para testear
+  const [isTestModalOpen, setIsTestModalOpen] = useState(false);
+  const [selectedMashupForTest, setSelectedMashupForTest] = useState(null);
+
   const { userData } = useAuth();
   const nodeRedUrl = import.meta.env.VITE_NODE_RED_URL || 'http://localhost:1880';
 
-  // Fetch flows on component mount
   useEffect(() => {
     fetchFlows();
   }, []);
@@ -62,13 +69,13 @@ export function Mashups() {
   const fetchFlows = async () => {
     try {
       setLoading(true);
-      const response = await getAllApiFlows();
+      const response = await getAllNodeRedFlows(); // Usamos la nueva función
       setFlows(response.data);
       setError(null);
     } catch (err) {
-      setError('Failed to load API flows. Please try again later.');
-      toast.error('Error loading API flows');
-      console.error('Error fetching API flows:', err);
+      setError('Failed to load Node-RED flows. Please try again later.'); // Mensaje actualizado
+      toast.error('Error loading Node-RED flows'); // Mensaje actualizado
+      console.error('Error fetching Node-RED flows:', err);
     } finally {
       setLoading(false);
     }
@@ -80,11 +87,10 @@ export function Mashups() {
 
   const handleDelete = useCallback(async () => {
     if (!flowToDelete) return;
-    
+
     try {
       setLoading(true);
-      // Implementation for delete would go here
-      // await deleteFlow(flowToDelete.id);
+      // await deleteFlow(flowToDelete.id); // Lógica de eliminación real
       setFlows(flows.filter((flow) => flow.id !== flowToDelete.id));
       toast.success('Flow deleted successfully');
     } catch (err) {
@@ -95,6 +101,17 @@ export function Mashups() {
       setFlowToDelete(null);
     }
   }, [flows, flowToDelete]);
+
+  // NEW: Función para abrir el modal de test con el mashup específico
+  const handleOpenTestModal = useCallback((mashup) => {
+    setSelectedMashupForTest(mashup);
+    setIsTestModalOpen(true);
+  }, []);
+
+  const handleCloseTestModal = useCallback(() => {
+    setIsTestModalOpen(false);
+    setSelectedMashupForTest(null); // Limpiar la selección al cerrar
+  }, []);
 
   const columns = useMemo(
     () => [
@@ -140,13 +157,37 @@ export function Mashups() {
         cell: (info) => info.getValue() || 'No ID',
         meta: { hideByDefault: true },
       }),
+      // NEW: Columna de tipo de entrada principal
+      columnHelper.accessor('mainInputType', {
+        header: 'Main Input Type',
+        cell: (info) => {
+          const type = info.getValue();
+          switch (type) {
+            case 'http in': return 'HTTP API';
+            case 'inject': return 'Manual Trigger';
+            case 'mqtt in': return 'MQTT Subscriber';
+            case 'websocket in': return 'WebSocket Listener';
+            case 'cron': return 'Scheduled Task';
+            default: return type;
+          }
+        },
+      }),
+      // NEW: Columna de URL modificada para ser condicional y mostrar link
       columnHelper.accessor('url', {
         header: 'Mashup Endpoint',
-        cell: (info) => info.getValue() || 'No URL',
+        cell: (info) => {
+          const flow = info.row.original;
+          return flow.mainInputType === 'http in' && flow.url
+            ? <a href={`${nodeRedUrl}${flow.url}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+              {flow.url} <ExternalLink className="inline-block ml-1 h-3 w-3" />
+            </a>
+            : 'N/A';
+        },
       }),
       columnHelper.accessor('numNodes', {
         header: 'Total Pipes',
         cell: (info) => info.getValue() || 0,
+        meta: { hideByDefault: true }, // Opcional: Ocultar por defecto si no es una prioridad
       }),
       {
         id: 'actions',
@@ -162,11 +203,16 @@ export function Mashups() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                {/* NEW: Botón Test Mashup dentro del DropdownMenu */}
+                <DropdownMenuItem onClick={() => handleOpenTestModal(flow)}>
+                  <Play className="mr-2 h-4 w-4 text-green-600" />
+                  Test Mashup
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => window.open(`/red#flow/${flow.id}`, '_blank')}>
                   <Edit className="mr-2 h-4 w-4" />
                   Edit in Node-RED
                 </DropdownMenuItem>
-                <DropdownMenuItem 
+                <DropdownMenuItem
                   onClick={() => handleDeleteConfirm(flow)}
                   className="text-red-600"
                 >
@@ -179,7 +225,7 @@ export function Mashups() {
         },
       },
     ],
-    [handleDeleteConfirm, userData.authority]
+    [handleDeleteConfirm, handleOpenTestModal, userData.authority, nodeRedUrl] // Añadir nodeRedUrl a las dependencias
   );
 
   const table = useReactTable({
@@ -236,27 +282,38 @@ export function Mashups() {
                           ? 'Total pipes'
                           : column.id === 'label'
                             ? 'Mashup Name'
-                            : column.id}
+                            : column.id === 'mainInputType' // Nuevo caso
+                              ? 'Main Input Type'
+                              : column.id}
                     </span>
                   </DropdownMenuItem>
                 );
               })}
           </DropdownMenuContent>
         </DropdownMenu>
-        <Button 
+
+        {/* OLD: Eliminar este botón global de Test Mashup */}
+        {/* <Button
+            className="border-2 border-green-600 bg-green-500 hover:bg-green-700 text-white"
+            onClick={() => setIsTestModalOpen(true)}
+        >
+            <Play className="mr-2 h-4 w-4" /> Test Mashup
+        </Button> */}
+
+        <Button
           className="border-2 border-sidebar-accent bg-sidebar-accent hover:bg-secondary hover:text-sidebar-accent"
           onClick={() => window.open(nodeRedUrl, '_blank')}
         >
           <ExternalLink className="mr-2 h-4 w-4" /> Open Node-RED
         </Button>
       </div>
-      
+
       {error && (
         <div className="my-4 border border-red-400 rounded bg-red-100 px-4 py-3 text-red-700">
           {error}
         </div>
       )}
-      
+
       <div className="mt-4 border rounded-md">
         <Table>
           <TableHeader className="bg-gray-50">
@@ -276,12 +333,12 @@ export function Mashups() {
                 <TableCell colSpan={columns.length} className="h-24 text-center">
                   <div className="flex items-center justify-center">
                     <Loader2 className="mr-2 h-6 w-6 animate-spin" />
-                    Loading API flows...
+                    Loading Node-RED flows...
                   </div>
                 </TableCell>
               </TableRow>
             )}
-            
+
             {!loading && table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow className="text-left" key={row.id} data-state={row.getIsSelected() && 'selected'}>
@@ -293,14 +350,14 @@ export function Mashups() {
             ) : !loading && (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                  No API flows found.
+                  No Node-RED flows found.
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
       </div>
-      
+
       <div className="flex items-center justify-end py-4 space-x-2">
         <Button variant="outline" size="sm" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
           Previous
@@ -309,7 +366,7 @@ export function Mashups() {
           Next
         </Button>
       </div>
-      
+
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!flowToDelete} onOpenChange={(isOpen) => !isOpen && setFlowToDelete(null)}>
         <AlertDialogContent>
@@ -334,6 +391,14 @@ export function Mashups() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* NEW: Test Mashup Workflow Modal */}
+      <TestMashupWorkflowModal
+        isOpen={isTestModalOpen}
+        onClose={handleCloseTestModal} // Usamos el nuevo handler para cerrar
+        allMashups={flows}
+        selectedMashup={selectedMashupForTest} // Pasamos el mashup seleccionado
+      />
     </Page>
   );
 }
