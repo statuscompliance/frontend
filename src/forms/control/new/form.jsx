@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { createControl } from '@/services/controls';
 import { getAllScopes, createScopeSet } from '@/services/scopes';
-import { getAllApiFlows, getFlowParams } from '@/services/mashups';
+import { getAllNodeRedFlows, getFlowParams } from '@/services/mashups';
 import { PlusCircle, X, CalendarIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -66,7 +66,7 @@ export function NewControlForm({ catalogId, onClose, onSuccess }) {
     // Fetch available mashups for the dropdown
     const fetchMashups = async () => {
       try {
-        const response = await getAllApiFlows();
+        const response = await getAllNodeRedFlows();
         setAvailableMashups(response.data);
       } catch (error) {
         console.error('Error fetching mashups:', error);
