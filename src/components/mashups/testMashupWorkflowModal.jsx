@@ -8,11 +8,11 @@ import { ComboBox } from '@/components/ui/combobox';
 import { Input } from '@/components/ui/input';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-
 import {
   getAllCatalogs,
   createTestControl,
-  executeNodeRedMashup, // Importa la función actualizada
+  // triggerControlCalculation, // <--- ELIMINAR ESTA IMPORTACIÓN
+  getControlTestResults,
 } from '@/services/testMashup';
 
 /**
@@ -26,38 +26,34 @@ import {
  */
 export function TestMashupWorkflowModal({ isOpen, onClose, allMashups, selectedMashup }) {
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(1); 
 
   const [catalogs, setCatalogs] = useState([]);
   const [selectedCatalogId, setSelectedCatalogId] = useState('');
 
   const [selectedMashupId, setSelectedMashupId] = useState('');
-  const [mashupName, setMashupName] = useState('');
+  const [mashupName, setMashupName] = useState(''); 
 
-  const [controlId, setControlId] = useState(null); // ID del control draft creado
-  const [testResults, setTestResults] = useState(null); // Contendrá la respuesta directa del mashup
+  const [controlId, setControlId] = useState(null);
+  const [testResults, setTestResults] = useState(null);
 
-  const [createdControlData, setCreatedControlData] = useState(null);
+  const [createdControlData, setCreatedControlData] = useState(null); // Estado para guardar el control completo
 
-  const mashupOptions = allMashups
-    // Filtramos si solo quieres mostrar flujos que tienen un endpoint en la segunda posición
-    .filter(mashup => mashup.hasOwnProperty('endpoints') && Array.isArray(mashup.endpoints) && mashup.endpoints.length > 1 && mashup.endpoints[1].url)
-    .map(mashup => ({
-      value: mashup.id,
-      label: mashup.label || `Mashup ID: ${mashup.id}`,
-      // Extrae el endpoint del segundo elemento del array 'endpoints'
-      endpoint: mashup.endpoints[1].url // <-- ¡CORRECCIÓN AQUÍ!
-    }));
+  const mashupOptions = allMashups.map(mashup => ({
+    value: mashup.id,
+    label: mashup.label || `Mashup ID: ${mashup.id}`,
+  }));
 
   useEffect(() => {
     if (!isOpen) {
+      // Resetear estados al cerrar el modal
       setStep(1);
       setTestResults(null);
       setControlId(null);
       setSelectedCatalogId('');
       setSelectedMashupId('');
       setMashupName('');
-      setCreatedControlData(null);
+      setCreatedControlData(null); // Resetear el control completo
       return;
     }
 
