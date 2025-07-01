@@ -1,5 +1,4 @@
-// src/pages/app/Mashups.jsx
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
@@ -18,12 +17,12 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Edit, Trash, MoreHorizontal, ChevronDown, Loader2, ExternalLink, Play } from 'lucide-react';
+import { Edit, Trash, MoreHorizontal, ChevronDown, Loader2, ExternalLink, Play } from 'lucide-react'; // Importamos 'Play'
 import { toast } from 'sonner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import Page from '@/components/basic-page.jsx';
 import {
-  getAllNodeRedFlows // Asegúrate de usar la nueva función
+  getAllNodeRedFlows,
 } from '@/services/mashups';
 import {
   AlertDialog,
@@ -37,7 +36,10 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useAuth } from '@/hooks/use-auth';
 import { Link } from 'react-router-dom';
-import { TestMashupWorkflowModal } from '@/components/mashups/testMashupWorkflowModal';
+
+// Importamos el componente de vista de testeo
+import { ControlCreationAndTestView } from '@/components/mashups/ControlCreationAndTestView';
+
 
 const columnHelper = createColumnHelper();
 
@@ -52,16 +54,16 @@ export function Mashups() {
     id: false,
     url: false,
     numNodes: false,
-    mainInputType: false, // Asegúrate de que esta columna también esté en tu estado
   });
-
-  // NEW: Estado para el modal de test y el mashup seleccionado para testear
-  const [isTestModalOpen, setIsTestModalOpen] = useState(false);
-  const [selectedMashupForTest, setSelectedMashupForTest] = useState(null);
-
   const { userData } = useAuth();
   const nodeRedUrl = import.meta.env.VITE_NODE_RED_URL || 'http://localhost:1880';
 
+  // Estados para el diálogo de testeo
+  const [isTestViewOpen, setIsTestViewOpen] = useState(false);
+  const [selectedMashupForTest, setSelectedMashupForTest] = useState(null);
+
+
+  // Fetch flows on component mount
   useEffect(() => {
     fetchFlows();
   }, []);
@@ -69,13 +71,15 @@ export function Mashups() {
   const fetchFlows = async () => {
     try {
       setLoading(true);
-      const response = await getAllNodeRedFlows(); // Usamos la nueva función
+      const response = await getAllNodeRedFlows();
+      // Asumimos que getAllNodeRedFlows devuelve también 'mainInputType' y 'url'
+      // Si no es así, deberías ajustar la llamada o el servicio getAllNodeRedFlows
       setFlows(response.data);
       setError(null);
     } catch (err) {
-      setError('Failed to load Node-RED flows. Please try again later.'); // Mensaje actualizado
-      toast.error('Error loading Node-RED flows'); // Mensaje actualizado
-      console.error('Error fetching Node-RED flows:', err);
+      setError('Failed to load API flows. Please try again later.');
+      toast.error('Error loading API flows');
+      console.error('Error fetching API flows:', err);
     } finally {
       setLoading(false);
     }
@@ -90,7 +94,8 @@ export function Mashups() {
 
     try {
       setLoading(true);
-      // await deleteFlow(flowToDelete.id); // Lógica de eliminación real
+      // Aquí iría la implementación para eliminar el flujo
+      // await deleteFlow(flowToDelete.id); // Descomenta y implementa deleteFlow
       setFlows(flows.filter((flow) => flow.id !== flowToDelete.id));
       toast.success('Flow deleted successfully');
     } catch (err) {
@@ -102,16 +107,23 @@ export function Mashups() {
     }
   }, [flows, flowToDelete]);
 
-  // NEW: Función para abrir el modal de test con el mashup específico
-  const handleOpenTestModal = useCallback((mashup) => {
+
+  // Handler para abrir la vista de testeo de un mashup específico
+  const handleOpenTestView = useCallback((mashup) => {
+    console.log('[Mashups] Abriendo vista de testeo para mashup:', JSON.stringify(mashup, null, 2));
     setSelectedMashupForTest(mashup);
-    setIsTestModalOpen(true);
+    setIsTestViewOpen(true);
   }, []);
 
-  const handleCloseTestModal = useCallback(() => {
-    setIsTestModalOpen(false);
-    setSelectedMashupForTest(null); // Limpiar la selección al cerrar
+  // Handler para cerrar la vista de testeo
+  const handleCloseTestView = useCallback(() => {
+    console.log('[Mashups] Cerrando vista de testeo.');
+    setIsTestViewOpen(false);
+    setSelectedMashupForTest(null);
+    // Opcionalmente, puedes volver a cargar los flujos aquí si es necesario
+    // fetchFlows();
   }, []);
+
 
   const columns = useMemo(
     () => [
@@ -157,37 +169,13 @@ export function Mashups() {
         cell: (info) => info.getValue() || 'No ID',
         meta: { hideByDefault: true },
       }),
-      // NEW: Columna de tipo de entrada principal
-      columnHelper.accessor('mainInputType', {
-        header: 'Main Input Type',
-        cell: (info) => {
-          const type = info.getValue();
-          switch (type) {
-            case 'http in': return 'HTTP API';
-            case 'inject': return 'Manual Trigger';
-            case 'mqtt in': return 'MQTT Subscriber';
-            case 'websocket in': return 'WebSocket Listener';
-            case 'cron': return 'Scheduled Task';
-            default: return type;
-          }
-        },
-      }),
-      // NEW: Columna de URL modificada para ser condicional y mostrar link
       columnHelper.accessor('url', {
         header: 'Mashup Endpoint',
-        cell: (info) => {
-          const flow = info.row.original;
-          return flow.mainInputType === 'http in' && flow.url
-            ? <a href={`${nodeRedUrl}${flow.url}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-              {flow.url} <ExternalLink className="inline-block ml-1 h-3 w-3" />
-            </a>
-            : 'N/A';
-        },
+        cell: (info) => info.getValue() || 'No URL',
       }),
       columnHelper.accessor('numNodes', {
         header: 'Total Pipes',
         cell: (info) => info.getValue() || 0,
-        meta: { hideByDefault: true }, // Opcional: Ocultar por defecto si no es una prioridad
       }),
       {
         id: 'actions',
@@ -203,11 +191,6 @@ export function Mashups() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                {/* NEW: Botón Test Mashup dentro del DropdownMenu */}
-                <DropdownMenuItem onClick={() => handleOpenTestModal(flow)}>
-                  <Play className="mr-2 h-4 w-4 text-green-600" />
-                  Test Mashup
-                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => window.open(`/red#flow/${flow.id}`, '_blank')}>
                   <Edit className="mr-2 h-4 w-4" />
                   Edit in Node-RED
@@ -224,8 +207,28 @@ export function Mashups() {
           );
         },
       },
+      // Nueva columna para el botón de Test
+      columnHelper.display({
+        id: 'test_action',
+        header: 'Test',
+        cell: ({ row }) => {
+          const mashup = row.original;
+          return (
+            <Button
+              variant="default" // Puedes elegir un variante sólido como "default"
+              className="bg-green-600 hover:bg-green-700 text-white" // Botón verde
+              onClick={() => handleOpenTestView(mashup)}
+              disabled={false} // Se deshabilita si no es testeable
+            >
+              <Play className="mr-2 h-4 w-4" /> Test
+            </Button>
+          );
+        },
+        enableSorting: false,
+        enableHiding: false,
+      }),
     ],
-    [handleDeleteConfirm, handleOpenTestModal, userData.authority, nodeRedUrl] // Añadir nodeRedUrl a las dependencias
+    [handleDeleteConfirm, userData.authority, handleOpenTestView]
   );
 
   const table = useReactTable({
@@ -276,14 +279,15 @@ export function Mashups() {
                       onCheckedChange={(value) => column.toggleVisibility(!!value)}
                     />
                     <span className="ml-2">
-                      {column.id === 'info'
+                      {/* --- CAMBIO CLAVE AQUÍ --- */}
+                      {column.id === 'description' // ¡AHORA ES 'description', no 'info'!
                         ? 'Description'
                         : column.id === 'numNodes'
                           ? 'Total pipes'
-                          : column.id === 'label'
+                          : column.id === 'name' // ¡AHORA ES 'name', no 'label'!
                             ? 'Mashup Name'
-                            : column.id === 'mainInputType' // Nuevo caso
-                              ? 'Main Input Type'
+                            : column.id === 'endpoint' // Agregado para 'endpoint' si no lo tenías antes
+                              ? 'Mashup Endpoint'
                               : column.id}
                     </span>
                   </DropdownMenuItem>
@@ -291,15 +295,6 @@ export function Mashups() {
               })}
           </DropdownMenuContent>
         </DropdownMenu>
-
-        {/* OLD: Eliminar este botón global de Test Mashup */}
-        {/* <Button
-            className="border-2 border-green-600 bg-green-500 hover:bg-green-700 text-white"
-            onClick={() => setIsTestModalOpen(true)}
-        >
-            <Play className="mr-2 h-4 w-4" /> Test Mashup
-        </Button> */}
-
         <Button
           className="border-2 border-sidebar-accent bg-sidebar-accent hover:bg-secondary hover:text-sidebar-accent"
           onClick={() => window.open(nodeRedUrl, '_blank')}
@@ -333,7 +328,7 @@ export function Mashups() {
                 <TableCell colSpan={columns.length} className="h-24 text-center">
                   <div className="flex items-center justify-center">
                     <Loader2 className="mr-2 h-6 w-6 animate-spin" />
-                    Loading Node-RED flows...
+                    Loading API flows...
                   </div>
                 </TableCell>
               </TableRow>
@@ -350,7 +345,7 @@ export function Mashups() {
             ) : !loading && (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                  No Node-RED flows found.
+                  No API flows found.
                 </TableCell>
               </TableRow>
             )}
@@ -392,13 +387,14 @@ export function Mashups() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* NEW: Test Mashup Workflow Modal */}
-      <TestMashupWorkflowModal
-        isOpen={isTestModalOpen}
-        onClose={handleCloseTestModal} // Usamos el nuevo handler para cerrar
-        allMashups={flows}
-        selectedMashup={selectedMashupForTest} // Pasamos el mashup seleccionado
-      />
+      {/* Control Creation and Test View Dialog */}
+      {selectedMashupForTest && (
+        <ControlCreationAndTestView
+          mashup={selectedMashupForTest}
+          isOpen={isTestViewOpen}
+          onClose={handleCloseTestView}
+        />
+      )}
     </Page>
   );
 }
