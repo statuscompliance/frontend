@@ -8,17 +8,17 @@ export const panelSchema = z.object({
   description: z.string().optional(),
   table: z.string().min(1, { message: 'Table is required' }),
   sqlQuery: z.object({
-    aggregations: z.array(z.object({
-      func: z.enum(['COUNT', 'SUM', 'AVG', 'MIN', 'MAX']),
-      attr: z.string().min(1)
-    })).min(1, { message: 'At least one aggregation is required' }),
-    whereConditions: z.array(z.object({
-      key: z.string().min(1),
-      operator: z.enum(['=', '>', '<', '>=', '<=', '<>', 'LIKE', 'IN', 'NOT IN']),
-      value: z.string().min(1)
-    })).optional(),
-    whereLogic: z.enum(['AND', 'OR']).optional(),
-    table: z.string().min(1)
+    model: z.string().min(1, { message: 'Model is required' }),
+    operation: z.string().min(1, { message: 'Operation is required' }),
+    options: z.object({
+      attributes: z.array(z.string().min(1)).min(1, { message: 'At least one field must be selected' }),
+      where: z.array(z.object({
+        key: z.string().min(1),
+        operator: z.enum(['=', '>', '<', '>=', '<=', '<>', 'LIKE', 'IN', 'NOT IN']),
+        value: z.string().min(1)
+      })).optional(),
+      whereLogic: z.enum(['AND', 'OR']).optional()
+    })
   }),
   showLegend: z.boolean().default(true).optional(),
   unit: z.string().optional(),

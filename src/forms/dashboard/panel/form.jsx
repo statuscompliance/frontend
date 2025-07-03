@@ -246,6 +246,7 @@ export function AddPanelForm({ dashboardUid, onClose, onSuccess, dashboardTimeRa
   // Submit the form to create a new panel
   const onSubmit = async (data) => {
     console.log('Form data:', data);
+    console.log('Form errors:', form.formState.errors);
     setLoading(true);
 
     try {
@@ -289,6 +290,31 @@ export function AddPanelForm({ dashboardUid, onClose, onSuccess, dashboardTimeRa
     }
   };
 
+  // Handle form validation errors
+  const onInvalid = (errors) => {
+    console.error('Form validation errors:', errors);
+    
+    // Show specific error messages
+    if (errors.title) {
+      toast.error('Panel title is required');
+    }
+    if (errors.sqlQuery?.options?.attributes) {
+      toast.error('At least one field must be selected');
+    }
+    if (errors.type) {
+      toast.error('Panel type must be selected');
+    }
+    if (errors.table) {
+      toast.error('Table is required');
+    }
+    
+    // Show a general validation error message if there are any errors
+    const errorCount = Object.keys(errors).length;
+    if (errorCount > 0) {
+      toast.error(`Form has ${errorCount} validation error(s). Please check all required fields.`);
+    }
+  };
+
   return (
     <Dialog open={true} onOpenChange={onClose} className="max-w-5xl w-full">
       <DialogContent className="max-h-[90vh] max-w-5xl w-full overflow-y-auto">
@@ -296,7 +322,29 @@ export function AddPanelForm({ dashboardUid, onClose, onSuccess, dashboardTimeRa
           <DialogTitle>Add New Panel to Dashboard</DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="space-y-6">
+            {/* Show validation errors */}
+            {Object.keys(form.formState.errors).length > 0 && (
+              <div className="border border-red-200 rounded-md bg-red-50 p-4">
+                <div className="text-sm text-red-700">
+                  <p className="mb-2 font-medium">Please fix the following errors:</p>
+                  <ul className="list-disc pl-5 space-y-1">
+                    {form.formState.errors.title && (
+                      <li>Panel title is required</li>
+                    )}
+                    {form.formState.errors.type && (
+                      <li>Panel type must be selected</li>
+                    )}
+                    {form.formState.errors.table && (
+                      <li>Table is required</li>
+                    )}
+                    {form.formState.errors.sqlQuery?.options?.attributes && (
+                      <li>At least one field must be selected</li>
+                    )}
+                  </ul>
+                </div>
+              </div>
+            )}
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <FormField
                 control={form.control}
@@ -387,10 +435,10 @@ export function AddPanelForm({ dashboardUid, onClose, onSuccess, dashboardTimeRa
                 <Card>
                   <CardContent className="pt-6">
                     <div className="space-y-4">
-                      {/* Selected Fields Section - ahora con toggle */}
+                      {/* Selected Fields Section - now with toggle */}
                       <div className="space-y-2">
-                        <div 
-                          className="flex cursor-pointer items-center justify-between" 
+                        <div
+                          className="flex cursor-pointer items-center justify-between"
                           onClick={() => setFieldsExpanded(!fieldsExpanded)}
                         >
                           <div className="flex items-center space-x-2">
@@ -459,8 +507,8 @@ export function AddPanelForm({ dashboardUid, onClose, onSuccess, dashboardTimeRa
 
                       {/* Conditions Section */}
                       <div className="space-y-2">
-                        <div 
-                          className="flex cursor-pointer items-center justify-between" 
+                        <div
+                          className="flex cursor-pointer items-center justify-between"
                           onClick={() => setConditionsExpanded(!conditionsExpanded)}
                         >
                           <div className="flex items-center space-x-2">
@@ -521,7 +569,7 @@ export function AddPanelForm({ dashboardUid, onClose, onSuccess, dashboardTimeRa
                                     ))}
                                   </SelectContent>
                                 </Select>
-        
+
                                 <Select
                                   value={condition.operator}
                                   onValueChange={(value) => {
@@ -541,7 +589,7 @@ export function AddPanelForm({ dashboardUid, onClose, onSuccess, dashboardTimeRa
                                     ))}
                                   </SelectContent>
                                 </Select>
-                                
+
                                 <Input
                                   className="min-w-[150px] flex-1"
                                   placeholder="Value"
@@ -552,7 +600,7 @@ export function AddPanelForm({ dashboardUid, onClose, onSuccess, dashboardTimeRa
                                     setValue('sqlQuery.options.where', updatedConditions);
                                   }}
                                 />
-                                
+
                                 <Button
                                   type="button"
                                   variant="ghost"
@@ -725,6 +773,22 @@ export function AddPanelForm({ dashboardUid, onClose, onSuccess, dashboardTimeRa
               <Button onClick={onClose} variant="outline" type="button">
                 Cancel
               </Button>
+              {import.meta.env.VITE_NODE_ENV === 'development' && (
+                <Button 
+                  type="button" 
+                  variant="secondary" 
+                  size="sm"
+                  onClick={() => {
+                    console.log('Form state:', form.formState);
+                    console.log('Form values:', form.getValues());
+                    console.log('Form errors:', form.formState.errors);
+                    console.log('Form is valid:', form.formState.isValid);
+                    toast.info('Check console for form debug info');
+                  }}
+                >
+                  Debug
+                </Button>
+              )}
               <Button type="submit" disabled={loading}>
                 {loading ? 'Adding...' : 'Add Panel'}
               </Button>
