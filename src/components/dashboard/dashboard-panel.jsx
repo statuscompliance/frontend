@@ -135,6 +135,7 @@ export function DashboardPanel({ dashboardUid, panel, height = 300, preview = fa
           <Skeleton className="h-full w-full" />
         </div>
       )}
+      {console.log('Rendering panel:', panel.id, 'with URL:', iframeUrl)}
       
       <iframe
         title={panel.title || `Panel ${panel.id}`}

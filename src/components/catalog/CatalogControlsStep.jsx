@@ -367,13 +367,13 @@ export function CatalogControlsStep({ initialControls = [], catalogId, onSubmit,
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent className="p-4 pt-2">
-                <p className="text-sm">{control.description}</p>
-                
+              <CardContent className="p-4 pt-2 text-left">
                 
                 
                 <div className="grid mt-2 gap-1 text-xs text-gray-500">
-                  
+                  <p> Description: <span className="text-primary">
+                    {control.description} </span></p>
+
                   <div className='flex'>Start Date: {new Date(control.startDate).toLocaleDateString()}</div>
                   {control.endDate && <div className='flex'>End Date: {new Date(control.endDate).toLocaleDateString()}</div>}
                   {control.scopes && Object.keys(control.scopes).length > 0 && (

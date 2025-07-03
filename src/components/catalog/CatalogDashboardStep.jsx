@@ -325,30 +325,11 @@ export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalo
                     <Card>
                       <CardHeader>
                         <div className="flex items-center justify-between">
-                          <CardTitle className="text-base">Panel Configuration</CardTitle>
+                          <CardTitle className="text-base">{panel.title}</CardTitle>
                           <Badge variant="outline">{panel.type}</Badge>
                         </div>
                       </CardHeader>
                       <CardContent className="space-y-4">
-                        {/* Panel details */}
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <FormLabel>Panel Title</FormLabel>
-                            <div className="font-medium">{panel.title}</div>
-                          </div>
-                          {panel.controlId && (
-                            <div>
-                              <FormLabel>Associated Control</FormLabel>
-                              <div className="font-medium">
-                                {(() => {
-                                  const control = controls.find(c => c.id === panel.controlId);
-                                  return control ? control.name : panel.controlId;
-                                })()}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-
                         {panel.panelId && tempDashboardUid && (
                           <div>
                             <FormLabel>Preview</FormLabel>
@@ -363,7 +344,7 @@ export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalo
                           </div>
                         )}
                       </CardContent>
-                      <CardFooter className="flex justify-between">
+                      {/* <CardFooter className="flex justify-between">
                         <Button 
                           type="button" 
                           variant="destructive"
@@ -377,7 +358,7 @@ export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalo
                           )}
                           Remove Panel
                         </Button>
-                      </CardFooter>
+                      </CardFooter> */}
                     </Card>
                   </TabsContent>
                 ))}
