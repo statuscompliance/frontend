@@ -22,11 +22,6 @@
   "browserslist": [
     "defaults and fully supports es6-module"
   ],
-  "overrides": {
-    "ahooks": {
-      "react": "^19.0.0"
-    }
-  },
   "dependencies": {
     "@hookform/resolvers": "5.1.1",
     "@tanstack/react-table": "8.21.3",
