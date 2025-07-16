@@ -21,6 +21,7 @@ import MainLayout from '@/layouts/MainLayout';
 import AppLayout from '@/layouts/AppLayout';
 import { Toaster } from '@/components/ui/sonner';
 import { AuthProvider, ProtectedRoute } from '@/components/auth-provider';
+import {Secrets} from '@/pages/app/Secrets';
 
 const allRolesAllowed = () => ['admin', 'user', 'developer'];
 
@@ -60,6 +61,8 @@ function App() {
               </Route>
               <Route path="scopes" element={<Scopes />} />
               <Route path="mashups" element={<Mashups />} />
+              {/* <Route path="secrets" element={<Secrets />} /> */}
+              <Route path="secrets" element={<Secrets />} />
               <Route path="editor">
                 <Route index element={<Editor />} />
                 <Route path=":id" element={<Editor />} />
