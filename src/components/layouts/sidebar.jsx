@@ -1,4 +1,4 @@
-import {Home, FolderOpen, Shapes, Workflow, FileSliders, ChartNoAxesCombined, ChevronRight, ChevronsUpDown, LogOut } from 'lucide-react';
+import {Home, FolderOpen, Shapes, Workflow, FileSliders, ChartNoAxesCombined, ChevronRight, ChevronsUpDown, LogOut, SquareAsterisk } from 'lucide-react';
 import { Link } from 'react-router';
 import { MoreHorizontal } from 'lucide-react';
 import {
@@ -76,6 +76,12 @@ const data = [
     type: 'footer',
     title: 'Footer',
     items: [
+      {
+        type: 'item',
+        title: 'Secrets',
+        url: '/app/secrets',
+        icon: SquareAsterisk,
+      },
       {
         type: 'item',
         title: 'Logout',
