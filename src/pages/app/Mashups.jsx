@@ -17,7 +17,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Edit, Trash, MoreHorizontal, ChevronDown, Loader2, ExternalLink, Play } from 'lucide-react'; // Importamos 'Play'
+import { Edit, Trash, MoreHorizontal, ChevronDown, Loader2, ExternalLink, Play } from 'lucide-react'; // Import 'Play'
 import { toast } from 'sonner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import Page from '@/components/basic-page.jsx';
@@ -37,8 +37,8 @@ import {
 import { useAuth } from '@/hooks/use-auth';
 import { Link } from 'react-router-dom';
 
-// Importamos el componente de vista de testeo
-import { ControlCreationAndTestView } from '@/components/mashups/ControlCreationAndTestView';
+// Import the test view page
+import { ControlCreationAndTestView } from '@/pages/app/mashups/ControlCreationAndTestView';
 
 
 const columnHelper = createColumnHelper();
@@ -58,32 +58,45 @@ export function Mashups() {
   const { userData } = useAuth();
   const nodeRedUrl = import.meta.env.VITE_NODE_RED_URL || 'http://localhost:1880';
 
-  // Estados para el diálogo de testeo
+  // States for the testing dialog
   const [isTestViewOpen, setIsTestViewOpen] = useState(false);
   const [selectedMashupForTest, setSelectedMashupForTest] = useState(null);
 
 
   // Fetch flows on component mount
   useEffect(() => {
-    fetchFlows();
-  }, []);
+    // Add isMounted flag for safe state updates
+    let isMounted = true;
 
-  const fetchFlows = async () => {
-    try {
-      setLoading(true);
-      const response = await getAllNodeRedFlows();
-      // Asumimos que getAllNodeRedFlows devuelve también 'mainInputType' y 'url'
-      // Si no es así, deberías ajustar la llamada o el servicio getAllNodeRedFlows
-      setFlows(response.data);
-      setError(null);
-    } catch (err) {
-      setError('Failed to load API flows. Please try again later.');
-      toast.error('Error loading API flows');
-      console.error('Error fetching API flows:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    const fetchFlows = async () => {
+      try {
+        setLoading(true);
+        const response = await getAllNodeRedFlows();
+        // Assuming getAllNodeRedFlows returns 'mainInputType' and 'endpoint' (not 'url')
+        if (isMounted) {
+          setFlows(response.data);
+          setError(null);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError('Failed to load API flows. Please try again later.');
+          toast.error('Error loading API flows');
+          console.error('Error fetching API flows:', err);
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchFlows();
+
+    // Cleanup function: set isMounted to false when component unmounts
+    return () => {
+      isMounted = false;
+    };
+  }, []); // Dependencies: empty array to run only once on mount
 
   const handleDeleteConfirm = useCallback((flow) => {
     setFlowToDelete(flow);
@@ -94,8 +107,8 @@ export function Mashups() {
 
     try {
       setLoading(true);
-      // Aquí iría la implementación para eliminar el flujo
-      // await deleteFlow(flowToDelete.id); // Descomenta y implementa deleteFlow
+      // Here would be the implementation to delete the flow
+      // await deleteFlow(flowToDelete.id); // Uncomment and implement deleteFlow
       setFlows(flows.filter((flow) => flow.id !== flowToDelete.id));
       toast.success('Flow deleted successfully');
     } catch (err) {
@@ -108,19 +121,19 @@ export function Mashups() {
   }, [flows, flowToDelete]);
 
 
-  // Handler para abrir la vista de testeo de un mashup específico
+  // Handler to open the test view for a specific mashup
   const handleOpenTestView = useCallback((mashup) => {
-    console.log('[Mashups] Abriendo vista de testeo para mashup:', JSON.stringify(mashup, null, 2));
+    console.log('[Mashups] Opening test view for mashup:', JSON.stringify(mashup, null, 2));
     setSelectedMashupForTest(mashup);
     setIsTestViewOpen(true);
   }, []);
 
-  // Handler para cerrar la vista de testeo
+  // Handler to close the test view
   const handleCloseTestView = useCallback(() => {
-    console.log('[Mashups] Cerrando vista de testeo.');
+    console.log('[Mashups] Closing test view.');
     setIsTestViewOpen(false);
     setSelectedMashupForTest(null);
-    // Opcionalmente, puedes volver a cargar los flujos aquí si es necesario
+    // Optionally, you can reload flows here if necessary
     // fetchFlows();
   }, []);
 
@@ -148,19 +161,19 @@ export function Mashups() {
         enableSorting: false,
         enableHiding: false,
       },
-      columnHelper.accessor('label', {
+      columnHelper.accessor('name', { // Using 'name' from the new flow data structure
         header: 'Mashup Name',
         cell: (info) => (
           <Link
             to={`/app/editor/${info.row.original.id}`}
             className="text-blue-600 hover:underline"
-            state={{ flowName: info.row.original.label }}
+            state={{ flowName: info.row.original.name }} // Using 'name'
           >
             {info.getValue() || 'Untitled Flow'}
           </Link>
         ),
       }),
-      columnHelper.accessor('info', {
+      columnHelper.accessor('description', { // Using 'description' from the new flow data structure
         header: 'Description',
         cell: (info) => info.getValue() || 'No description',
       }),
@@ -169,9 +182,9 @@ export function Mashups() {
         cell: (info) => info.getValue() || 'No ID',
         meta: { hideByDefault: true },
       }),
-      columnHelper.accessor('url', {
+      columnHelper.accessor('endpoint', { // Using 'endpoint' from the new flow data structure
         header: 'Mashup Endpoint',
-        cell: (info) => info.getValue() || 'No URL',
+        cell: (info) => info.getValue() || 'No Endpoint',
       }),
       columnHelper.accessor('numNodes', {
         header: 'Total Pipes',
@@ -207,18 +220,20 @@ export function Mashups() {
           );
         },
       },
-      // Nueva columna para el botón de Test
+      // New column for the Test button
       columnHelper.display({
         id: 'test_action',
         header: 'Test',
         cell: ({ row }) => {
           const mashup = row.original;
+          // Disable if not testable (e.g., no endpoint or not an http in type)
+          const isTestable = mashup.endpoint && mashup.mainInputType === 'http in';
           return (
             <Button
-              variant="default" // Puedes elegir un variante sólido como "default"
-              className="bg-green-600 hover:bg-green-700 text-white" // Botón verde
+              variant="default" // You can choose a solid variant like "default"
+              className="bg-green-600 hover:bg-green-700 text-white" // Green button
               onClick={() => handleOpenTestView(mashup)}
-              disabled={false} // Se deshabilita si no es testeable
+              disabled={!isTestable} // Disable if not testable
             >
               <Play className="mr-2 h-4 w-4" /> Test
             </Button>
@@ -279,14 +294,14 @@ export function Mashups() {
                       onCheckedChange={(value) => column.toggleVisibility(!!value)}
                     />
                     <span className="ml-2">
-                      {/* --- CAMBIO CLAVE AQUÍ --- */}
-                      {column.id === 'description' // ¡AHORA ES 'description', no 'info'!
+                      {/* --- KEY CHANGE HERE --- */}
+                      {column.id === 'description' // Now 'description', not 'info'!
                         ? 'Description'
                         : column.id === 'numNodes'
                           ? 'Total pipes'
-                          : column.id === 'name' // ¡AHORA ES 'name', no 'label'!
+                          : column.id === 'name' // Now 'name', not 'label'!
                             ? 'Mashup Name'
-                            : column.id === 'endpoint' // Agregado para 'endpoint' si no lo tenías antes
+                            : column.id === 'endpoint' // Added for 'endpoint' if not present before
                               ? 'Mashup Endpoint'
                               : column.id}
                     </span>
@@ -368,7 +383,7 @@ export function Mashups() {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the flow &quot;{flowToDelete?.label || 'Untitled Flow'}&quot;. This action cannot be undone.
+              This will permanently delete the flow &quot;{flowToDelete?.name || 'Untitled Flow'}&quot;. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

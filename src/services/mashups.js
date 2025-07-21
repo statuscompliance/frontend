@@ -1,58 +1,49 @@
 import { apiClient } from '@/api/apiClient'; // Tu cliente de API existente
 import { nodeRedClient } from '@/api/nodeRedClient';
 import { createCatalog } from './catalogs';
-export { getAllCatalogs } from './catalogs';
 
-const encodeToBase64 = (str) => {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(str);
-
-    const binaryString = String.fromCharCode.apply(null, data);
-
-    return btoa(binaryString);
-};
 
 /**
- * Obtiene todos los flujos (tabs) de Node-RED, incluyendo su tipo de entrada principal y el endpoint HTTP.
- * @returns {Promise<{data: Array<Object>}>} Un objeto que contiene un array de objetos de flujo personalizados.
- * Cada objeto de flujo incluye: id, name, description, numNodes, mainInputType, y endpoint.
+ * Gets all Node-RED flows (tabs), including their main input type and HTTP endpoint.
+ * @returns {Promise<{data: Array<Object>}>} An object containing an array of custom flow objects.
+ * Each flow object includes: id, name, description, numNodes, mainInputType, and endpoint.
  */
 export async function getAllNodeRedFlows() {
   try {
     const response = await nodeRedClient.get('/flows');
-    const flowsData = response.data || []; // Array de todos los nodos y tabs de Node-RED
+    const flowsData = response.data || []; // Array of all Node-RED nodes and tabs
 
-    const tabDetails = {}; // Usaremos este objeto para construir la información de cada tab
+    const tabDetails = {}; // We'll use this object to build the info for each tab
 
-    // Primera pasada: Procesar todos los nodos para recopilar información por tab (id 'z')
+    // First pass: Process all nodes to gather info by tab (id 'z')
     for (const node of flowsData) {
       if (node.type === 'tab') {
-        // Inicializar la entrada para esta tab
+        // Initialize the entry for this tab
         tabDetails[node.id] = {
           id: node.id,
-          name: node.label || node.name || 'Untitled Flow', // Preferir label, sino name
+          name: node.label || node.name || 'Untitled Flow', // Prefer label, otherwise name
           description: node.info || 'No description',
-          numNodes: 0, // Se contará en la segunda pasada
+          numNodes: 0, // Will be counted in the second pass
           mainInputType: 'None/Other',
           endpoint: null,
-          nodes: [], // Para almacenar los nodos hijos y luego contarlos
+          nodes: [], // To store child nodes and count them later
         };
       } else if (node.z && tabDetails[node.z]) {
-        // Si es un nodo y pertenece a una tab ya identificada
+        // If it's a node and belongs to an already identified tab
         tabDetails[node.z].nodes.push(node);
 
-        // Identificar el tipo de entrada principal
+        // Identify the main input type
         const inputNodeTypes = new Set([
           'http in', 'mqtt in', 'websocket in', 'inject',
           'cron', 'file in', 'tcp in', 'udp in'
         ]);
 
         if (inputNodeTypes.has(node.type)) {
-          // Si el tipo de entrada actual es 'http in', se convierte en el principal.
-          // De lo contrario, solo si aún no se ha asignado un tipo principal.
+          // If the current input type is 'http in', it becomes the main one.
+          // Otherwise, only if a main type hasn't been assigned yet.
           if (node.type === 'http in') {
             tabDetails[node.z].mainInputType = node.type;
-            // Capturar el endpoint si es un nodo 'http in'
+            // Capture the endpoint if it's an 'http in' node
             if (node.url) {
               tabDetails[node.z].endpoint = node.url;
             }
@@ -63,22 +54,22 @@ export async function getAllNodeRedFlows() {
       }
     }
 
-    // Segunda pasada: Finalizar la construcción de los objetos de flujo
+    // Second pass: Finalize the construction of flow objects
     const allFlowsInfo = Object.values(tabDetails).map(tab => {
-      // Contar el número de nodos para la tab
+      // Count the number of nodes for the tab
       tab.numNodes = tab.nodes.length;
-      delete tab.nodes; // Limpiar la propiedad temporal 'nodes'
+      delete tab.nodes; // Clean up the temporary 'nodes' property
 
       return tab;
     });
 
-    console.log("Flujos de Node-RED procesados:", allFlowsInfo); // Para depuración
+    console.log("Processed Node-RED flows:", allFlowsInfo); // For debugging
 
     return { data: allFlowsInfo };
 
   } catch (error) {
     console.error("Error fetching all Node-RED flows:", error);
-    // Relanzar el error para que pueda ser capturado por el código que llama
+    // Rethrow the error so it can be caught by the calling code
     throw error;
   }
 }
@@ -102,7 +93,7 @@ export function getFlowParams(flowId) {
   return getFlowById(flowId)
     .then(response => {
       const params = {};
-      // Aseguramos que estamos iterando sobre la respuesta correctamente
+      // Ensure we're iterating over the response correctly
       const nodes = response.data.nodes || [];
       nodes.forEach(node => {
         if (node.params && typeof node.params === 'object') {
@@ -114,10 +105,10 @@ export function getFlowParams(flowId) {
 }
 
 /**
- * Crea un nuevo catálogo de tipo 'draft' con startDate y endDate de hoy.
+ * Creates a new 'draft' catalog with today's startDate and endDate.
  *
- * @param {string} name - El nombre del catálogo.
- * @returns {Promise<object>} - Promesa que resuelve con los datos del catálogo creado.
+ * @param {string} name - The name of the catalog.
+ * @returns {Promise<object>} - Promise that resolves with the created catalog data.
  */
 export async function createDraftCatalog() {
   try {
@@ -141,7 +132,7 @@ export async function createDraftCatalog() {
     const response = await createCatalog(catalogData);
     console.log("Response: ", JSON.stringify(response, null, 2));
 
-    //Returns the catalogue by default, no response.data required
+    // Returns the catalogue by default, no response.data required
     if (response) {
       return response;
     } else {
@@ -155,18 +146,18 @@ export async function createDraftCatalog() {
 }
 
 /**
- * Crea un control de prueba en el backend.
- * Ajustado para devolver directamente el objeto de respuesta del API,
- * asumiendo que el control ya está en la raíz de la respuesta HTTP.
+ * Creates a test control in the backend.
+ * Adjusted to directly return the API response object,
+ * assuming the control is already at the root of the HTTP response.
  *
- * @param {string} mashupName - El nombre del mashup para el que se está creando el control de prueba.
- * @param {string} selectedCatalogId - El ID del catálogo seleccionado por el usuario en el modal.
- * @returns {Promise<object>} - Promesa que resuelve con los datos del control creado.
+ * @param {string} mashupName - The name of the mashup for which the test control is being created.
+ * @param {string} selectedCatalogId - The ID of the catalog selected by the user in the modal.
+ * @returns {Promise<object>} - Promise that resolves with the created control data.
  */
 export async function createTestControl(mashupName, selectedCatalogId) {
   try {
     const initialControlData = {
-      name: `Test for Mashup: ${mashupName || 'Untitled'} - ${new Date().toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' })}`,
+      name: `Test for Mashup: ${mashupName || 'Untitled'} - ${new Date().toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })}`,
       description: `Auto-generated control for testing API mashup: ${mashupName || 'Untitled Flow'}`,
       period: 'DAILY',
       startDate: `${new Date().toISOString()}`,
@@ -194,35 +185,55 @@ export async function createTestControl(mashupName, selectedCatalogId) {
 }
 
 /**
- * Ejecuta un flujo de Node-RED enviando un payload tipo msg al endpoint.
+ * Executes a Node-RED flow by sending a msg-type payload to the endpoint.
  *
- * @param {string} endpoint - El path del endpoint del flujo de Node-RED (ej. '/my-flow').
- * @param {object} payload - El objeto 'msg' a enviar al flujo (ej. { payload: 'Hello' }).
- * @returns {Promise<any>} - La respuesta directa del flujo de Node-RED.
+ * @param {string} endpoint - The path of the Node-RED flow endpoint (e.g., '/my-flow').
+ * @param {object} payload - The 'msg' object to send to the flow (e.g., { payload: 'Hello' }).
+ * @returns {Promise<any>} - The direct response from the Node-RED flow.
  */
-export async function executeNodeRedMashup(url, payload) {
-  const username = 'admin';
-  const password = 'admin123';
+export async function executeNodeRedMashup(endpoint, body, credentials, accessToken) {
 
-  if (!username || !password) {
-    console.warn("Advertencia: Las credenciales de Node-RED no están configuradas correctamente. La autenticación podría fallar.");
-    // Considera lanzar un error o manejar esto de forma más robusta en producción.
+  const currentDate = new Date().toISOString().split('T')[0];
+
+  if (!credentials) {
+    console.warn("Warning: Node-RED credentials are not properly configured.");
   }
 
-  // 2. Codificar las credenciales en Base64
-  const credentials = encodeToBase64(`${username}:${password}`);
+  if(!accessToken){
+    console.warn("Warning: Node-RED accessToken is not properly configured.")
+  }
 
   try {
-    const response = await nodeRedClient.post(`/api/v1/${url}`, payload, {
+    console.log(`[executeNodeRedMashup] Performing POST to /api/v1/${endpoint} with body:`, body);
+
+    const response = await nodeRedClient.post(`/api/v1${endpoint}`, body, {
       headers: {
         'Content-Type': 'application/json',
-        // 3. Añadir el encabezado Authorization
-        'Authorization': `Basic ${credentials}`
+        'Authorization': `Basic ${credentials}`,
+        'x-access-token': accessToken
       }
     });
+
+    console.log('[executeNodeRedMashup] Successful response:', response.data);
     return response.data;
   } catch (error) {
-    console.error('Error executing Node-RED mashup:', error.response ? error.response.data : error.message);
-    throw error; // Re-lanza el error para que sea manejado por el componente de UI
+    console.error('[executeNodeRedMashup] Error executing Node-RED mashup:', error.response ? error.response.data : error.message);
+
+    let errorMessage = 'Unknown error executing Node-RED mashup.';
+    if (error.response) {
+      if (error.response.status === 401 || error.response.status === 403) {
+        errorMessage = 'Unauthorized access. Your session may have expired. Please log in again.';
+      } else if (error.response.data && error.response.data.message) {
+        errorMessage = `Server error: ${error.response.data.message}`;
+      } else {
+        errorMessage = `Network or server error: ${error.response.status}`;
+      }
+    } else if (error.request) {
+      errorMessage = 'No response received from Node-RED server. Make sure the service is running.';
+    } else {
+      errorMessage = `Error configuring the request: ${error.message}`;
+    }
+    toast.error(errorMessage);
+    throw error;
   }
 }
