@@ -16,7 +16,7 @@ export default defineConfig({
       preflight: 'on-demand'
     }),
     /**
-     * TODO: Investigate alternative to this plugin. It's not very well-maintained, as its
+     * TODO: Investigate alternative to this plugin. It's not as maintained as its
      * tailwindcss-animate counterpart
      */
     presetAnimations()
