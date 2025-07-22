@@ -1,26 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, ArrowRight, Plus, Trash, Edit, AlertCircle } from 'lucide-react';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+import { Loader2, ArrowRight, Plus, Trash, Edit, AlertCircle, ExternalLink } from 'lucide-react';
 import { 
   Card, 
   CardContent, 
   CardHeader, 
   CardTitle
 } from '@/components/ui/card';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { NewControlForm } from '@/forms/control/new/form';
+import { getControlsByCatalogId, deleteControl, createDraftControl } from '@/services/controls';
+import { createScopeSet } from '@/services/scopes';
+import { toast } from 'sonner';
 import {
   Dialog,
   DialogContent,
@@ -28,60 +19,45 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { cn } from '@/lib/utils';
+import { getScopeSetsByControlId } from '@/services/scopes';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-
-// Schema for control validation
-const controlSchema = z.object({
-  name: z.string().min(1, { message: 'Control name is required' }),
-  description: z.string().min(1, { message: 'Description is required' }),
-  type: z.string().min(1, { message: 'Control type is required' }),
-  severity: z.string().min(1, { message: 'Severity is required' }),
-  implementation: z.string().optional(),
-});
-
-// Control types and severity options
-const controlTypes = [
-  { value: 'preventive', label: 'Preventive' },
-  { value: 'detective', label: 'Detective' },
-  { value: 'corrective', label: 'Corrective' },
-  { value: 'deterrent', label: 'Deterrent' },
-  { value: 'recovery', label: 'Recovery' },
-];
-
-const severityLevels = [
-  { value: 'critical', label: 'Critical', color: 'bg-red-500' },
-  { value: 'high', label: 'High', color: 'bg-orange-500' },
-  { value: 'medium', label: 'Medium', color: 'bg-yellow-500' },
-  { value: 'low', label: 'Low', color: 'bg-green-500' },
-  { value: 'informational', label: 'Informational', color: 'bg-blue-500' },
-];
+import { saveDraftControlId, saveDraftControlIds, saveDraftCatalogId, initializeControlIdsStorage } from '@/utils/draftStorage';
+import { dashboardsService } from '@/services/grafana/dashboards';
+import { saveDraftDashboardUid } from '@/utils/draftStorage';
 
 export function CatalogControlsStep({ initialControls = [], catalogId, onSubmit, isSubmitting, apiError = null }) {
   const [controls, setControls] = useState([]);
-  const [isEditing, setIsEditing] = useState(false);
-  const [currentControl, setCurrentControl] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
+  const [openNewControlForm, setOpenNewControlForm] = useState(false);
   const [submitError, setSubmitError] = useState(null);
+  const [currentControl, setCurrentControl] = useState(null);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const initialFetchCompleted = useRef(false);
 
-  // Setup form with zod resolver
-  const form = useForm({
-    resolver: zodResolver(controlSchema),
-    defaultValues: {
-      name: '',
-      description: '',
-      type: '',
-      severity: '',
-      implementation: '',
-    },
-  });
+  const nodeRedUrl = import.meta.env.VITE_NODE_RED_URL || 'http://localhost:1880';
 
+  // Save catalogId to localStorage and initialize controls storage
   useEffect(() => {
+    // Ensure the control_draft_ids key exists in localStorage
+    initializeControlIdsStorage();
+    
     if (initialControls && initialControls.length > 0) {
-      setControls([...initialControls]);
+      setControls(initialControls);
+      
+      // Save control IDs to localStorage
+      const controlIds = initialControls.map(control => control.id).filter(Boolean);
+      if (controlIds.length > 0) {
+        saveDraftControlIds(controlIds);
+      }
     }
-  }, [initialControls]);
+    else if (catalogId && !initialFetchCompleted.current) {
+      saveDraftCatalogId(catalogId);
+      fetchDraftControls();
+      initialFetchCompleted.current = true;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [catalogId]);
 
   // Update error message when API error changes
   useEffect(() => {
@@ -90,65 +66,180 @@ export function CatalogControlsStep({ initialControls = [], catalogId, onSubmit,
     }
   }, [apiError]);
 
-  const handleAddControl = () => {
-    setIsEditing(false);
-    setCurrentControl(null);
-    form.reset({
-      name: '',
-      description: '',
-      type: '',
-      severity: '',
-      implementation: '',
-    });
-    setOpenDialog(true);
-  };
-
-  const handleEditControl = (control, index) => {
-    setIsEditing(true);
-    setCurrentControl({ ...control, index });
-    form.reset({
-      name: control.name,
-      description: control.description,
-      type: control.type,
-      severity: control.severity,
-      implementation: control.implementation || '',
-    });
-    setOpenDialog(true);
-  };
-
-  const handleDeleteControl = (index) => {
-    const updatedControls = [...controls];
-    updatedControls.splice(index, 1);
-    setControls(updatedControls);
-  };
-
-  const handleControlSubmit = (data) => {
-    if (isEditing && currentControl) {
-      // Update existing control
-      const updatedControls = [...controls];
-      updatedControls[currentControl.index] = { 
-        id: currentControl.id || `temp-${Date.now()}`,
-        ...data 
-      };
-      setControls(updatedControls);
-    } else {
-      // Add new control
-      setControls([
-        ...controls, 
-        { 
-          id: `temp-${Date.now()}`,
-          ...data 
-        }
-      ]);
+  const fetchDraftControls = async () => {
+    if (!catalogId) return;
+    
+    setIsLoading(true);
+    try {
+      const response = await getControlsByCatalogId(catalogId, 'draft');
+      
+      // Handle case where the response is empty or undefined
+      if (!response || response.length === 0) {
+        setControls([]);
+        // Save an empty array to localStorage to indicate we've fetched controls (even if empty)
+        saveDraftControlIds([]);
+        setIsLoading(false);
+        return;
+      }
+      
+      const controlsWithScopesData = await Promise.all(
+        response.map(async (control) => {
+          try {
+            const scopeResponse = await getScopeSetsByControlId(control.id);
+            return {
+              ...control,
+              scopes: scopeResponse && scopeResponse.length > 0 
+                ? scopeResponse.reduce((acc, scopeSet) => {
+                  return { ...acc, ...scopeSet.scopes };
+                }, {})
+                : {}
+            };
+          } catch (error) {
+            console.error(`Error fetching scopes for control ${control.id}:`, error);
+            return { ...control, scopes: {} };
+          }
+        })
+      );
+      
+      setControls(controlsWithScopesData);
+      
+      // Save control IDs to localStorage
+      const controlIds = controlsWithScopesData.map(control => control.id).filter(Boolean);
+      if (controlIds.length > 0) {
+        saveDraftControlIds(controlIds);
+      } else {
+        // Initialize with empty array if no controls
+        saveDraftControlIds([]);
+      }
+    } catch (error) {
+      console.error('Error fetching draft controls:', error);
+      toast.error('Failed to load draft controls');
+      setControls([]);
+    } finally {
+      setIsLoading(false);
     }
-    setOpenDialog(false);
   };
 
-  const closeDialog = () => {
-    setOpenDialog(false);
+  const handleAddControl = () => {
+    setOpenNewControlForm(true);
   };
 
-  const handleSubmit = () => {
+  const handleCloseNewControlForm = () => {
+    setOpenNewControlForm(false);
+  };
+
+  const handleCustomSubmit = async (data) => {
+    try {
+      // Make sure the catalog ID is included in the control data
+      if (catalogId) {
+        data.catalogId = catalogId;
+        // Save catalog ID to localStorage again for safety
+        saveDraftCatalogId(catalogId);
+        // Ensure control_draft_ids is initialized
+        initializeControlIdsStorage();
+      }
+      
+      let scopeSet = { scopes: {} };
+      // Use createDraftControl specifically in the catalog context
+      const createdControl = await createDraftControl(data);
+      
+      // Save the new control ID to localStorage
+      if (createdControl && createdControl.id) {
+        saveDraftControlId(createdControl.id);
+      }
+      
+      // Create the scope set if needed
+      if (Object.keys(data.scopes).length > 0) {
+        const scopeSetData = {
+          controlId: createdControl.id,
+          scopes: data.scopes
+        };
+        
+        scopeSet = await createScopeSet(scopeSetData);
+      }
+      
+      return { ...createdControl, scopes: scopeSet.scopes };
+    } catch (error) {
+      console.error('Error creating draft control:', error);
+      throw error;
+    }
+  };
+
+  const handleControlSuccess = async (newControl) => {
+    setOpenNewControlForm(false);
+    
+    if (newControl && newControl.id) {
+      try {
+        // Fetch the updated list of controls
+        if (catalogId) {
+          const response = await getControlsByCatalogId(catalogId, 'draft');
+          const controlsWithScopesData = await Promise.all(
+            response.map(async (control) => {
+              try {
+                const scopeResponse = await getScopeSetsByControlId(control.id);
+                return {
+                  ...control,
+                  scopes: scopeResponse.reduce((acc, scopeSet) => {
+                    return { ...acc, ...scopeSet.scopes };
+                  }, {})
+                };
+              } catch (error) {
+                console.error(`Error fetching scopes for control ${control.id}:`, error);
+                return { ...control, scopes: {} };
+              }
+            })
+          );
+          setControls(controlsWithScopesData || []);
+        } else {
+          // If no catalogId, manually add the new control to the current list
+          setControls(prevControls => [...prevControls, newControl]);
+        }
+      } catch (error) {
+        console.error('Error updating controls list:', error);
+        toast.error('Control was created but the list could not be updated');
+        
+        // As a fallback, manually add the control to the list
+        setControls(prevControls => [...prevControls, newControl]);
+      }
+    }
+  };
+
+  const handleEditControl = (control) => {
+    // Placeholder for edit functionality
+    toast.info('Edit functionality will be available in a future update');
+  };
+
+  const handleDeleteConfirm = (control) => {
+    setCurrentControl(control);
+    setConfirmingDelete(true);
+    setOpenDialog(true);
+  };
+
+  const handleDeleteCancel = () => {
+    setOpenDialog(false);
+    setConfirmingDelete(false);
+    setCurrentControl(null);
+  };
+
+  const handleDeleteControl = async () => {
+    if (!currentControl || !currentControl.id) return;
+    
+    try {
+      await deleteControl(currentControl.id);
+      // After deletion, refresh the draft controls list
+      await fetchDraftControls();
+      toast.success('Control deleted successfully');
+    } catch (error) {
+      console.error('Error deleting draft control:', error);
+      toast.error('Failed to delete draft control');
+    } finally {
+      setOpenDialog(false);
+      setConfirmingDelete(false);
+      setCurrentControl(null);
+    }
+  };
+
+  const handleSubmit = async () => {
     setSubmitError(null);
     
     if (controls.length === 0) {
@@ -156,27 +247,57 @@ export function CatalogControlsStep({ initialControls = [], catalogId, onSubmit,
       return;
     }
     
-    onSubmit(controls);
-  };
+    // Save control IDs and catalog ID to localStorage before submitting
+    const controlIds = controls.map(control => control.id).filter(Boolean);
+    if (controlIds.length > 0) {
+      saveDraftControlIds(controlIds);
+    }
+    
+    if (catalogId) {
+      saveDraftCatalogId(catalogId);
+    }
+    
+    try {
+      const dashboardName = `tmp-${Date.now()}-${catalogId}`;
+      
+      // Use the start date of the first control or the current date
+      let startDate = 'now-24h';
+      if (controls.length > 0 && controls[0].startDate) {
+        startDate = new Date(controls[0].startDate).toISOString();
+      }
+      
+      // Create the template dashboard
+      const dashboardResponse = await dashboardsService.createTemplate({
+        name: dashboardName,
+        timeRange: {
+          from: startDate,
+          to: 'now'
+        }
+      });
 
-  const getSeverityBadge = (severity) => {
-    const severityInfo = severityLevels.find(level => level.value === severity);
-    return (
-      <Badge className={severityInfo ? severityInfo.color : 'bg-gray-500'}>
-        {severityInfo ? severityInfo.label : severity}
-      </Badge>
-    );
+      // Store the dashboard UID in localStorage
+      if (dashboardResponse?.dashboard && dashboardResponse.dashboard?.uid) {
+        const dashboardUid = dashboardResponse?.dashboard?.uid;
+        saveDraftDashboardUid(dashboardUid);
+      }
+    } catch (error) {
+      console.error('Error creating template dashboard:', error);
+      toast.warning('Could not create template dashboard, panels may not display correctly');
+    }
+    
+    onSubmit(controls);
   };
 
   return (
     <div className="py-4">
       <div className="mb-6 flex items-center justify-between">
-        <h2 className="text-left text-xl font-semibold">Security Controls</h2>
+        <h2 className="text-left text-xl font-semibold">Draft Controls</h2>
         <Button 
           onClick={handleAddControl}
+          className="border-2 border-sidebar-accent bg-sidebar-accent hover:bg-secondary hover:text-sidebar-accent"
         >
           <Plus className="mr-2 h-4 w-4" />
-          Add Control
+          Add Draft Control
         </Button>
       </div>
 
@@ -192,32 +313,47 @@ export function CatalogControlsStep({ initialControls = [], catalogId, onSubmit,
         </Alert>
       )}
 
-      {/* Controls list */}
+      {/* Empty state with helpful message */}
+      {!isLoading && controls.length === 0 && (
+        <div className="mb-6 border border-gray-300 rounded-lg border-dashed bg-gray-50 p-8 text-center">
+          <h3 className="mb-1 text-lg text-gray-900 font-medium">No draft controls yet</h3>
+          <p className="mb-4 text-gray-500">Add draft controls to define what to monitor in your catalog</p>
+        </div>
+      )}
+
+      {/* Controls list with shimmer effect when loading */}
       <div className="max-h-[500px] overflow-y-auto pr-2 space-y-4">
-        {controls.length === 0 ? (
-          <div className="border rounded-md bg-gray-50 py-10 text-center">
-            <p className="text-gray-500">No controls added yet. Click &quot;Add Control&quot; to start.</p>
-          </div>
-        ) : (
-          controls.map((control, index) => (
-            <Card key={control.id || index} className="transition-shadow hover:shadow-md">
+        {isLoading ? (
+          // Shimmer loading effect for controls
+          Array(3).fill(0).map((_, index) => (
+            <div key={index} className="animate-pulse">
+              <div className="h-24 rounded-md bg-gray-200"></div>
+            </div>
+          ))
+        ) : controls.length > 0 ? (
+          controls.map((control) => (
+            <Card key={control.id} className="transition-shadow hover:shadow-md">
               <CardHeader className="flex flex-row justify-between p-4 pb-2">
-                <div>
+                <div className="text-left">
                   <CardTitle className="flex items-center text-base font-medium">
                     {control.name}
-                    <span className="ml-3">
-                      {getSeverityBadge(control.severity)}
-                    </span>
                   </CardTitle>
                   <p className="text-sm text-gray-500">
-                    Type: {controlTypes.find(type => type.value === control.type)?.label || control.type}
+                    Period: {control.period}
                   </p>
                 </div>
                 <div className="flex space-x-1">
+                  {control.mashupId && (
+                    <div>
+                      <Button variant="ghost" size="sm" onClick={() => window.open(`${nodeRedUrl}/#flow/${control.mashupId}`, '_blank')}>
+                        <ExternalLink className="mr-2 h-4 w-4" /> View mashup
+                      </Button>
+                    </div>
+                  )}
                   <Button 
                     size="sm" 
                     variant="ghost" 
-                    onClick={() => handleEditControl(control, index)}
+                    onClick={() => handleEditControl(control)}
                   >
                     <Edit className="h-4 w-4" />
                   </Button>
@@ -225,167 +361,99 @@ export function CatalogControlsStep({ initialControls = [], catalogId, onSubmit,
                     size="sm" 
                     variant="ghost" 
                     className="text-red-500 hover:bg-red-50 hover:text-red-700"
-                    onClick={() => handleDeleteControl(index)}
+                    onClick={() => handleDeleteConfirm(control)}
                   >
                     <Trash className="h-4 w-4" />
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent className="p-4 pt-2">
-                <p className="text-sm">{control.description}</p>
-                {control.implementation && (
-                  <div className="mt-2 rounded-md bg-gray-50 p-2 text-xs text-gray-700">
-                    <strong>Implementation:</strong>
-                    <p className="mt-1 whitespace-pre-line">{control.implementation}</p>
-                  </div>
-                )}
+              <CardContent className="p-4 pt-2 text-left">
+                
+                
+                <div className="grid mt-2 gap-1 text-xs text-gray-500">
+                  <p> Description: <span className="text-primary">
+                    {control.description} </span></p>
+
+                  <div className='flex'>Start Date: {new Date(control.startDate).toLocaleDateString()}</div>
+                  {control.endDate && <div className='flex'>End Date: {new Date(control.endDate).toLocaleDateString()}</div>}
+                  {control.scopes && Object.keys(control.scopes).length > 0 && (
+                    <div className="mt-1 flex flex-wrap items-center gap-1">
+                      <span>Scopes: </span>
+                      {Object.entries(control.scopes).map(([key, value]) => (
+                        <Badge key={key} variant="outline">
+                          {key}: {value}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}  
+                  {control.params && Object.keys(control.params).length > 0 && (
+                    <div className="mt-1 flex flex-wrap items-center gap-1">
+                      <span>Parameters: </span>
+                      {Object.entries(control.params).map(([key, value]) => (
+                        <Badge key={key} variant="outline" className="text-xs">
+                          {key}: {typeof value === 'object' ? JSON.stringify(value) : value}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
           ))
-        )}
+        ) : null}
       </div>
 
-      {/* Control form dialog */}
-      <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-        <DialogContent className="sm:max-w-[550px]">
+      {/* Draft Control Form - Pass customSubmit for draft control creation */}
+      {openNewControlForm && (
+        <NewControlForm 
+          catalogId={catalogId}
+          onClose={handleCloseNewControlForm}
+          onSuccess={handleControlSuccess}
+          customSubmit={handleCustomSubmit}
+        />
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={openDialog && confirmingDelete} onOpenChange={setOpenDialog}>
+        <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>{isEditing ? 'Edit Control' : 'Add New Control'}</DialogTitle>
+            <DialogTitle>Delete Draft Control</DialogTitle>
           </DialogHeader>
-          
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleControlSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Control Name <span className="text-red-500">*</span></FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter control name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="type"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Type <span className="text-red-500">*</span></FormLabel>
-                      <Select 
-                        onValueChange={field.onChange} 
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select control type" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {controlTypes.map((type) => (
-                            <SelectItem key={type.value} value={type.value}>
-                              {type.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="severity"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Severity <span className="text-red-500">*</span></FormLabel>
-                      <Select 
-                        onValueChange={field.onChange} 
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select severity" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {severityLevels.map((level) => (
-                            <SelectItem key={level.value} value={level.value}>
-                              <div className="flex items-center">
-                                <span className={cn('w-3 h-3 rounded-full mr-2', level.color)} />
-                                {level.label}
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description <span className="text-red-500">*</span></FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        placeholder="Enter control description" 
-                        rows={2}
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="implementation"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Implementation Details</FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        placeholder="Describe how this control should be implemented" 
-                        rows={3}
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <DialogFooter className="pt-4">
-                <Button type="button" variant="outline" onClick={closeDialog}>
-                  Cancel
-                </Button>
-                <Button 
-                  type="submit" 
-                  className="ml-2"
-                >
-                  {isEditing ? 'Update Control' : 'Add Control'}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
+          <div className="py-4">
+            <p>Are you sure you want to delete this draft control?</p>
+            <p className="mt-2 text-sm text-gray-500">
+              This action cannot be undone.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={handleDeleteCancel}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteControl}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Navigation buttons */}
-      <div className="mt-8 flex justify-end">
+      {/* Progress counter and Navigation button */}
+      <div className="mt-8 flex items-center justify-between border-t pt-4">
+        <div className="text-sm text-gray-500">
+          {controls.length > 0 ? (
+            <span>{controls.length} draft control{controls.length !== 1 ? 's' : ''} added</span>
+          ) : (
+            <span>Add at least one draft control to continue</span>
+          )}
+        </div>
         <Button 
           onClick={handleSubmit} 
-          disabled={isSubmitting}
+          disabled={isSubmitting || controls.length === 0}
           className="min-w-[120px] bg-white text-primary hover:bg-secondary"
         >
           {isSubmitting ? (

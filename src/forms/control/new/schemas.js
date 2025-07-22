@@ -13,15 +13,8 @@ export const controlSchema = z.object({
     message: 'At least one parameter is required'
   }),
   scopes: z.record(z.string()).optional(),
-  catalogId: z.preprocess(
-    (val) => {
-      // Convierte el valor a número si es un string no vacío, de lo contrario, déjalo como está.
-      // Esto maneja tanto strings de input como posibles 'null' o 'undefined' iniciales.
-      if (typeof val === 'string' && val.trim() !== '') {
-        return Number(val);
-      }
-      return val;
-    },
-    z.number().int().positive({ message: 'Catalog ID must be a positive integer' }) // Asume que es un entero positivo
-  )
+  catalogId: z.number({
+    required_error: 'Catalog ID is required',
+    invalid_type_error: 'Catalog ID must be a number'
+  })
 });

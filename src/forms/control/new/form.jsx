@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -18,8 +18,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { controlSchema } from './schemas';
+import { saveDraftCatalogId } from '@/utils/draftStorage';
 
-export function NewControlForm({ catalogId, onClose, onSuccess, initialMashupId }) {
+export function NewControlForm({ catalogId, onClose, onSuccess, initialMashupId, customSubmit = null }) {
   const [loading, setLoading] = useState(false);
   const [availableScopes, setAvailableScopes] = useState([]);
   const [availableMashups, setAvailableMashups] = useState([]);
@@ -54,52 +55,52 @@ export function NewControlForm({ catalogId, onClose, onSuccess, initialMashupId 
   // Determine if the mashup field should be visible. It's visible if no initialMashupId is provided.
   const isMashupFieldVisible = !initialMashupId;
 
-  // Memoize fetchFlowParams to prevent unnecessary re-creations
-  const fetchFlowParams = useCallback(async (flowId) => {
-    if (!flowId) return;
+  // // Memoize fetchFlowParams to prevent unnecessary re-creations
+  // const fetchFlowParams = useCallback(async (flowId) => {
+  //   if (!flowId) return;
     
-    setLoadingParams(true);
-    try {
-      const response = await getFlowParams(flowId);
-      const fetchedParams = response.data || {};
-      const updatedParams = { ...fetchedParams, threshold: '' }; // Always add threshold param
-      setAvailableParams(updatedParams);
+  //   setLoadingParams(true);
+  //   try {
+  //     const response = await getFlowParams(flowId);
+  //     const fetchedParams = response.data || {};
+  //     const updatedParams = { ...fetchedParams, threshold: '' }; // Always add threshold param
+  //     setAvailableParams(updatedParams);
       
-      let mashupUrl = null;
+  //     let mashupUrl = null;
 
-      // Logic to find the mashup's URL (endpoint)
-      const foundMashup = availableMashups.find(m => m.id === flowId);
-      if (foundMashup) {
-        mashupUrl = foundMashup.endpoint; // Assuming 'endpoint' is the property containing the URL
-      } else if (initialMashupId && initialMashupId === flowId) {
-        // Fallback for initialMashupId if it's not in availableMashups yet (unlikely with improved useEffect, but good for robustness)
-        // In a real application, you might need a specific API call here to get details of a single flow by ID
-        console.warn(`Mashup with ID ${flowId} not found in available list for initialMashupId. This might indicate a timing issue or that the mashup list doesn't contain it.`);
-      }
+  //     // Logic to find the mashup's URL (endpoint)
+  //     const foundMashup = availableMashups.find(m => m.id === flowId);
+  //     if (foundMashup) {
+  //       mashupUrl = foundMashup.endpoint; // Assuming 'endpoint' is the property containing the URL
+  //     } else if (initialMashupId && initialMashupId === flowId) {
+  //       // Fallback for initialMashupId if it's not in availableMashups yet (unlikely with improved useEffect, but good for robustness)
+  //       // In a real application, you might need a specific API call here to get details of a single flow by ID
+  //       console.warn(`Mashup with ID ${flowId} not found in available list for initialMashupId. This might indicate a timing issue or that the mashup list doesn't contain it.`);
+  //     }
 
-      if (mashupUrl) {
-        const currentParams = getValues('params');
-        // Only update 'endpoint' if it's different to prevent unnecessary form state updates
-        if (currentParams.endpoint !== mashupUrl) {
-            setValue('params', { ...currentParams, endpoint: mashupUrl });
-        }
-      } else {
-          // If no endpoint is found, ensure it's removed from params to avoid sending stale data
-          const currentParams = getValues('params');
-          if (Object.hasOwn(currentParams, 'endpoint')) {
-              const newParams = { ...currentParams };
-              delete newParams.endpoint;
-              setValue('params', newParams);
-          }
-      }
+  //     if (mashupUrl) {
+  //       const currentParams = getValues('params');
+  //       // Only update 'endpoint' if it's different to prevent unnecessary form state updates
+  //       if (currentParams.endpoint !== mashupUrl) {
+  //           setValue('params', { ...currentParams, endpoint: mashupUrl });
+  //       }
+  //     } else {
+  //         // If no endpoint is found, ensure it's removed from params to avoid sending stale data
+  //         const currentParams = getValues('params');
+  //         if (Object.hasOwn(currentParams, 'endpoint')) {
+  //             const newParams = { ...currentParams };
+  //             delete newParams.endpoint;
+  //             setValue('params', newParams);
+  //         }
+  //     }
 
-    } catch (error) {
-      console.error('Error fetching flow parameters:', error);
-      toast.error('Failed to fetch flow parameters');
-    } finally {
-      setLoadingParams(false);
-    }
-  }, [availableMashups, getValues, initialMashupId, setValue]);
+  //   } catch (error) {
+  //     console.error('Error fetching flow parameters:', error);
+  //     toast.error('Failed to fetch flow parameters');
+  //   } finally {
+  //     setLoadingParams(false);
+  //   }
+  // }, [availableMashups, getValues, initialMashupId, setValue]);
 
   useEffect(() => {
     // Fetch available scopes for the dropdown
@@ -137,7 +138,31 @@ export function NewControlForm({ catalogId, onClose, onSuccess, initialMashupId 
     if (watchMashupId && availableMashups.length > 0) {
       fetchFlowParams(watchMashupId);
     }
-  }, [watchMashupId, availableMashups, fetchFlowParams]); // fetchFlowParams is a dependency because it's memoized
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watchMashupId]);
+
+  const fetchFlowParams = async (flowId) => {
+    if (!flowId) return;
+    
+    setLoadingParams(true);
+    try {
+      const response = await getFlowParams(flowId);
+      const fetchedParams = response.data || {};
+      const updatedParams = { ...fetchedParams, threshold: '' }; // Add threshold param
+      setAvailableParams(updatedParams);
+      
+      const selectedMashup = availableMashups.find(mashup => mashup.id === flowId);
+      if (selectedMashup && selectedMashup.url) {
+        const updatedFormParams = { ...getValues('params'), endpoint: selectedMashup.url };
+        setValue('params', updatedFormParams);
+      }
+    } catch (error) {
+      console.error('Error fetching flow parameters:', error);
+      toast.error('Failed to fetch flow parameters');
+    } finally {
+      setLoadingParams(false);
+    }
+  };
 
   const addScope = () => {
     if (selectedScope && scopeValue) {
@@ -169,34 +194,63 @@ export function NewControlForm({ catalogId, onClose, onSuccess, initialMashupId 
     setValue('params', updatedParams);
   };
 
+  useEffect(() => {
+    // Si se proporciona un catalogId, asegúrate de guardarlo
+    if (catalogId) {
+      saveDraftCatalogId(catalogId);
+    }
+  }, [catalogId]);
+
   const onSubmit = async (data) => {
     setLoading(true);
-
+  
     try {
-      // 'data.params' should now correctly contain the 'endpoint' if applicable
-      const createdControl = await createControl(data);
-      
-      // Then create the scope set using the control ID if scopes exist
-      if (Object.keys(data.scopes).length > 0) {
-        const scopeSetData = {
-          controlId: createdControl.id,
-          scopes: data.scopes
-        };
-        
-        await createScopeSet(scopeSetData);
+      // Guardar catalogId si está disponible
+      if (catalogId) {
+        saveDraftCatalogId(catalogId);
+        // Asegúrate de que el control esté asociado al catálogo
+        data.catalogId = catalogId;
       }
-      
-      toast.success('Control created successfully with associated scopes');
-      onSuccess(createdControl.id, data.mashupId);
+
+      // If customSubmit is provided, use it instead of the default submit behavior
+      if (customSubmit) {
+        const result = await customSubmit(data);
+        onSuccess(result);
+      } else {
+        // Default behavior: create control and scope set
+        const response = await createControl(data);
+        const createdControl = response.data || response;
+        
+        // Then create the scope set using the control ID if scopes exist
+        if (Object.keys(data.scopes).length > 0) {
+          const scopeSetData = {
+            controlId: createdControl.id,
+            scopes: data.scopes
+          };
+          
+          await createScopeSet(scopeSetData);
+        }
+        
+        toast.success('Control created successfully with associated scopes');
+        onSuccess(createdControl);
+      }
     } catch (error) {
       console.error('Error creating control and scopes:', error);
-      const errorMessage = error.response?.data.error || 'Failed to create control and associate scopes';
-      toast.error(errorMessage);
+      // Handle specific error cases
+      if (error.status === 400) {
+        const errorMessage = error.message || 'Validation error in control data';
+        toast.error(errorMessage);
+      } else {
+        const errorMessage = error.response?.data?.msg || 
+                            error.response?.data?.message ||
+                            'Failed to create control and associate scopes';
+        toast.error(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
   };
-  
+
   // Function to format date for display in the calendar field
   const formatDate = (date) => {
     if (!date) return '';
@@ -512,6 +566,7 @@ export function NewControlForm({ catalogId, onClose, onSuccess, initialMashupId 
               <Button
                 type="submit"
                 disabled={loading}
+                variant="destructive"
               >
                 {loading ? 'Creating...' : 'Save'}
               </Button>
