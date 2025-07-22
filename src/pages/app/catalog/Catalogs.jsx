@@ -256,6 +256,32 @@ export function Catalogs() {
     },
   });
 
+  // Obtiene los catálogos seleccionados
+  const selectedCatalogs = useMemo(() => {
+    return table.getSelectedRowModel().rows.map(row => row.original);
+  }, [rowSelection, catalogs]); // <-- Actualiza dependencias para re-render en tiempo real
+
+  // Elimina todos los catálogos seleccionados en orden
+  const handleBulkDelete = async () => {
+    if (!selectedCatalogs.length) return;
+    setLoading(true);
+    let allSuccess = true;
+    for (const catalog of selectedCatalogs) {
+      try {
+        await deleteCatalog(catalog.id);
+      } catch (err) {
+        allSuccess = false;
+        toast.error(`Error deleting catalog: ${catalog.name}`);
+      }
+    }
+    if (allSuccess) {
+      toast.success('All selected catalogs succesfully deleted');
+      setCatalogs(prev => prev.filter(c => !selectedCatalogs.some(sel => sel.id === c.id)));
+    }
+    setLoading(false);
+    setRowSelection({});
+  };
+
   return (
     <Page name="Catalogs" className="h-full w-full">
       <div className="flex items-center justify-between gap-x-4">
@@ -303,7 +329,7 @@ export function Catalogs() {
         </div>
       )}
       
-      <div className="mt-4 border rounded-md">
+      <div className="mt-4 border rounded-md max-h-[600px] overflow-y-auto">
         <Table>
           <TableHeader className="bg-gray-50">
             {table.getHeaderGroups().map((headerGroup) => (
@@ -346,16 +372,41 @@ export function Catalogs() {
           </TableBody>
         </Table>
       </div>
-      
-      <div className="flex items-center justify-end py-4 space-x-2">
-        <Button variant="outline" size="sm" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
-          Previous
-        </Button>
-        <Button variant="outline" size="sm" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
-          Next
-        </Button>
+      <div className="flex items-center justify-between py-4 space-x-2">
+        <div className="flex items-center">
+          <Button
+            size="lg"
+            className={`flex items-center gap-2 shadow-lg ${
+              selectedCatalogs.length > 0
+                ? 'bg-red-600 text-white hover:bg-red-700'
+                : 'bg-gray-200 text-black cursor-not-allowed'
+            }`}
+            onClick={handleBulkDelete}
+            disabled={selectedCatalogs.length === 0}
+          >
+            <Trash className="h-5 w-5" />
+            Delete Selected
+          </Button>
+        </div>
+        <div className="flex items-center space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+          >
+            Previous
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+          >
+            Next
+          </Button>
+        </div>
       </div>
-      
       {/* Edit Dialog */}
       <Dialog open={!!editingCatalog} onOpenChange={(isOpen) => !isOpen && setEditingCatalog(null)}>
         <DialogContent className="sm:max-w-[500px]">
