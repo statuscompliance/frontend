@@ -2,90 +2,19 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, ExternalLink, ArrowLeft } from 'lucide-react';
+import { Loader2, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import Page from '@/components/basic-page.jsx';
 
 import { EmbeddedControlForm } from '@/forms/control/new/embedded-form';
-import { executeNodeRedMashup, getAllNodeRedFlows, createDraftCatalog, deleteDraftCatalog } from '@/services/mashups';
+import { executeNodeRedMashup, getAllNodeRedFlows } from '@/services/mashups';
+import { createDraftCatalog, deleteCatalog } from '@/services/catalogs';
 import { deleteControl } from '@/services/controls';
+import { getComputationById } from '@/services/computations';
+import { TestResults } from '@/components/mashups/TestResults';
+import { PreviousTests } from '@/components/mashups/PreviousTests';
+import { useMashupTests } from '@/hooks/use-mashup-tests';
 import { v4 as uuidv4 } from 'uuid';
-
-function TestResults({ 
-  testResults, 
-  loadingTestExecution, 
-  mashupDetails, 
-  onReset, 
-  onClose 
-}) {
-  if (loadingTestExecution) {
-    return (
-      <Card className="h-fit w-full">
-        <CardHeader>
-          <CardTitle>Running Test...</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="mr-2 h-6 w-6 animate-spin" />
-            <span>Running mashup test...</span>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (testResults) {
-    return (
-      <Card className="h-fit w-full">
-        <CardHeader>
-          <CardTitle>Test Results</CardTitle>
-        </CardHeader>
-        <CardContent className="w-full overflow-hidden space-y-4">
-          <div className="w-full">
-            <h4 className="text-md mb-2 font-medium">Complete Response:</h4>
-            <pre className="max-h-[400px] max-w-full overflow-auto whitespace-pre-wrap break-words rounded-md bg-gray-100 p-3 text-sm">
-              {typeof testResults === 'object' ? JSON.stringify(testResults, null, 2) : String(testResults)}
-            </pre>
-          </div>
-          
-          {mashupDetails?.id && (
-            <div className="flex justify-end">
-              <Button
-                variant="outline"
-                onClick={() => window.open(`/red#flow/${mashupDetails.id}`, '_blank')}
-              >
-                <ExternalLink className="mr-2 h-4 w-4" />
-                View Mashup in Node-RED
-              </Button>
-            </div>
-          )}
-
-          <div className="flex justify-end border-t pt-4 space-x-2">
-            <Button variant="outline" onClick={onReset}>
-              Create New Control
-            </Button>
-            <Button variant="outline" onClick={onClose}>
-              Close View
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  return (
-    <Card className="h-fit w-full">
-      <CardHeader>
-        <CardTitle>Mashup Test</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p className="text-muted-foreground">
-          The test will run automatically after creating the control.
-        </p>
-      </CardContent>
-    </Card>
-  );
-}
 
 function LoadingSetup() {
   return (
@@ -120,6 +49,7 @@ export function ControlCreationAndTestPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { mashup } = location.state || {};
+  const { addTest, getTestsForMashupSync, deleteTest } = useMashupTests();
 
   const [draftCatalogId, setDraftCatalogId] = useState(null);
   const [createdControlId, setCreatedControlId] = useState(null);
@@ -135,7 +65,13 @@ export function ControlCreationAndTestPage() {
         setLoadingInitialSetup(true);
         try {
           if (!draftCatalogId) {
-            const newCatalog = await createDraftCatalog();
+            const draftCatalogData = {
+              name: `Draft Catalog for ${mashup?.name || 'Mashup Test'} - ${new Date().toISOString()}`,
+              description: `Temporary catalog created for testing mashup: ${mashup?.name || 'Unknown mashup'}`,
+              startDate: new Date().toISOString().split('T')[0], // Current date in YYYY-MM-DD format
+              endDate: null
+            };
+            const newCatalog = await createDraftCatalog(draftCatalogData);
             if (!newCatalog || !newCatalog.id) {
               throw new Error('Could not create draft catalog or missing ID.');
             }
@@ -172,7 +108,7 @@ export function ControlCreationAndTestPage() {
         await deleteControl(createdControlId);
       }
       if (draftCatalogId) {
-        await deleteDraftCatalog(draftCatalogId);
+        await deleteCatalog(draftCatalogId);
       }
     } catch {
       // Silent cleanup - don't show errors to user since they're leaving the page
@@ -207,43 +143,101 @@ export function ControlCreationAndTestPage() {
       const baseUrl = import.meta.env.VITE_BASE_URL || 'http://localhost:3001/api/v1';
       const computationBackendUrl = `${baseUrl}/computations/bulk`;
       const userData = JSON.parse(localStorage.getItem('userData'));
+      const computationGroupId = uuidv4();
 
       const payloadForMashup = {
         endpoint: mashupDetails.endpoint,
         body: {
           backendUrl: computationBackendUrl,
-          computationGroup: uuidv4(),
+          computationGroup: computationGroupId,
           controlId: controlId
         }
       };
 
-      const computationResponse = await executeNodeRedMashup(
+      // Execute the mashup
+      const mashupResponse = await executeNodeRedMashup(
         payloadForMashup.endpoint,
         payloadForMashup.body,
         userData.basicAuth,
         userData.accessToken
       );
 
-      setTestResults(computationResponse);
+      // Check if mashup execution was successful (status 200)
+      if (mashupResponse && (mashupResponse.status === 200 || !mashupResponse.status)) {
+        toast.loading('Mashup executed successfully. Fetching computation results...', { 
+          id: 'mashup-test', 
+          duration: 0 
+        });
 
-      toast.success('Mashup executed successfully!', {
-        id: 'mashup-test',
-        description: (
-          <div className="mt-2 max-h-40 overflow-y-auto break-all text-wrap text-xs">
-            <h4 className="mb-1 font-semibold">Computation Results:</h4>
-            <pre className="whitespace-pre-wrap">{JSON.stringify(computationResponse, null, 2)}</pre>
-          </div>
-        ),
-        duration: 8000
-      });
+        try {
+          // Fetch the computation results using the computationGroupId
+          const computationResponse = await getComputationById(computationGroupId);
+          
+          // Combine both responses
+          const combinedResults = {
+            mashupResponse: mashupResponse,
+            computationResults: computationResponse
+          };
+
+          setTestResults(combinedResults);
+
+          // Save test results to IndexedDB
+          if (mashupDetails?.id) {
+            await addTest(mashupDetails.id, computationGroupId, combinedResults);
+          }
+
+          toast.success('Mashup and computation results retrieved successfully!', {
+            id: 'mashup-test',
+            description: (
+              <div className="mt-2 max-h-40 overflow-y-auto break-all text-wrap text-xs">
+                <h4 className="mb-1 font-semibold">Results:</h4>
+                <p>Mashup: {mashupResponse ? 'Success' : 'No response'}</p>
+                <p>Computations: {computationResponse ? 'Retrieved' : 'No data'}</p>
+              </div>
+            ),
+            duration: 8000
+          });
+
+        } catch (computationError) {
+          console.warn('Failed to fetch computation results:', computationError);
+          
+          // Still show mashup results even if computation fetch fails
+          setTestResults(mashupResponse);
+          
+          // Save partial test results to IndexedDB
+          if (mashupDetails?.id) {
+            await addTest(mashupDetails.id, computationGroupId, mashupResponse);
+          }
+          
+          toast.success('Mashup executed successfully!', {
+            id: 'mashup-test',
+            description: (
+              <div className="mt-2 max-h-40 overflow-y-auto break-all text-wrap text-xs">
+                <h4 className="mb-1 font-semibold">Mashup Results:</h4>
+                <pre className="whitespace-pre-wrap">{JSON.stringify(mashupResponse, null, 2)}</pre>
+                <p className="mt-1 text-yellow-600">Note: Could not fetch computation results.</p>
+              </div>
+            ),
+            duration: 8000
+          });
+        }
+      } else {
+        // Mashup execution failed
+        setTestResults(mashupResponse);
+        toast.error('Mashup execution completed with errors', { 
+          id: 'mashup-test', 
+          duration: 8000 
+        });
+      }
 
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.message || 'Unknown error';
       toast.error(`Mashup test failed: ${errorMessage}`, { id: 'mashup-test', duration: 8000 });
+      setTestResults({ error: errorMessage, originalError: error });
     } finally {
       setLoadingTestExecution(false);
     }
-  }, [mashupDetails]);
+  }, [mashupDetails, addTest]);
 
   const handleReset = useCallback(async () => {
     await cleanupDraftResources();
@@ -260,6 +254,25 @@ export function ControlCreationAndTestPage() {
     await cleanupDraftResources();
     navigate(-1);
   }, [navigate, cleanupDraftResources]);
+
+  const handleViewTest = useCallback((test) => {
+    setTestResults(test.results);
+    setIsFormCreating(false);
+  }, []);
+
+  const handleDeleteTest = useCallback(async (testId) => {
+    if (mashupDetails?.id) {
+      try {
+        await deleteTest(mashupDetails.id, testId);
+        toast.success('Test deleted successfully');
+      } catch (error) {
+        console.error('Error deleting test:', error);
+        toast.error('Failed to delete test');
+      }
+    }
+  }, [mashupDetails?.id, deleteTest]);
+
+  const previousTests = mashupDetails?.id ? getTestsForMashupSync(mashupDetails.id) : [];
 
   if (!mashup) {
     return (
@@ -285,7 +298,7 @@ export function ControlCreationAndTestPage() {
             <h1 className="text-2xl font-bold">
               {isFormCreating 
                 ? `${mashup.name || 'Loading...'} Test` 
-                : `Mashup Test: ${mashup.name || 'Loading...'}`
+                : `Test Results: ${mashup.name || 'Loading...'}`
               }
             </h1>
           </div>
@@ -314,12 +327,11 @@ export function ControlCreationAndTestPage() {
                     </CardContent>
                   </Card>
 
-                  <TestResults
-                    testResults={null}
-                    loadingTestExecution={false}
-                    mashupDetails={mashupDetails}
-                    onReset={handleReset}
-                    onClose={handleClose}
+                  <PreviousTests
+                    tests={previousTests}
+                    onDeleteTest={handleDeleteTest}
+                    onViewTest={handleViewTest}
+                    mashupName={mashupDetails?.name || 'Unknown Mashup'}
                   />
                 </div>
               ) : (

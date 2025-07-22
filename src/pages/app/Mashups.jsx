@@ -193,6 +193,13 @@ export function Mashups() {
                   <Edit className="mr-2 h-4 w-4" />
                   Edit in Node-RED
                 </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => handleOpenTestView(flow)}
+                  disabled={!(flow.endpoint && flow.mainInputType === 'http in')}
+                >
+                  <Play className="mr-2 h-4 w-4" />
+                  Test
+                </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => handleDeleteConfirm(flow)}
                   className="text-red-600"
@@ -205,28 +212,6 @@ export function Mashups() {
           );
         },
       },
-      // New column for the Test button
-      columnHelper.display({
-        id: 'test_action',
-        header: 'Test',
-        cell: ({ row }) => {
-          const mashup = row.original;
-          // Disable if not testable (e.g., no endpoint or not an http in type)
-          const isTestable = mashup.endpoint && mashup.mainInputType === 'http in';
-          return (
-            <Button
-              variant="default" // You can choose a solid variant like "default"
-              className="bg-green-600 text-white hover:bg-green-700" // Green button
-              onClick={() => handleOpenTestView(mashup)}
-              disabled={!isTestable} // Disable if not testable
-            >
-              <Play className="mr-2 h-4 w-4" /> Test
-            </Button>
-          );
-        },
-        enableSorting: false,
-        enableHiding: false,
-      }),
     ],
     [handleDeleteConfirm, userData.authority, handleOpenTestView]
   );
