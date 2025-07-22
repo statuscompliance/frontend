@@ -14,4 +14,14 @@ export const controlSchema = z.object({
   }),
   scopes: z.record(z.string()).optional(),
   catalogId: z.string().min(1, { message: 'Catalog ID is required' })
-});
+}).refine(
+  (data) => {
+    if (!data.endDate || !data.startDate) return true;
+    // Comparar fechas en formato YYYY-MM-DD
+    return new Date(data.endDate) >= new Date(data.startDate);
+  },
+  {
+    message: 'End date cannot be before start date',
+    path: ['endDate'],
+  }
+);

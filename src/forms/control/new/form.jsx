@@ -29,6 +29,9 @@ export function NewControlForm({ catalogId, onClose, onSuccess }) {
   const [scopeValue, setScopeValue] = useState('');
   const [selectedParam, setSelectedParam] = useState('');
   const [paramValue, setParamValue] = useState('');
+  const [noScopesWarning, setNoScopesWarning] = useState(false);
+  const [buttonDisabled, setButtonDisabled] = useState(false);
+  const [confirmMode, setConfirmMode] = useState(false);
 
   // Setup form with zod validation
   const form = useForm({
@@ -141,6 +144,20 @@ export function NewControlForm({ catalogId, onClose, onSuccess }) {
   };
 
   const onSubmit = async (data) => {
+    // Si no hay scopes y no estamos en modo confirmación, mostrar aviso y bloquear botón
+    if (!data.scopes || Object.keys(data.scopes).length === 0) {
+      if (!confirmMode) {
+        toast.warning('You are about to create a control without associated scopes.');
+        setButtonDisabled(true);
+        setNoScopesWarning(true);
+        setTimeout(() => {
+          setButtonDisabled(false);
+          setConfirmMode(true);
+        }, 2000);
+        return;
+      }
+    }
+
     setLoading(true);
 
     try {
@@ -157,7 +174,7 @@ export function NewControlForm({ catalogId, onClose, onSuccess }) {
         await createScopeSet(scopeSetData);
       }
       
-      toast.success('Control created successfully with associated scopes');
+      toast.success('Control created successfully' + (Object.keys(data.scopes).length > 0 ? ' with associated scopes' : ' without scopes'));
       onSuccess();
     } catch (error) {
       console.error('Error creating control and scopes:', error);
@@ -165,6 +182,8 @@ export function NewControlForm({ catalogId, onClose, onSuccess }) {
       toast.error(errorMessage);
     } finally {
       setLoading(false);
+      setConfirmMode(false);
+      setNoScopesWarning(false);
     }
   };
   
@@ -479,9 +498,11 @@ export function NewControlForm({ catalogId, onClose, onSuccess }) {
               </Button>
               <Button
                 type="submit"
-                disabled={loading}
+                disabled={loading || buttonDisabled}
               >
-                {loading ? 'Creating...' : 'Save'}
+                {loading
+                  ? 'Creating...'
+                  : (confirmMode ? 'Confirm' : 'Save')}
               </Button>
             </DialogFooter>
           </form>
