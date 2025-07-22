@@ -61,7 +61,6 @@ function App() {
               </Route>
               <Route path="scopes" element={<Scopes />} />
               <Route path="mashups" element={<Mashups />} />
-              {/* <Route path="secrets" element={<Secrets />} /> */}
               <Route path="secrets" element={<Secrets />} />
               <Route path="editor">
                 <Route index element={<Editor />} />
