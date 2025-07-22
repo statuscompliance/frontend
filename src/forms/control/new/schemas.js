@@ -1,8 +1,8 @@
 import * as z from 'zod';
 
 export const controlSchema = z.object({
-  name: z.string().min(1, { message: 'Name is required' }),
-  description: z.string().nullable().optional(),
+  name: z.string().min(1, { message: 'Name is required' }).max(40, { message: 'Name must be at most 40 characters' }),
+  description: z.string().max(140, { message: 'Description must be at most 140 characters' }).nullable().optional(),
   period: z.enum(['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'], { 
     message: 'Period must be selected' 
   }),
