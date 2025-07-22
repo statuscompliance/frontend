@@ -35,10 +35,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useAuth } from '@/hooks/use-auth';
-import { Link } from 'react-router-dom';
-
-// Import the test view page
-import { ControlCreationAndTestView } from '@/pages/app/mashups/ControlCreationAndTestView';
+import { Link, useNavigate } from 'react-router-dom';
 
 
 const columnHelper = createColumnHelper();
@@ -56,11 +53,8 @@ export function Mashups() {
     numNodes: false,
   });
   const { userData } = useAuth();
+  const navigate = useNavigate();
   const nodeRedUrl = import.meta.env.VITE_NODE_RED_URL || 'http://localhost:1880';
-
-  // States for the testing dialog
-  const [isTestViewOpen, setIsTestViewOpen] = useState(false);
-  const [selectedMashupForTest, setSelectedMashupForTest] = useState(null);
 
 
   // Fetch flows on component mount
@@ -121,21 +115,12 @@ export function Mashups() {
   }, [flows, flowToDelete]);
 
 
-  // Handler to open the test view for a specific mashup
+  // Handler to navigate to the test page for a specific mashup
   const handleOpenTestView = useCallback((mashup) => {
-    console.log('[Mashups] Opening test view for mashup:', JSON.stringify(mashup, null, 2));
-    setSelectedMashupForTest(mashup);
-    setIsTestViewOpen(true);
-  }, []);
+    navigate('/app/mashups/control-test', { state: { mashup } });
+  }, [navigate]);
 
-  // Handler to close the test view
-  const handleCloseTestView = useCallback(() => {
-    console.log('[Mashups] Closing test view.');
-    setIsTestViewOpen(false);
-    setSelectedMashupForTest(null);
-    // Optionally, you can reload flows here if necessary
-    // fetchFlows();
-  }, []);
+  // Delete handler remains the same
 
 
   const columns = useMemo(
@@ -231,7 +216,7 @@ export function Mashups() {
           return (
             <Button
               variant="default" // You can choose a solid variant like "default"
-              className="bg-green-600 hover:bg-green-700 text-white" // Green button
+              className="bg-green-600 text-white hover:bg-green-700" // Green button
               onClick={() => handleOpenTestView(mashup)}
               disabled={!isTestable} // Disable if not testable
             >
@@ -401,15 +386,6 @@ export function Mashups() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Control Creation and Test View Dialog */}
-      {selectedMashupForTest && (
-        <ControlCreationAndTestView
-          mashup={selectedMashupForTest}
-          isOpen={isTestViewOpen}
-          onClose={handleCloseTestView}
-        />
-      )}
     </Page>
   );
 }

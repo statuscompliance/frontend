@@ -63,12 +63,10 @@ export async function getAllNodeRedFlows() {
       return tab;
     });
 
-    console.log("Processed Node-RED flows:", allFlowsInfo); // For debugging
-
     return { data: allFlowsInfo };
 
   } catch (error) {
-    console.error("Error fetching all Node-RED flows:", error);
+    console.error('Error fetching all Node-RED flows:', error);
     // Rethrow the error so it can be caught by the calling code
     throw error;
   }
@@ -130,8 +128,7 @@ export async function createDraftCatalog() {
     };
 
     const response = await createCatalog(catalogData);
-    console.log("Response: ", JSON.stringify(response, null, 2));
-
+    
     // Returns the catalogue by default, no response.data required
     if (response) {
       return response;
@@ -162,7 +159,7 @@ export async function createTestControl(mashupName, selectedCatalogId) {
       period: 'DAILY',
       startDate: `${new Date().toISOString()}`,
       params: {
-        endpoint: "/draft-endpoint",
+        endpoint: '/draft-endpoint',
         threshold: 0
       },
       status: 'draft',
@@ -172,7 +169,7 @@ export async function createTestControl(mashupName, selectedCatalogId) {
     const response = await apiClient.post('/controls', initialControlData);
 
     if (response) {
-      console.info("Created Draft Control:", JSON.stringify(response, null, 2));
+      console.info('Created Draft Control:', JSON.stringify(response, null, 2));
       return response;
     } else {
       console.warn('API returned a successful response for creating a test control, but the response object was empty or null:', response);
@@ -193,19 +190,15 @@ export async function createTestControl(mashupName, selectedCatalogId) {
  */
 export async function executeNodeRedMashup(endpoint, body, credentials, accessToken) {
 
-  const currentDate = new Date().toISOString().split('T')[0];
-
   if (!credentials) {
-    console.warn("Warning: Node-RED credentials are not properly configured.");
+    console.warn('Warning: Node-RED credentials are not properly configured.');
   }
 
   if(!accessToken){
-    console.warn("Warning: Node-RED accessToken is not properly configured.")
+    console.warn('Warning: Node-RED accessToken is not properly configured.');
   }
 
   try {
-    console.log(`[executeNodeRedMashup] Performing POST to /api/v1/${endpoint} with body:`, body);
-
     const response = await nodeRedClient.post(`/api/v1${endpoint}`, body, {
       headers: {
         'Content-Type': 'application/json',
@@ -213,27 +206,9 @@ export async function executeNodeRedMashup(endpoint, body, credentials, accessTo
         'x-access-token': accessToken
       }
     });
-
-    console.log('[executeNodeRedMashup] Successful response:', response.data);
     return response.data;
   } catch (error) {
-    console.error('[executeNodeRedMashup] Error executing Node-RED mashup:', error.response ? error.response.data : error.message);
-
-    let errorMessage = 'Unknown error executing Node-RED mashup.';
-    if (error.response) {
-      if (error.response.status === 401 || error.response.status === 403) {
-        errorMessage = 'Unauthorized access. Your session may have expired. Please log in again.';
-      } else if (error.response.data && error.response.data.message) {
-        errorMessage = `Server error: ${error.response.data.message}`;
-      } else {
-        errorMessage = `Network or server error: ${error.response.status}`;
-      }
-    } else if (error.request) {
-      errorMessage = 'No response received from Node-RED server. Make sure the service is running.';
-    } else {
-      errorMessage = `Error configuring the request: ${error.message}`;
-    }
-    toast.error(errorMessage);
+    console.error('Error executing Node-RED mashup:', error);
     throw error;
   }
 }

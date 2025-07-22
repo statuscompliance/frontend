@@ -12,6 +12,7 @@ import { ControlDetails } from '@/pages/app/ControlDetails';
 import { ComputationDetails } from '@/pages/app/ComputationDetails';
 import { CatalogWizard } from './pages/app/catalog/CatalogWizard.jsx';
 import { Mashups } from '@/pages/app/Mashups';
+import { ControlCreationAndTestPage } from '@/pages/app/mashups/ControlCreationAndTestPage';
 import { Scopes } from '@/pages/app/Scopes';
 import { Dashboards } from '@/pages/app/Dashboards';
 import { DashboardDetails } from '@/pages/app/dashboard/DashboardDetails';
@@ -59,7 +60,10 @@ function App() {
                 <Route path="folders/:id" element={<FolderDetails />} />
               </Route>
               <Route path="scopes" element={<Scopes />} />
-              <Route path="mashups" element={<Mashups />} />
+              <Route path="mashups">
+                <Route index element={<Mashups />} />
+                <Route path="control-test" element={<ControlCreationAndTestPage />} />
+              </Route>
               <Route path="editor">
                 <Route index element={<Editor />} />
                 <Route path=":id" element={<Editor />} />
