@@ -75,8 +75,7 @@ export function SecretModal({ open, onClose, onSubmit, initialData }) {
     try {
       await onSubmit(values, initialData?.id);
     } catch (err) {
-      console.error('Secrets handleSubmit error:', err);
-      toast.error('Failed to save secret');
+      toast.error('Unexpected error while trying to submit the secret.')
     }
   };
 

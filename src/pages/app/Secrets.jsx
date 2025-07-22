@@ -101,8 +101,11 @@ export function Secrets() {
         setLastCreatedSecret(result);
       }
     } catch (err) {
-      toast.error('Failed to save secret');
-      console.error('Error saving secret:', err);
+      if (err?.response?.status === 409) {
+        toast.error('A secret with this name already exists.');
+      } else {
+        toast.error('Failed to save secret');
+      }
     }
   };
 
