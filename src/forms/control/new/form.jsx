@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -56,51 +56,51 @@ export function NewControlForm({ catalogId, onClose, onSuccess, initialMashupId,
   const isMashupFieldVisible = !initialMashupId;
 
   // // Memoize fetchFlowParams to prevent unnecessary re-creations
-  // const fetchFlowParams = useCallback(async (flowId) => {
-  //   if (!flowId) return;
+  const fetchFlowParams = useCallback(async (flowId) => {
+    if (!flowId) return;
     
-  //   setLoadingParams(true);
-  //   try {
-  //     const response = await getFlowParams(flowId);
-  //     const fetchedParams = response.data || {};
-  //     const updatedParams = { ...fetchedParams, threshold: '' }; // Always add threshold param
-  //     setAvailableParams(updatedParams);
+    setLoadingParams(true);
+    try {
+      const response = await getFlowParams(flowId);
+      const fetchedParams = response.data || {};
+      const updatedParams = { ...fetchedParams, threshold: '' }; // Always add threshold param
+      setAvailableParams(updatedParams);
       
-  //     let mashupUrl = null;
+      let mashupUrl = null;
 
-  //     // Logic to find the mashup's URL (endpoint)
-  //     const foundMashup = availableMashups.find(m => m.id === flowId);
-  //     if (foundMashup) {
-  //       mashupUrl = foundMashup.endpoint; // Assuming 'endpoint' is the property containing the URL
-  //     } else if (initialMashupId && initialMashupId === flowId) {
-  //       // Fallback for initialMashupId if it's not in availableMashups yet (unlikely with improved useEffect, but good for robustness)
-  //       // In a real application, you might need a specific API call here to get details of a single flow by ID
-  //       console.warn(`Mashup with ID ${flowId} not found in available list for initialMashupId. This might indicate a timing issue or that the mashup list doesn't contain it.`);
-  //     }
+      // Logic to find the mashup's URL (endpoint)
+      const foundMashup = availableMashups.find(m => m.id === flowId);
+      if (foundMashup) {
+        mashupUrl = foundMashup.endpoint; // Assuming 'endpoint' is the property containing the URL
+      } else if (initialMashupId && initialMashupId === flowId) {
+        // Fallback for initialMashupId if it's not in availableMashups yet (unlikely with improved useEffect, but good for robustness)
+        // In a real application, you might need a specific API call here to get details of a single flow by ID
+        console.warn(`Mashup with ID ${flowId} not found in available list for initialMashupId. This might indicate a timing issue or that the mashup list doesn't contain it.`);
+      }
 
-  //     if (mashupUrl) {
-  //       const currentParams = getValues('params');
-  //       // Only update 'endpoint' if it's different to prevent unnecessary form state updates
-  //       if (currentParams.endpoint !== mashupUrl) {
-  //           setValue('params', { ...currentParams, endpoint: mashupUrl });
-  //       }
-  //     } else {
-  //         // If no endpoint is found, ensure it's removed from params to avoid sending stale data
-  //         const currentParams = getValues('params');
-  //         if (Object.hasOwn(currentParams, 'endpoint')) {
-  //             const newParams = { ...currentParams };
-  //             delete newParams.endpoint;
-  //             setValue('params', newParams);
-  //         }
-  //     }
+      if (mashupUrl) {
+        const currentParams = getValues('params');
+        // Only update 'endpoint' if it's different to prevent unnecessary form state updates
+        if (currentParams.endpoint !== mashupUrl) {
+          setValue('params', { ...currentParams, endpoint: mashupUrl });
+        }
+      } else {
+        // If no endpoint is found, ensure it's removed from params to avoid sending stale data
+        const currentParams = getValues('params');
+        if (Object.hasOwn(currentParams, 'endpoint')) {
+          const newParams = { ...currentParams };
+          delete newParams.endpoint;
+          setValue('params', newParams);
+        }
+      }
 
-  //   } catch (error) {
-  //     console.error('Error fetching flow parameters:', error);
-  //     toast.error('Failed to fetch flow parameters');
-  //   } finally {
-  //     setLoadingParams(false);
-  //   }
-  // }, [availableMashups, getValues, initialMashupId, setValue]);
+    } catch (error) {
+      console.error('Error fetching flow parameters:', error);
+      toast.error('Failed to fetch flow parameters');
+    } finally {
+      setLoadingParams(false);
+    }
+  }, [availableMashups, getValues, initialMashupId, setValue]);
 
   useEffect(() => {
     // Fetch available scopes for the dropdown
@@ -140,29 +140,6 @@ export function NewControlForm({ catalogId, onClose, onSuccess, initialMashupId,
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watchMashupId]);
-
-  const fetchFlowParams = async (flowId) => {
-    if (!flowId) return;
-    
-    setLoadingParams(true);
-    try {
-      const response = await getFlowParams(flowId);
-      const fetchedParams = response.data || {};
-      const updatedParams = { ...fetchedParams, threshold: '' }; // Add threshold param
-      setAvailableParams(updatedParams);
-      
-      const selectedMashup = availableMashups.find(mashup => mashup.id === flowId);
-      if (selectedMashup && selectedMashup.url) {
-        const updatedFormParams = { ...getValues('params'), endpoint: selectedMashup.url };
-        setValue('params', updatedFormParams);
-      }
-    } catch (error) {
-      console.error('Error fetching flow parameters:', error);
-      toast.error('Failed to fetch flow parameters');
-    } finally {
-      setLoadingParams(false);
-    }
-  };
 
   const addScope = () => {
     if (selectedScope && scopeValue) {

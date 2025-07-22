@@ -176,7 +176,7 @@ export function EmbeddedControlForm({ catalogId, onClose, onSuccess, initialMash
 
   const removeParam = (key) => {
     // Prevent removal of hidden/system parameters
-    if (key === 'backendUrl') {
+    if (key === 'backendUrl' || key === 'endpoint') {
       console.warn('Cannot remove system parameter:', key);
       return;
     }
@@ -211,7 +211,6 @@ export function EmbeddedControlForm({ catalogId, onClose, onSuccess, initialMash
         await createScopeSet(scopeSetData);
       }
       
-      toast.success('Control created successfully with associated scopes');
       onSuccess(createdControl.id, data.mashupId);
     } catch (error) {
       console.error('Error creating control and scopes:', error);
@@ -398,14 +397,16 @@ export function EmbeddedControlForm({ catalogId, onClose, onSuccess, initialMash
                 <div key={key} className="flex items-center rounded-md bg-gray-100">
                   <Badge key={key} variant="outline" className="px-2 py-1">
                     <span>{key}: {value}</span>
-                    <div 
-                      role="button"
-                      tabIndex="0"
-                      className="ml-1 flex cursor-pointer items-center text-center"
-                      onClick={() => removeParam(key)}
-                    >
-                      <X size="14" />
-                    </div>
+                    {key !== 'endpoint' && (
+                      <div 
+                        role="button"
+                        tabIndex="0"
+                        className="ml-1 flex cursor-pointer items-center text-center"
+                        onClick={() => removeParam(key)}
+                      >
+                        <X size="14" />
+                      </div>
+                    )}
                   </Badge>
                 </div>
               ))}
