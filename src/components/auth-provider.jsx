@@ -16,7 +16,8 @@ export const AuthProvider = ({ children }) => {
   // Ref to store the interceptor references for cleanup
   const axiosInterceptorRef = useRef(null);
   const nodeRedInterceptorRef = useRef(null);
-  
+  let isLoggingOut = false; // Flag to prevent multiple logout requests
+
   // Handle node token change
   useEffect(() => {
     if (nodeRedToken) {
@@ -31,30 +32,30 @@ export const AuthProvider = ({ children }) => {
   // Refresh token on app boot
   useEffect(() => {
     void refreshUserToken();
-    
+
     // Configure interceptors if authenticated
     if (isAuthenticated) {
       setupInterceptors();
     }
-    
+
     // Cleanup interceptors on unmount
     return () => {
       cleanupInterceptors();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isAuthenticated]);
 
   /**
    * Configures the interceptors for axios and nodeRed clients
    */
   const setupInterceptors = () => {
     cleanupInterceptors();
-    
+
     axiosInterceptorRef.current = axiosClient.interceptors.response.use(
       response => response,
       axiosLogoutInterceptor
     );
-    
+
     nodeRedInterceptorRef.current = nodeRedClient.interceptors.response.use(
       response => response,
       axiosLogoutInterceptor
@@ -69,7 +70,7 @@ export const AuthProvider = ({ children }) => {
       axiosClient.interceptors.response.eject(axiosInterceptorRef.current);
       axiosInterceptorRef.current = null;
     }
-    
+
     if (nodeRedInterceptorRef.current !== null) {
       nodeRedClient.interceptors.response.eject(nodeRedInterceptorRef.current);
       nodeRedInterceptorRef.current = null;
@@ -135,16 +136,16 @@ export const AuthProvider = ({ children }) => {
 
         try {
           const refreshed = await refreshUserToken();
-          
+
           if (!refreshed) {
             throw new Error('Token refresh failed');
           }
-          
+
           // Update the original request with the new access token
           if (userData?.accessToken) {
             originalRequest.headers['Authorization'] = `Bearer ${userData.accessToken}`;
           }
-          
+
           processQueue(null);
           return axiosClient(originalRequest);
         } catch (err) {
@@ -156,11 +157,11 @@ export const AuthProvider = ({ children }) => {
           isRefreshing = false;
         }
       }
-      
+
       // If the request has already been retried, reject the promise
       return Promise.reject(error);
     };
-  })();  
+  })();
 
   /**
    * Logs in with a registered user
@@ -169,8 +170,9 @@ export const AuthProvider = ({ children }) => {
    * @param {string} credentials.password - Password
    * @returns {Promise} - Promise with the response
    */
-  async function authenticate ({ username, password }) {
-    const { message: _, ...userData } = await apiClient.post('/users/signIn', { username, password });
+
+  async function authenticate ({ username, password, totpToken }) {
+    const { message: _, ...userData } = await apiClient.post('/users/signIn', { username, password, totpToken });
     setUserData(userData);
     setupInterceptors();
   };
@@ -178,14 +180,17 @@ export const AuthProvider = ({ children }) => {
   /**
    * Logs out the current user
    */
-  function unauthenticate() {
+  async function unauthenticate() {
+    if (isLoggingOut) return; // Evita logout doble
+    isLoggingOut = true;
     try {
-      apiClient.get('/users/signOut');
+      await apiClient.get('/users/signOut');
     } catch (error) {
       console.error(error);
     } finally {
       cleanupInterceptors();
-      setUserData();
+      setUserData(null);
+      isLoggingOut = false;
     }
   };
 
