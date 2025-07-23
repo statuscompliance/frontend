@@ -12,7 +12,7 @@ export const AuthProvider = ({ children }) => {
   const [userData, setUserData] = useStorage('userData');
   const [, setNodeToken] = useStorage('token');
   const nodeRedToken = useMemo(() => userData?.nodeRedToken, [userData]);
-  const isAuthenticated = useMemo(() => !!userData, [userData]);
+  const isAuthenticated = useMemo(() => !!userData && !userData.requires2FA, [userData]);
   // Ref to store the interceptor references for cleanup
   const axiosInterceptorRef = useRef(null);
   const nodeRedInterceptorRef = useRef(null);
@@ -33,8 +33,8 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     void refreshUserToken();
 
-    // Configure interceptors if authenticated
-    if (isAuthenticated) {
+    // Configure interceptors if authenticated and not requiring 2FA
+    if (isAuthenticated && !userData?.requires2FA) {
       setupInterceptors();
     }
 
@@ -43,7 +43,7 @@ export const AuthProvider = ({ children }) => {
       cleanupInterceptors();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated]);
+  }, [isAuthenticated, userData?.requires2FA]);
 
   /**
    * Configures the interceptors for axios and nodeRed clients
@@ -81,7 +81,8 @@ export const AuthProvider = ({ children }) => {
    * Refreshes the user token
    */
   async function refreshUserToken() {
-    if (isAuthenticated) {
+    // Don't refresh token if user data indicates 2FA is required
+    if (isAuthenticated && userData?.accessToken && !userData?.requires2FA) {
       try {
         const { accessToken } = await refreshToken();
         setUserData((p) => ({ ...p, accessToken }));
@@ -168,13 +169,23 @@ export const AuthProvider = ({ children }) => {
    * @param {object} credentials - User credentials
    * @param {string} credentials.username - Username
    * @param {string} credentials.password - Password
+   * @param {string} credentials.totpToken - TOTP token for 2FA
    * @returns {Promise} - Promise with the response
    */
-
   async function authenticate ({ username, password, totpToken }) {
-    const { message: _, ...userData } = await apiClient.post('/users/signIn', { username, password, totpToken });
+    const response = await apiClient.post('/users/signIn', { username, password, totpToken });
+    
+    // If 2FA is required, don't set full user data yet
+    if (response.requires2FA) {
+      setUserData(response); // This will store the 2FA requirement info
+      return response; // Return the response so the UI can handle 2FA
+    }
+    
+    // Extract userData, excluding the message
+    const { message: _, ...userData } = response;
     setUserData(userData);
     setupInterceptors();
+    return userData;
   };
 
   /**
