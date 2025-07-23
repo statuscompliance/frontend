@@ -294,7 +294,8 @@ export function CatalogControlsStep({ initialControls = [], catalogId, onSubmit,
         <h2 className="text-left text-xl font-semibold">Draft Controls</h2>
         <Button 
           onClick={handleAddControl}
-          className="border-2 border-sidebar-accent bg-sidebar-accent hover:bg-secondary hover:text-sidebar-accent"
+          // Updated styling for the button
+          className="border-2 border-black bg-white text-black hover:bg-gray-100 hover:text-black"
         >
           <Plus className="mr-2 h-4 w-4" />
           Add Draft Control
@@ -385,7 +386,7 @@ export function CatalogControlsStep({ initialControls = [], catalogId, onSubmit,
                         </Badge>
                       ))}
                     </div>
-                  )}  
+                  )} 
                   {control.params && Object.keys(control.params).length > 0 && (
                     <div className="mt-1 flex flex-wrap items-center gap-1">
                       <span>Parameters: </span>
@@ -454,7 +455,7 @@ export function CatalogControlsStep({ initialControls = [], catalogId, onSubmit,
         <Button 
           onClick={handleSubmit} 
           disabled={isSubmitting || controls.length === 0}
-          className="min-w-[120px] bg-white text-primary hover:bg-secondary"
+          className="min-w-[120px] bg-chart-1 text-primary hover:bg-green-600"
         >
           {isSubmitting ? (
             <>

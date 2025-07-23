@@ -26,17 +26,26 @@ import { cn } from '@/lib/utils';
 
 // Schema validation for catalog info
 const catalogInfoSchema = z.object({
-  name: z.string().min(1, { message: 'Catalog name is required' }),
+  name: z.string()
+    .min(1, { message: 'Catalog name is required' })
+    .max(40, { message: 'Catalog name must be at most 40 characters' }), // Added max length
+  description: z.string()
+    .min(1, { message: 'Description is required' }) // Made description required
+    .max(140, { message: 'Description must be at most 140 characters' }), // Added max length
   startDate: z.date({
     required_error: 'Start date is required',
   }),
-  endDate: z.date().optional(),
+  endDate: z.date({
+    required_error: 'End date is required', // Made end date required
+  }),
 }).refine(data => {
-  return !data.endDate || data.startDate <= data.endDate;
+  return data.startDate <= data.endDate;
 }, {
   message: 'End date must be after start date',
   path: ['endDate']
 });
+
+const LOCALSTORAGE_KEY = 'catalogWizardCache'; // New constant for localStorage key
 
 export function CatalogInfoStep({ initialData = {}, onSubmit, isSubmitting, apiError = null }) {
   const [submitError, setSubmitError] = useState(null);
@@ -70,6 +79,22 @@ export function CatalogInfoStep({ initialData = {}, onSubmit, isSubmitting, apiE
     }
   }, [apiError]);
 
+  // Save form values to localStorage on every change (New Feature)
+  useEffect(() => {
+    const subscription = form.watch((values) => {
+      try {
+        localStorage.setItem(LOCALSTORAGE_KEY, JSON.stringify({
+          ...initialData, // Preserve initial data like ID if present
+          ...values
+        }));
+      } catch (e) {
+        // Silently catch localStorage errors (e.g., storage full)
+        console.warn('Could not save to localStorage:', e);
+      }
+    });
+    return () => subscription.unsubscribe(); // Cleanup subscription
+  }, [form, initialData]);
+
   const handleSubmit = (data) => {
     setSubmitError(null);
     onSubmit(data);
@@ -77,7 +102,7 @@ export function CatalogInfoStep({ initialData = {}, onSubmit, isSubmitting, apiE
 
   return (
     <div className="py-4 text-left">
-      <h2 className="mb-6 text-xl font-semibold">Catalog Information</h2>
+      <h2 className="mb-6 text-xl font-semibold">Basic Catalog Information</h2> {/* Updated title */}
       
       {submitError && (
         <Alert variant="destructive" className="mb-6">
@@ -106,9 +131,14 @@ export function CatalogInfoStep({ initialData = {}, onSubmit, isSubmitting, apiE
                     placeholder="Enter catalog name" 
                     {...field} 
                     disabled={isSubmitting} 
+                    maxLength={40} // Added maxLength
                   />
                 </FormControl>
                 <FormMessage />
+                {/* Character counter for name */}
+                <div className="text-xs text-muted-foreground text-right">
+                  {field.value?.length || 0}/40
+                </div>
               </FormItem>
             )}
           />
@@ -119,7 +149,7 @@ export function CatalogInfoStep({ initialData = {}, onSubmit, isSubmitting, apiE
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="text-base font-medium">
-                  Description
+                  Description <span className="text-red-500">*</span> {/* Added required indicator */}
                 </FormLabel>
                 <FormControl>
                   <Textarea 
@@ -127,9 +157,14 @@ export function CatalogInfoStep({ initialData = {}, onSubmit, isSubmitting, apiE
                     rows={4}
                     {...field} 
                     disabled={isSubmitting} 
+                    maxLength={140} // Added maxLength
                   />
                 </FormControl>
                 <FormMessage />
+                {/* Character counter for description */}
+                <div className="text-xs text-muted-foreground text-right">
+                  {field.value?.length || 0}/140
+                </div>
               </FormItem>
             )}
           />
@@ -183,7 +218,7 @@ export function CatalogInfoStep({ initialData = {}, onSubmit, isSubmitting, apiE
               render={({ field }) => (
                 <FormItem className="flex flex-col">
                   <FormLabel className="text-base font-medium">
-                    End Date
+                    End Date <span className="text-red-500">*</span> {/* Added required indicator */}
                   </FormLabel>
                   <Popover>
                     <PopoverTrigger asChild>
@@ -227,7 +262,7 @@ export function CatalogInfoStep({ initialData = {}, onSubmit, isSubmitting, apiE
             <Button 
               type="submit" 
               disabled={isSubmitting}
-              className="min-w-[120px] bg-white text-primary hover:bg-secondary"
+              className="min-w-[120px] bg-chart-1 text-white hover:bg-green-600"
             >
               {isSubmitting ? (
                 <>

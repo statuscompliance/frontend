@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Check, AlertCircle, Trash } from 'lucide-react';
+import { Loader2, Check, AlertCircle, Trash, Plus } from 'lucide-react'; // Added Plus icon
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { z } from 'zod';
@@ -14,10 +14,10 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { 
-  Card, 
-  CardContent, 
-  CardHeader, 
+import {
+  Card,
+  CardContent,
+  CardHeader,
   CardTitle,
   CardFooter
 } from '@/components/ui/card';
@@ -37,8 +37,12 @@ import { getDraftDashboardUid, clearDraftDashboardUid } from '@/utils/draftStora
 
 // Dashboard configuration schema
 const dashboardConfigSchema = z.object({
-  title: z.string().min(1, { message: 'Dashboard title is required' }),
-  description: z.string().optional(),
+  title: z.string()
+    .min(1, { message: 'Dashboard title is required' })
+    .max(40, { message: 'Dashboard title must be at most 40 characters' }), // Added max length
+  description: z.string()
+    .max(140, { message: 'Description must be at most 140 characters' }) // Added max length
+    .optional(),
   panels: z.array(
     z.object({
       title: z.string().min(1, { message: 'Panel title is required' }),
@@ -63,7 +67,7 @@ export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalo
   const [showAddPanelForm, setShowAddPanelForm] = useState(false);
   const [tempDashboardUid, setTempDashboardUid] = useState(null);
   const [isRemovingPanel, setIsRemovingPanel] = useState(false);
-  
+
   // Setup form with zod resolver
   const form = useForm({
     resolver: zodResolver(dashboardConfigSchema),
@@ -80,28 +84,29 @@ export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalo
     name: 'panels',
   });
 
-  // Try to load dashboard UID from localStorage
+  // Try to load dashboard UID from localStorage on initial mount
   useEffect(() => {
     const draftDashboardUid = getDraftDashboardUid();
     if (draftDashboardUid) {
       setTempDashboardUid(draftDashboardUid);
-      
-      // Load existing panels from the dashboard
-      if (fields.length === 0) {
+      // Load existing panels from the dashboard only if they haven't been loaded yet
+      // This helps prevent unnecessary re-fetches if panels are already in form state
+      if (form.getValues('panels').length === 0) {
         loadDashboardPanels(draftDashboardUid);
       }
     } else {
       toast.error('No dashboard template found. Please go back to the Controls step.');
     }
+    // This effect now runs only once on mount to initialize tempDashboardUid
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fields.length]);
+  }, []);
 
   // Function to load existing panels from the dashboard
   const loadDashboardPanels = async (dashboardUid) => {
     try {
       const response = await dashboardsService.getPanels(dashboardUid);
       const panels = Array.isArray(response) ? response : (response.data || []);
-      
+
       if (panels.length > 0) {
         const formattedPanels = panels.map(panel => ({
           title: panel.title,
@@ -111,7 +116,7 @@ export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalo
           panelId: panel.id,
           originalPanel: panel
         }));
-        
+
         form.setValue('panels', formattedPanels);
       }
     } catch (error) {
@@ -147,16 +152,8 @@ export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalo
 
   const handleOpenAddPanel = async () => {
     try {
-      // Check if we have a dashboard UID
-      if (!tempDashboardUid) {
-        const draftUid = getDraftDashboardUid();
-        if (draftUid) {
-          setTempDashboardUid(draftUid);
-        } else {
-          toast.error('No dashboard template available. Please go back to the Controls step.');
-          return;
-        }
-      }
+      // The button's disabled prop already checks tempDashboardUid.
+      // If we reach here, tempDashboardUid should be valid.
       setShowAddPanelForm(true);
     } catch (error) {
       console.error('Error preparing panel form:', error);
@@ -179,12 +176,12 @@ export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalo
       panelId: panelData.id || panelData.panelId,
       originalPanel: panelData
     };
-    
+
     append(newPanel);
     setSelectedPanel(fields.length);
     setShowAddPanelForm(false);
     toast.success('Panel added to dashboard');
-    
+
     if (tempDashboardUid) {
       loadDashboardPanels(tempDashboardUid);
     }
@@ -197,13 +194,13 @@ export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalo
   const handleDeletePanel = async (index, panelId) => {
     try {
       setIsRemovingPanel(true);
-      
+
       // Remove the panel from Grafana if a dashboard and panel ID exist
       if (tempDashboardUid && panelId) {
         await dashboardsService.removePanel(tempDashboardUid, panelId);
         toast.success('Panel removed from dashboard');
       }
-      
+
       // Remove the panel from the form
       remove(index);
       setSelectedPanel(null);
@@ -217,10 +214,10 @@ export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalo
 
   const handleSubmit = (data) => {
     setSubmitError(null);
-    
+
     // Clear dashboard UID from localStorage when finished
     clearDraftDashboardUid();
-    
+
     onSubmit(data);
   };
 
@@ -232,13 +229,13 @@ export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalo
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Error</AlertTitle>
           <AlertDescription>
-            {typeof submitError === 'string' 
-              ? submitError 
+            {typeof submitError === 'string'
+              ? submitError
               : 'There was an error saving your data. Please try again.'}
           </AlertDescription>
         </Alert>
       )}
-      
+
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="text-left space-y-6">
           {/* Dashboard title and description fields */}
@@ -251,9 +248,16 @@ export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalo
                   <FormItem>
                     <FormLabel>Dashboard Title <span className="text-red-500">*</span></FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter dashboard title" {...field} />
+                      <Input
+                        placeholder="Enter dashboard title"
+                        {...field}
+                        maxLength={40} // Added max length
+                      />
                     </FormControl>
                     <FormMessage />
+                    <div className="text-xs text-muted-foreground text-right">
+                      {field.value?.length || 0}/40 {/* Character counter */}
+                    </div>
                   </FormItem>
                 )}
               />
@@ -267,13 +271,17 @@ export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalo
               <FormItem>
                 <FormLabel>Description</FormLabel>
                 <FormControl>
-                  <Textarea 
-                    placeholder="Enter dashboard description" 
+                  <Textarea
+                    placeholder="Enter dashboard description"
                     rows={2}
-                    {...field} 
+                    {...field}
+                    maxLength={140} // Added max length
                   />
                 </FormControl>
                 <FormMessage />
+                <div className="text-xs text-muted-foreground text-right">
+                  {field.value?.length || 0}/140 {/* Character counter */}
+                </div>
               </FormItem>
             )}
           />
@@ -294,19 +302,21 @@ export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalo
                     View Dashboard
                   </Button>
                 )}
-                <Button 
-                  type="button" 
+                <Button
+                  type="button"
                   onClick={handleOpenAddPanel}
-                  variant="destructive"
+                  // Updated styling for the button: black background, white text, no border
+                  className="bg-black text-white hover:bg-gray-800"
                   disabled={!tempDashboardUid}
                 >
+                  <Plus className="mr-2 h-4 w-4" /> {/* Added Plus icon */}
                   Add Panel
                 </Button>
               </div>
             </div>
 
             {fields.length > 0 ? (
-              <Tabs 
+              <Tabs
                 value={selectedPanel !== null ? selectedPanel.toString() : undefined}
                 onValueChange={(value) => setSelectedPanel(parseInt(value))}
                 className="mt-2"
@@ -334,9 +344,9 @@ export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalo
                           <div>
                             <FormLabel>Preview</FormLabel>
                             <div className="mt-2 h-[200px]">
-                              <DashboardPanel 
+                              <DashboardPanel
                                 dashboardUid={tempDashboardUid}
-                                panel={{...panel.originalPanel, id: panel.panelId}}
+                                panel={{ ...panel.originalPanel, id: panel.panelId }}
                                 height={180}
                                 timeRange={{ from: 'now-24h', to: 'now' }}
                               />
@@ -372,11 +382,11 @@ export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalo
 
           {/* Submit button */}
           <div className="flex justify-end pt-4">
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               disabled={isSubmitting}
-              className="min-w-[120px]"
-              variant="outline"
+              className="min-w-[120px] bg-chart-1 text-white hover:bg-green-600" // Updated styling for the button: green background, white text
+            // Removed variant="outline" as it conflicts with solid background
             >
               {isSubmitting ? (
                 <>
