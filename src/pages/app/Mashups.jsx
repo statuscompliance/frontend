@@ -17,7 +17,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Edit, Trash, MoreHorizontal, ChevronDown, Loader2, ExternalLink, Play } from 'lucide-react';
+import { Edit, Trash, MoreHorizontal, ChevronDown, Loader2, ExternalLink, Play, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import Page from '@/components/basic-page.jsx';
@@ -324,12 +324,15 @@ export function Mashups() {
   return (
     <Page name="API Mashups" className="h-full w-full">
       <div className="flex items-center justify-between gap-x-4">
-        <Input
-          placeholder="Search flows..."
-          value={globalFilter ?? ''}
-          onChange={(e) => setGlobalFilter(e.target.value)}
-          className="max-w-sm"
-        />
+        <div className="relative">
+          <Search className="absolute left-4 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search flows..."
+            value={globalFilter ?? ''}
+            onChange={(e) => setGlobalFilter(e.target.value)}
+            className="pl-10 max-w-sm"
+          />
+        </div>
         <div className="flex items-center space-x-2"> {/* Added wrapper div for consistency */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -381,11 +384,11 @@ export function Mashups() {
 
       <div className="mt-4 border rounded-md max-h-[600px] overflow-y-auto"> {/* Added max-h and overflow for table scrolling */}
         <Table>
-          <TableHeader className="bg-gray-50">
+          <TableHeader className="bg-gray-400">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
+                  <TableHead className="text-white text-left" key={header.id}>
                     {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                   </TableHead>
                 ))}

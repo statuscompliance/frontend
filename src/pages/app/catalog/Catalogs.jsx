@@ -17,7 +17,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Edit, Trash, MoreHorizontal, ChevronDown, Plus, Loader2, ExternalLink } from 'lucide-react';
+import { Edit, Trash, MoreHorizontal, ChevronDown, Plus, Loader2, ExternalLink, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link, useNavigate } from 'react-router-dom';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -50,7 +50,7 @@ import {
 import { deleteControl } from '@/services/controls';
 import { deleteScopeSetsByControlId } from '@/services/scopes';
 // Assuming dashboardsService exists and is imported if getDraftDashboardUid is used
-// import * as dashboardsService from '@/services/dashboards'; 
+// import * as dashboardsService from '@/services/dashboards';
 
 
 const columnHelper = createColumnHelper();
@@ -66,7 +66,7 @@ export function Catalogs() {
   const [formErrors, setFormErrors] = useState({});
   const [showDraftDialog, setShowDraftDialog] = useState(false);
   // Nuevo estado para el diálogo de confirmación de borrado masivo
-  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false); 
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
   const navigate = useNavigate();
   const { userData } = useAuth();
 
@@ -140,7 +140,7 @@ export function Catalogs() {
       if (dashboardUid) {
         try {
           // Ensure dashboardsService is imported and available if this block is uncommented
-          // await dashboardsService.delete(dashboardUid); 
+          // await dashboardsService.delete(dashboardUid);
           console.warn('Dashboard draft deletion skipped: dashboardsService not imported or available.');
         } catch (err) {
           console.error(`Error deleting draft dashboard ${dashboardUid}:`, err);
@@ -374,14 +374,17 @@ export function Catalogs() {
 
   return (
     <Page name="Catalogs" className="h-full w-full">
-      <div className="flex items-center justify-between gap-x-4">
-        <Input
-          placeholder="Search catalogs..."
-          value={globalFilter ?? ''}
-          onChange={(e) => setGlobalFilter(e.target.value)}
-          className="max-w-sm"
-        />
-        <div className="flex items-center space-x-2"> {/* Added wrapper div for consistency */}
+      <div className="flex items-center justify-between gap-x-4"> {/* Usar justify-between aquí */}
+        <div className="relative">
+          <Search className="absolute left-4 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search catalogs..."
+            value={globalFilter ?? ''}
+            onChange={(e) => setGlobalFilter(e.target.value)}
+            className="pl-10 max-w-sm"
+          />
+        </div>
+        <div className="flex items-center space-x-2"> {/* Este div ya está a la derecha por justify-between */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="ml-auto">
@@ -399,7 +402,9 @@ export function Catalogs() {
                         checked={column.getIsVisible()}
                         onCheckedChange={(value) => column.toggleVisibility(!!value)}
                       />
-                      <span className="ml-2">{column.id === 'dashboard_id' ? 'Dashboard' : column.id}</span>
+                      <span className="ml-2">
+                        {column.id === 'name' ? 'API Name' : column.id}
+                      </span>
                     </DropdownMenuItem>
                   );
                 })}
@@ -408,9 +413,8 @@ export function Catalogs() {
           <Button
             className="border-2 border-sidebar-accent bg-sidebar-accent hover:bg-secondary hover:text-sidebar-accent"
             onClick={handleNew}
-            userRole={userData.authority}
           >
-            <Plus className="mr-2 h-4 w-4" /> Add New Catalog
+            <Plus className="mr-2 h-4 w-4" /> Add New Catalog {/* Cambiado el texto del botón */}
           </Button>
         </div>
       </div>
@@ -424,11 +428,11 @@ export function Catalogs() {
       {/* Added max-h and overflow for table scrolling */}
       <div className="mt-4 border rounded-md max-h-[600px] overflow-y-auto">
         <Table>
-          <TableHeader className="bg-sidebar-accent">
+          <TableHeader className="bg-gray-400">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
-                  <TableHead className="text-white text-center" key={header.id}>
+                  <TableHead className="text-white text-left" key={header.id}>
                     {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                   </TableHead>
                 ))}
@@ -472,7 +476,7 @@ export function Catalogs() {
           <Button
             size="lg"
             className={`flex items-center gap-2 shadow-lg ${selectedCatalogs.length > 0
-              ? 'bg-sidebar-accent text-white hover:bg-red-500'
+              ? 'bg-red-600 text-white hover:bg-red-700'
               : 'bg-gray-200 text-black cursor-not-allowed'
               }`}
             onClick={handleBulkDeleteClick} // Llama a la nueva función para abrir el diálogo

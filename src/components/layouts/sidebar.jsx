@@ -1,4 +1,4 @@
-import {Home, FolderOpen, Shapes, Workflow, FileSliders, ChartNoAxesCombined, ChevronRight, ChevronsUpDown, LogOut, SquareAsterisk } from 'lucide-react';
+import {Home, FolderOpen, Shapes, Workflow, FileSliders, ChartNoAxesCombined, ChevronRight, ChevronsUpDown, LogOut, SquareAsterisk, GitGraph, LucideGitGraph, GitGraphIcon, LucidePencil, LucideGlasses, LucideFileArchive, LucideFileCheck, LucideFile, LucideLockKeyhole, LucideLogOut, LucideHome, LucideEdit2, LucideEdit, LucideEdit3, LucideFileEdit, LucideActivity, LucideMap, LucideClipboard, LucideScreenShare, LucideChartArea, LucideChartNetwork, LucideChartSpline, LucideActivitySquare, LucideChartColumn, LucideChartColumnBig, LucideCakeSlice, LucideChartPie, LucideWorkflow } from 'lucide-react';
 import { Link } from 'react-router';
 import { MoreHorizontal } from 'lucide-react';
 import {
@@ -42,32 +42,32 @@ const data = [
       {
         title: 'Home',
         url: '/app',
-        icon: Home,
+        icon: LucideHome,
       },
       {
         title: 'Catalogs',
         url: '/app/catalogs',
-        icon: FolderOpen,
+        icon: LucideFile,
       },
       {
         title: 'Dashboards',
         url: '/app/dashboards',
-        icon: ChartNoAxesCombined,
+        icon: LucideChartPie,
       },
       {
         title: 'Scopes',
         url: '/app/scopes',
-        icon: Shapes,
+        icon: LucideGlasses,
       },
       {
         title: 'Mashups',
         url: '/app/mashups',
-        icon: FileSliders,
+        icon: LucideWorkflow,
       },
       {
         title: 'Editor',
         url: '/app/editor',
-        icon: Workflow,
+        icon: LucideScreenShare,
         roles: ['admin', 'developer'],
       },
     ]
@@ -80,13 +80,13 @@ const data = [
         type: 'item',
         title: 'Secrets',
         url: '/app/secrets',
-        icon: SquareAsterisk,
+        icon: LucideLockKeyhole,
       },
       {
         type: 'item',
         title: 'Logout',
         url: '/logout',
-        icon: LogOut,
+        icon: LucideLogOut,
       },
     ]
   }
