@@ -23,7 +23,7 @@ import { Toaster } from '@/components/ui/sonner';
 import { AuthProvider, ProtectedRoute } from '@/components/auth-provider';
 import { Unauthorized } from './pages/Unauthorized.jsx';
 import { TwoFADetails } from './pages/app/TwoFADetails.jsx';
-
+import {Secrets} from '@/pages/app/Secrets';
 
 const allRolesAllowed = () => ['admin', 'user', 'developer'];
 
@@ -66,6 +66,7 @@ function App() {
               <Route path="scopes" element={<Scopes />} />
               <Route path="mashups" element={<Mashups />} />
               <Route path="setting-2fa" element={<TwoFADetails />} />
+              <Route path="secrets" element={<Secrets />} />
               <Route path="editor">
                 <Route index element={<Editor />} />
                 <Route path=":id" element={<Editor />} />
