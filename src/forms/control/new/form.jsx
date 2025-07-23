@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react'; // Import useRef
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { createControl } from '@/services/controls';
 import { getAllScopes, createScopeSet } from '@/services/scopes';
 import { getAllNodeRedFlows, getFlowParams } from '@/services/mashups';
-import { PlusCircle, X, CalendarIcon, Loader2, AlertCircle, Check } from 'lucide-react';
+import { PlusCircle, X, CalendarIcon, Loader2, AlertCircle, Check, Lock } from 'lucide-react'; // Importar Lock
 import { Badge } from '@/components/ui/badge';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Calendar } from '@/components/ui/calendar';
@@ -48,6 +48,8 @@ export function NewControlForm({ catalogId, onClose, onSuccess, initialMashupId,
   const [confirmingScopes, setConfirmingScopes] = useState(false);
   const [cooldownActive, setCooldownActive] = useState(false);
   const [buttonText, setButtonText] = useState('Save');
+  const [countdown, setCountdown] = useState(0); // Nuevo estado para el contador
+  const countdownIntervalRef = useRef(null); // Ref para el intervalo
 
   // Setup form with zod validation
   const form = useForm({
@@ -57,11 +59,10 @@ export function NewControlForm({ catalogId, onClose, onSuccess, initialMashupId,
       description: '',
       period: 'DAILY',
       startDate: parseDate(new Date().toISOString().split('T')[0]),
-      endDate: undefined,
-      mashupId: initialMashupId || '', 
+      endDate: null, // Changed from undefined to null to ensure controlled component
+      mashupId: initialMashupId || '',
       params: {}, // params will now include endpoint
-      scopes: {}, 
-      // endpoint: '', // Removed from top-level defaultValues
+      scopes: {},
       catalogId: catalogId
     }
   });
@@ -82,14 +83,14 @@ export function NewControlForm({ catalogId, onClose, onSuccess, initialMashupId,
   // Memoize fetchFlowParams to prevent unnecessary re-creations
   const fetchFlowParams = useCallback(async (flowId) => {
     if (!flowId) return;
-    
+
     setLoadingParams(true);
     try {
       const response = await getFlowParams(flowId);
       const fetchedParams = response.data || {};
       const updatedParams = { ...fetchedParams, threshold: '' };
       setAvailableParams(updatedParams);
-      
+
       let mashupUrl = null;
 
       const foundMashup = availableMashups.find(m => m.id === flowId);
@@ -146,7 +147,7 @@ export function NewControlForm({ catalogId, onClose, onSuccess, initialMashupId,
     };
 
     fetchScopes();
-    if (isMashupFieldVisible || initialMashupId) { 
+    if (isMashupFieldVisible || initialMashupId) {
       fetchMashups();
     }
   }, [isMashupFieldVisible, initialMashupId]);
@@ -201,18 +202,32 @@ export function NewControlForm({ catalogId, onClose, onSuccess, initialMashupId,
     // Lógica de confirmación de scopes:
     // Si no hay scopes Y no estamos en fase de confirmación
     if (Object.keys(currentScopes).length === 0 && !confirmingScopes) {
-      toast.info('Estás a punto de crear un control sin scopes. Confirma para continuar.');
+      toast.info('You are about to create a control without scopes. Confirm to proceed.');
       setConfirmingScopes(true); // Entra en fase de confirmación
       setCooldownActive(true);   // Activa el cooldown
-      setButtonText('Confirmar');   // Cambia el texto del botón
+      setButtonText('Confirmar');    // Cambia el texto del botón
+      setCountdown(2); // Inicia el contador en 2 segundos
 
-      // Desactiva el cooldown después de 2 segundos
-      setTimeout(() => {
-        setCooldownActive(false); 
-      }, 2000);
+      // Limpia cualquier intervalo existente para evitar múltiples intervalos
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+      }
+
+      // Inicia el contador
+      countdownIntervalRef.current = setInterval(() => {
+        setCountdown(prev => {
+          if (prev <= 1) {
+            clearInterval(countdownIntervalRef.current);
+            setCooldownActive(false);
+            setButtonText('Save');
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
 
       // Importante: Detiene la ejecución aquí. El usuario debe volver a hacer clic.
-      return; 
+      return;
     }
 
     // Si llegamos aquí, significa:
@@ -233,13 +248,13 @@ export function NewControlForm({ catalogId, onClose, onSuccess, initialMashupId,
         // endpoint is now part of data.params, so no need to explicitly pass it here
       };
 
+      let result;
       if (customSubmit) {
-        const result = await customSubmit(dataToSubmit);
-        onSuccess(result);
+        result = await customSubmit(dataToSubmit);
       } else {
         const response = await createControl(dataToSubmit);
         const createdControl = response.data || response;
-        
+
         if (Object.keys(dataToSubmit.scopes).length > 0) {
           const scopeSetData = {
             controlId: createdControl.id,
@@ -247,10 +262,12 @@ export function NewControlForm({ catalogId, onClose, onSuccess, initialMashupId,
           };
           await createScopeSet(scopeSetData);
         }
-        
+
         toast.success('Control creado exitosamente con scopes asociados');
-        onSuccess(createdControl);
+        result = createdControl;
       }
+      onSuccess(result); // Llama a onSuccess con el control creado
+      onClose(); // Cierra el diálogo al éxito
       // Resetea el estado de confirmación tras una submisión exitosa
       setConfirmingScopes(false);
       setCooldownActive(false);
@@ -261,9 +278,9 @@ export function NewControlForm({ catalogId, onClose, onSuccess, initialMashupId,
         const errorMessage = error.message || 'Error de validación en los datos del control';
         toast.error(errorMessage);
       } else {
-        const errorMessage = error.response?.data?.msg || 
-                             error.response?.data?.message ||
-                             'Falló la creación del control y la asociación de scopes';
+        const errorMessage = error.response?.data?.msg ||
+                               error.response?.data?.message ||
+                               'Falló la creación del control y la asociación de scopes';
         toast.error(errorMessage);
       }
       // Resetea el estado de confirmación en caso de error para permitir un nuevo intento
@@ -281,6 +298,16 @@ export function NewControlForm({ catalogId, onClose, onSuccess, initialMashupId,
     const dateObj = typeof date === 'string' ? parseDate(date) : date;
     return dateObj ? format(dateObj, 'PPP') : '';
   };
+
+  // Limpiar el intervalo al desmontar el componente
+  useEffect(() => {
+    return () => {
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+      }
+    };
+  }, []);
+
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
@@ -313,8 +340,8 @@ export function NewControlForm({ catalogId, onClose, onSuccess, initialMashupId,
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Period <span className="text-red-500">*</span></FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
+                    <Select
+                      onValueChange={field.onChange}
                       defaultValue={field.value}
                     >
                       <FormControl>
@@ -424,7 +451,7 @@ export function NewControlForm({ catalogId, onClose, onSuccess, initialMashupId,
                           mode="single"
                           selected={field.value}
                           onSelect={(date) => handleDateSelect(date, field.onChange)}
-                          disabled={(date) => 
+                          disabled={(date) =>
                             form.getValues('startDate') && date < form.getValues('startDate')
                           }
                           initialFocus
@@ -444,8 +471,8 @@ export function NewControlForm({ catalogId, onClose, onSuccess, initialMashupId,
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Mashup <span className="text-red-500">*</span></FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
+                    <Select
+                      onValueChange={field.onChange}
                       defaultValue={field.value}
                     >
                       <FormControl>
@@ -485,7 +512,7 @@ export function NewControlForm({ catalogId, onClose, onSuccess, initialMashupId,
             <div className="space-y-2">
               <FormLabel>Parameters <span className="text-red-500">*</span></FormLabel>
               <div className="flex space-x-2">
-                <Select 
+                <Select
                   value={selectedParam}
                   onValueChange={setSelectedParam}
                   disabled={!watchMashupId || loadingParams || Object.keys(availableParams).length === 0}
@@ -526,7 +553,7 @@ export function NewControlForm({ catalogId, onClose, onSuccess, initialMashupId,
                     <div key={key} className="flex items-center rounded-md bg-gray-100">
                       <Badge key={key} variant="outline" className="px-2 py-1">
                         <span>{key}: {value}</span>
-                        <div 
+                        <div
                           role="button"
                           tabIndex="0"
                           className="ml-1 flex cursor-pointer items-center text-center"
@@ -548,8 +575,8 @@ export function NewControlForm({ catalogId, onClose, onSuccess, initialMashupId,
             <div className="space-y-2">
               <FormLabel>Scopes (Opcional)</FormLabel>
               <div className="flex space-x-2">
-                <Select 
-                  value={selectedScope} 
+                <Select
+                  value={selectedScope}
                   onValueChange={setSelectedScope}
                 >
                   <SelectTrigger className="w-full">
@@ -583,7 +610,7 @@ export function NewControlForm({ catalogId, onClose, onSuccess, initialMashupId,
                   <div key={key} className="flex items-center rounded-md bg-gray-100">
                     <Badge key={key} variant="outline" className="px-2 py-1">
                       <span>{key}: {value}</span>
-                      <div 
+                      <div
                         role="button"
                         tabIndex="0"
                         className="ml-1 flex cursor-pointer items-center text-center"
@@ -621,6 +648,11 @@ export function NewControlForm({ catalogId, onClose, onSuccess, initialMashupId,
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Creando...
+                  </>
+                ) : cooldownActive ? (
+                  <>
+                    <Lock className="mr-2 h-4 w-4" />
+                    {buttonText} ({countdown}s)
                   </>
                 ) : (
                   <>

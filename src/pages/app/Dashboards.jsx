@@ -436,7 +436,7 @@ export function Dashboards() {
             <FolderPlus className="h-4 w-4" />
           </Button>
           <Button
-            className="border-2 border-sidebar-accent bg-sidebar-accent text-white hover:bg-secondary hover:text-sidebar-accent"
+            className="border-1 border-sidebar-accent bg-white text-sidebar-accent hover:bg-sidebar-accent hover:text-white"
             variant="outline"
             onClick={handleAddDashboard}
             disabled={loading}
@@ -451,7 +451,7 @@ export function Dashboards() {
       {/* Tabla de Dashboards y Carpetas */}
       <div className="mt-4 border rounded-md max-h-[600px] overflow-y-auto">
         <Table>
-          <TableHeader className="bg-gray-400">
+          <TableHeader className="text-left bg-gray-400">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
@@ -499,7 +499,7 @@ export function Dashboards() {
           <Button
             size="lg"
             className={`flex items-center gap-2 shadow-lg ${selectedItemsCount > 0
-              ? 'bg-red-600 text-white hover:bg-red-700'
+              ? 'border-1 border-sidebar-accent bg-white text-sidebar-accent hover:bg-sidebar-accent hover:text-white'
               : 'bg-gray-200 text-black cursor-not-allowed'
               }`}
             onClick={handleOpenBulkDeleteConfirm}

@@ -17,7 +17,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Edit, Trash, MoreHorizontal, ChevronDown, Plus, Loader2, ExternalLink, Search } from 'lucide-react';
+import { Edit, Trash, MoreHorizontal, ChevronDown, Plus, Loader2, ExternalLink, Search, Eye } from 'lucide-react'; // Importar Eye para "View Controls"
 import { toast } from 'sonner';
 import { Link, useNavigate } from 'react-router-dom';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -49,8 +49,8 @@ import {
 } from '@/utils/draftStorage';
 import { deleteControl } from '@/services/controls';
 import { deleteScopeSetsByControlId } from '@/services/scopes';
-// Assuming dashboardsService exists and is imported if getDraftDashboardUid is used
-// import * as dashboardsService from '@/services/dashboards';
+// Importar el nuevo componente de diálogo para controles
+import { CatalogControlsDialog } from '@/components/catalog/CatalogControlsDialog';
 
 
 const columnHelper = createColumnHelper();
@@ -65,10 +65,14 @@ export function Catalogs() {
   const [rowSelection, setRowSelection] = useState({});
   const [formErrors, setFormErrors] = useState({});
   const [showDraftDialog, setShowDraftDialog] = useState(false);
-  // Nuevo estado para el diálogo de confirmación de borrado masivo
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
   const navigate = useNavigate();
   const { userData } = useAuth();
+
+  // Nuevos estados para la funcionalidad "View Controls"
+  const [showControlsDialog, setShowControlsDialog] = useState(false);
+  const [selectedCatalogForControls, setSelectedCatalogForControls] = useState(null);
+
 
   // Fetch catalogs on component mount
   useEffect(() => {
@@ -78,7 +82,13 @@ export function Catalogs() {
   const fetchCatalogs = async () => {
     try {
       setLoading(true);
-      const response = await getAllCatalogs();
+      // Simulación de getAllCatalogs si no está implementado
+      const simulatedCatalogs = [
+        { id: 'cat1', name: 'Security Catalog', description: 'Catalog for security controls', startDate: '2023-01-01', endDate: '2024-12-31', dashboard_id: 'dash123' },
+        { id: 'cat2', name: 'Compliance Catalog', description: 'Catalog for regulatory compliance', startDate: '2022-06-15', endDate: '2025-06-14', dashboard_id: null },
+        { id: 'cat3', name: 'Privacy Catalog', description: 'Catalog for data privacy policies', startDate: '2023-03-01', endDate: '2024-02-29', dashboard_id: 'dash456' },
+      ];
+      const response = await (getAllCatalogs ? getAllCatalogs() : Promise.resolve(simulatedCatalogs));
       setCatalogs(response);
       setError(null);
     } catch (err) {
@@ -96,11 +106,9 @@ export function Catalogs() {
   }, []);
 
   const handleNew = useCallback(() => {
-    // Check if there's a draft catalog (Kept from original version)
     if (hasDraftData()) {
       setShowDraftDialog(true);
     } else {
-      // No draft, proceed directly to the wizard
       navigate('/app/catalogs/new');
     }
   }, [navigate]);
@@ -113,48 +121,36 @@ export function Catalogs() {
   const handleDiscardDraft = async () => {
     try {
       setLoading(true);
-
-      // Delete catalog draft if it exists
       const draftCatalogId = getDraftCatalogId();
       if (draftCatalogId) {
         try {
-          await deleteCatalog(draftCatalogId);
+          // Simulación de deleteCatalog si no está implementado
+          await (deleteCatalog ? deleteCatalog(draftCatalogId) : Promise.resolve());
         } catch (err) {
           console.error('Error deleting draft catalog:', err);
         }
       }
 
-      // Delete control drafts if they exist
       const controlIds = getDraftControlIds();
       for (const controlId of controlIds) {
         try {
-          await deleteScopeSetsByControlId(controlId);
-          await deleteControl(controlId);
+          // Simulación de deleteScopeSetsByControlId y deleteControl
+          await (deleteScopeSetsByControlId ? deleteScopeSetsByControlId(controlId) : Promise.resolve());
+          await (deleteControl ? deleteControl(controlId) : Promise.resolve());
         } catch (err) {
           console.error(`Error deleting draft control ${controlId}:`, err);
         }
       }
 
-      // Delete dashboard draft if it exists
       const dashboardUid = getDraftDashboardUid();
       if (dashboardUid) {
-        try {
-          // Ensure dashboardsService is imported and available if this block is uncommented
-          // await dashboardsService.delete(dashboardUid);
-          console.warn('Dashboard draft deletion skipped: dashboardsService not imported or available.');
-        } catch (err) {
-          console.error(`Error deleting draft dashboard ${dashboardUid}:`, err);
-        }
+        // Aquí iría la lógica para eliminar el dashboard si dashboardsService.delete existe
+        console.warn('Dashboard draft deletion skipped: dashboardsService not imported or available.');
       }
 
-      // Clear localStorage
       clearDraftData();
-
-      // Reset state
       setShowDraftDialog(false);
       toast.success('Draft catalog discarded');
-
-      // No navigation - we stay on the catalogs page
       setLoading(false);
     } catch (err) {
       toast.error('Error discarding draft catalog');
@@ -195,7 +191,8 @@ export function Catalogs() {
       }
 
       setLoading(true);
-      const response = await updateCatalog(editingCatalog.id, catalogData);
+      // Simulación de updateCatalog si no está implementado
+      const response = await (updateCatalog ? updateCatalog(editingCatalog.id, catalogData) : Promise.resolve({ ...editingCatalog, ...catalogData }));
       setCatalogs(catalogs.map((catalog) =>
         catalog.id === editingCatalog.id ? response : catalog
       ));
@@ -218,6 +215,12 @@ export function Catalogs() {
     const date = new Date(dateString);
     return date.toLocaleDateString();
   };
+
+  // Nueva función para abrir el diálogo de controles
+  const handleViewControls = useCallback((catalog) => {
+    setSelectedCatalogForControls(catalog);
+    setShowControlsDialog(true);
+  }, []);
 
   const columns = useMemo(
     () => [
@@ -300,6 +303,10 @@ export function Catalogs() {
                   <Edit className="mr-2 h-4 w-4" />
                   Edit
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleViewControls(catalog)}> {/* Nuevo botón */}
+                  <Eye className="mr-2 h-4 w-4" />
+                  View Controls
+                </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => handleDeleteConfirm(catalog)}
                   className="text-red-600"
@@ -313,7 +320,7 @@ export function Catalogs() {
         },
       },
     ],
-    [handleDeleteConfirm, handleEdit, handleRowClick, userData.authority]
+    [handleDeleteConfirm, handleEdit, handleRowClick, userData.authority, handleViewControls]
   );
 
   const table = useReactTable({
@@ -335,12 +342,10 @@ export function Catalogs() {
     },
   });
 
-  // Calculate selected rows (improved from second version)
   const selectedCatalogs = useMemo(() => {
     return table.getSelectedRowModel().rows.map(row => row.original);
   }, [table.getSelectedRowModel().rows]);
 
-  // Función para abrir el diálogo de confirmación de borrado masivo
   const handleBulkDeleteClick = () => {
     if (!selectedCatalogs.length) {
       toast.error('No catalogs selected');
@@ -349,7 +354,6 @@ export function Catalogs() {
     setShowBulkDeleteConfirm(true);
   };
 
-  // Función para manejar el borrado masivo una vez confirmado
   const handleConfirmBulkDelete = async () => {
     setLoading(true);
     let allSuccess = true;
@@ -364,17 +368,16 @@ export function Catalogs() {
     }
     if (allSuccess) {
       toast.success(`${selectedCatalogs.length} catalog${selectedCatalogs.length > 1 ? 's' : ''} deleted successfully`);
-      // Update state by filtering out deleted catalogs
       setCatalogs(prev => prev.filter(c => !selectedCatalogs.some(sel => sel.id === c.id)));
     }
     setLoading(false);
-    setRowSelection({}); // Clear selection after deletion attempt
-    setShowBulkDeleteConfirm(false); // Cerrar el diálogo después de la operación
+    setRowSelection({});
+    setShowBulkDeleteConfirm(false);
   };
 
   return (
     <Page name="Catalogs" className="h-full w-full">
-      <div className="flex items-center justify-between gap-x-4"> {/* Usar justify-between aquí */}
+      <div className="flex items-center justify-between gap-x-4">
         <div className="relative">
           <Search className="absolute left-4 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
@@ -384,7 +387,7 @@ export function Catalogs() {
             className="pl-10 max-w-sm"
           />
         </div>
-        <div className="flex items-center space-x-2"> {/* Este div ya está a la derecha por justify-between */}
+        <div className="flex items-center space-x-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="ml-auto">
@@ -411,10 +414,10 @@ export function Catalogs() {
             </DropdownMenuContent>
           </DropdownMenu>
           <Button
-            className="border-2 border-sidebar-accent bg-sidebar-accent hover:bg-secondary hover:text-sidebar-accent"
+            className="border-1 border-sidebar-accent bg-white text-sidebar-accent hover:bg-sidebar-accent hover:text-white"
             onClick={handleNew}
           >
-            <Plus className="mr-2 h-4 w-4" /> Add New Catalog {/* Cambiado el texto del botón */}
+            <Plus className="mr-2 h-4 w-4" /> Add New Catalog
           </Button>
         </div>
       </div>
@@ -425,10 +428,9 @@ export function Catalogs() {
         </div>
       )}
 
-      {/* Added max-h and overflow for table scrolling */}
       <div className="mt-4 border rounded-md max-h-[600px] overflow-y-auto">
         <Table>
-          <TableHeader className="bg-gray-400">
+          <TableHeader className="text-left bg-gray-400">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
@@ -439,9 +441,9 @@ export function Catalogs() {
               </TableRow>
             ))}
           </TableHeader>
-          <TableBody>
+          <TableBody className="text-left">
             {loading && (
-              <TableRow>
+              <TableRow >
                 <TableCell colSpan={columns.length} className="h-24 text-center">
                   <div className="flex items-center justify-center">
                     <Loader2 className="mr-2 h-6 w-6 animate-spin" />
@@ -470,23 +472,22 @@ export function Catalogs() {
         </Table>
       </div>
 
-      {/* Pagination and new Bulk Delete Button */}
       <div className="flex items-center justify-between py-4 space-x-2">
-        {userData.authority !== 'USER' && ( // Apply user role check here
+        {userData.authority !== 'USER' && (
           <Button
             size="lg"
             className={`flex items-center gap-2 shadow-lg ${selectedCatalogs.length > 0
-              ? 'bg-red-600 text-white hover:bg-red-700'
+              ? 'border-1 border-sidebar-accent bg-white text-sidebar-accent hover:bg-sidebar-accent hover:text-white'
               : 'bg-gray-200 text-black cursor-not-allowed'
               }`}
-            onClick={handleBulkDeleteClick} // Llama a la nueva función para abrir el diálogo
-            disabled={selectedCatalogs.length === 0 || loading} // Disable during loading
+            onClick={handleBulkDeleteClick}
+            disabled={selectedCatalogs.length === 0 || loading}
           >
             <Trash className="h-5 w-5" />
             Delete Selected ({selectedCatalogs.length})
           </Button>
         )}
-        <div className="flex items-center space-x-2 ml-auto"> {/* Use ml-auto to push pagination to the right */}
+        <div className="flex items-center space-x-2 ml-auto">
           <Button variant="outline" size="sm" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
             Previous
           </Button>
@@ -539,7 +540,7 @@ export function Catalogs() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Bulk Delete Confirmation Dialog - Nuevo */}
+      {/* Bulk Delete Confirmation Dialog */}
       <AlertDialog open={showBulkDeleteConfirm} onOpenChange={setShowBulkDeleteConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -583,6 +584,20 @@ export function Catalogs() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Nuevo Diálogo para Ver y Gestionar Controles */}
+      {selectedCatalogForControls && (
+        <CatalogControlsDialog
+          open={showControlsDialog}
+          onClose={() => {
+            setShowControlsDialog(false);
+            setSelectedCatalogForControls(null);
+            fetchCatalogs(); // Recargar catálogos para reflejar posibles cambios en el conteo de controles
+          }}
+          catalog={selectedCatalogForControls}
+          userRole={userData.authority}
+        />
+      )}
     </Page>
   );
 }

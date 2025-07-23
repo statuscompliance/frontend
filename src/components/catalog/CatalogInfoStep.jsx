@@ -262,7 +262,7 @@ export function CatalogInfoStep({ initialData = {}, onSubmit, isSubmitting, apiE
             <Button 
               type="submit" 
               disabled={isSubmitting}
-              className="min-w-[120px] bg-chart-1 text-white hover:bg-green-600"
+              className="border-1 border-sidebar-accent bg-white text-sidebar-accent hover:bg-sidebar-accent hover:text-white"
             >
               {isSubmitting ? (
                 <>

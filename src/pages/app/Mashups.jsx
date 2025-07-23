@@ -368,7 +368,7 @@ export function Mashups() {
             </DropdownMenuContent>
           </DropdownMenu>
           <Button
-            className="border-2 border-sidebar-accent bg-sidebar-accent hover:bg-secondary hover:text-sidebar-accent"
+            className="border-1 border-sidebar-accent bg-white text-sidebar-accent hover:bg-sidebar-accent hover:text-white"
             onClick={() => window.open(nodeRedUrl, '_blank')}
           >
             <ExternalLink className="mr-2 h-4 w-4" /> Open Node-RED
@@ -432,7 +432,7 @@ export function Mashups() {
           <Button
             size="lg"
             className={`flex items-center gap-2 shadow-lg ${selectedFlows.length > 0
-              ? 'bg-sidebar-accent text-white hover:bg-red-500'
+              ? 'border-1 border-sidebar-accent bg-white text-sidebar-accent hover:bg-sidebar-accent hover:text-white'
               : 'bg-gray-200 text-black cursor-not-allowed'
               }`}
             onClick={handleOpenBulkDeleteConfirm} // Llama a la nueva función para abrir el diálogo

@@ -295,7 +295,7 @@ export function CatalogControlsStep({ initialControls = [], catalogId, onSubmit,
         <Button 
           onClick={handleAddControl}
           // Updated styling for the button
-          className="border-2 border-black bg-white text-black hover:bg-gray-100 hover:text-black"
+          className="border-1 border-sidebar-accent bg-white text-sidebar-accent hover:bg-sidebar-accent hover:text-white"
         >
           <Plus className="mr-2 h-4 w-4" />
           Add Draft Control
@@ -445,7 +445,7 @@ export function CatalogControlsStep({ initialControls = [], catalogId, onSubmit,
 
       {/* Progress counter and Navigation button */}
       <div className="mt-8 flex items-center justify-between border-t pt-4">
-        <div className="text-sm text-gray-500">
+        <div className="text-sm text-white">
           {controls.length > 0 ? (
             <span>{controls.length} draft control{controls.length !== 1 ? 's' : ''} added</span>
           ) : (
@@ -455,7 +455,7 @@ export function CatalogControlsStep({ initialControls = [], catalogId, onSubmit,
         <Button 
           onClick={handleSubmit} 
           disabled={isSubmitting || controls.length === 0}
-          className="min-w-[120px] bg-chart-1 text-primary hover:bg-green-600"
+          className="border-1 border-sidebar-accent bg-white text-sidebar-accent hover:bg-sidebar-accent hover:text-white"
         >
           {isSubmitting ? (
             <>
