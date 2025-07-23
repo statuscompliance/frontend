@@ -10,15 +10,27 @@ import { Button } from '@/components/ui/button';
 import { createControl } from '@/services/controls';
 import { getAllScopes, createScopeSet } from '@/services/scopes';
 import { getAllNodeRedFlows, getFlowParams } from '@/services/mashups';
-import { PlusCircle, X, CalendarIcon } from 'lucide-react';
+import { PlusCircle, X, CalendarIcon, Loader2, AlertCircle, Check } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
-import { controlSchema } from './schemas';
+import { format, parseISO } from 'date-fns';
+import { controlSchema } from './schemas'; // Ensure this schema is updated as described above
 import { saveDraftCatalogId } from '@/utils/draftStorage';
+
+// Helper function to safely parse dates (from string to Date object)
+const parseDate = (dateString) => {
+  if (!dateString) return undefined;
+  try {
+    const date = parseISO(dateString);
+    date.setHours(12, 0, 0, 0); // Set to noon to avoid timezone issues
+    return date;
+  } catch {
+    return undefined;
+  }
+};
 
 export function NewControlForm({ catalogId, onClose, onSuccess, initialMashupId, customSubmit = null }) {
   const [loading, setLoading] = useState(false);
@@ -26,10 +38,16 @@ export function NewControlForm({ catalogId, onClose, onSuccess, initialMashupId,
   const [availableMashups, setAvailableMashups] = useState([]);
   const [availableParams, setAvailableParams] = useState({});
   const [loadingParams, setLoadingParams] = useState(false);
-  const [selectedScope, setSelectedScope] = useState('');
-  const [scopeValue, setScopeValue] = useState('');
   const [selectedParam, setSelectedParam] = useState('');
   const [paramValue, setParamValue] = useState('');
+
+  // Reintroduced states for scopes
+  const [selectedScope, setSelectedScope] = useState('');
+  const [scopeValue, setScopeValue] = useState('');
+
+  const [confirmingScopes, setConfirmingScopes] = useState(false);
+  const [cooldownActive, setCooldownActive] = useState(false);
+  const [buttonText, setButtonText] = useState('Save');
 
   // Setup form with zod validation
   const form = useForm({
@@ -38,24 +56,30 @@ export function NewControlForm({ catalogId, onClose, onSuccess, initialMashupId,
       name: '',
       description: '',
       period: 'DAILY',
-      startDate: new Date().toISOString().split('T')[0],
-      endDate: null,
+      startDate: parseDate(new Date().toISOString().split('T')[0]),
+      endDate: undefined,
       mashupId: initialMashupId || '', 
-      params: {},
-      scopes: {},
+      params: {}, // params will now include endpoint
+      scopes: {}, 
+      // endpoint: '', // Removed from top-level defaultValues
       catalogId: catalogId
     }
   });
 
-  const { watch, setValue, getValues } = form;
+  const { watch, setValue, getValues, setError, clearErrors } = form;
   const watchMashupId = watch('mashupId');
   const watchParams = watch('params');
-  const watchScopes = watch('scopes');
+  const watchScopes = watch('scopes'); // Now watches the object value of scopes
 
   // Determine if the mashup field should be visible. It's visible if no initialMashupId is provided.
   const isMashupFieldVisible = !initialMashupId;
 
-  // // Memoize fetchFlowParams to prevent unnecessary re-creations
+  // Helper function to handle date selection properly
+  const handleDateSelect = (date, onChange) => {
+    onChange(date);
+  };
+
+  // Memoize fetchFlowParams to prevent unnecessary re-creations
   const fetchFlowParams = useCallback(async (flowId) => {
     if (!flowId) return;
     
@@ -63,21 +87,19 @@ export function NewControlForm({ catalogId, onClose, onSuccess, initialMashupId,
     try {
       const response = await getFlowParams(flowId);
       const fetchedParams = response.data || {};
-      const updatedParams = { ...fetchedParams, threshold: '' }; // Always add threshold param
+      const updatedParams = { ...fetchedParams, threshold: '' };
       setAvailableParams(updatedParams);
       
       let mashupUrl = null;
 
-      // Logic to find the mashup's URL (endpoint)
       const foundMashup = availableMashups.find(m => m.id === flowId);
       if (foundMashup) {
-        mashupUrl = foundMashup.endpoint; // Assuming 'endpoint' is the property containing the URL
+        mashupUrl = foundMashup.endpoint;
       } else if (initialMashupId && initialMashupId === flowId) {
-        // Fallback for initialMashupId if it's not in availableMashups yet (unlikely with improved useEffect, but good for robustness)
-        // In a real application, you might need a specific API call here to get details of a single flow by ID
         console.warn(`Mashup with ID ${flowId} not found in available list for initialMashupId. This might indicate a timing issue or that the mashup list doesn't contain it.`);
       }
 
+      // Logic to update 'params' with 'endpoint'
       if (mashupUrl) {
         const currentParams = getValues('params');
         // Only update 'endpoint' if it's different to prevent unnecessary form state updates
@@ -100,10 +122,9 @@ export function NewControlForm({ catalogId, onClose, onSuccess, initialMashupId,
     } finally {
       setLoadingParams(false);
     }
-  }, [availableMashups, getValues, initialMashupId, setValue]);
+  }, [availableMashups, initialMashupId, setValue, getValues]); // Added getValues to deps
 
   useEffect(() => {
-    // Fetch available scopes for the dropdown
     const fetchScopes = async () => {
       try {
         const response = await getAllScopes();
@@ -114,7 +135,6 @@ export function NewControlForm({ catalogId, onClose, onSuccess, initialMashupId,
       }
     };
 
-    // Fetch available mashups for the dropdown
     const fetchMashups = async () => {
       try {
         const response = await getAllNodeRedFlows();
@@ -126,35 +146,16 @@ export function NewControlForm({ catalogId, onClose, onSuccess, initialMashupId,
     };
 
     fetchScopes();
-    // Load mashups always if there's an initialMashupId, or if the field is visible for user selection.
     if (isMashupFieldVisible || initialMashupId) { 
       fetchMashups();
     }
   }, [isMashupFieldVisible, initialMashupId]);
 
-  // When mashupId changes or availableMashups are loaded, fetch its parameters
   useEffect(() => {
-    // Only proceed if mashupId is set and we have mashup data to search through
     if (watchMashupId && availableMashups.length > 0) {
       fetchFlowParams(watchMashupId);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [watchMashupId]);
-
-  const addScope = () => {
-    if (selectedScope && scopeValue) {
-      const updatedScopes = { ...getValues('scopes'), [selectedScope]: scopeValue };
-      setValue('scopes', updatedScopes);
-      setSelectedScope('');
-      setScopeValue('');
-    }
-  };
-
-  const removeScope = (key) => {
-    const updatedScopes = { ...getValues('scopes') };
-    delete updatedScopes[key];
-    setValue('scopes', updatedScopes);
-  };
+  }, [watchMashupId, availableMashups, fetchFlowParams]);
 
   const addParam = () => {
     if (selectedParam && paramValue) {
@@ -171,70 +172,114 @@ export function NewControlForm({ catalogId, onClose, onSuccess, initialMashupId,
     setValue('params', updatedParams);
   };
 
+  // Reintroduced addScope function
+  const addScope = () => {
+    if (selectedScope && scopeValue) {
+      const updatedScopes = { ...getValues('scopes'), [selectedScope]: scopeValue };
+      setValue('scopes', updatedScopes);
+      setSelectedScope('');
+      setScopeValue('');
+    }
+  };
+
+  // Reintroduced removeScope function
+  const removeScope = (key) => {
+    const updatedScopes = { ...getValues('scopes') };
+    delete updatedScopes[key];
+    setValue('scopes', updatedScopes);
+  };
+
   useEffect(() => {
-    // Si se proporciona un catalogId, asegúrate de guardarlo
     if (catalogId) {
       saveDraftCatalogId(catalogId);
     }
   }, [catalogId]);
 
-  const onSubmit = async (data) => {
-    setLoading(true);
-  
+  const handleFormSubmit = async (data) => {
+    const currentScopes = data.scopes; // Get the current scopes object
+
+    // Lógica de confirmación de scopes:
+    // Si no hay scopes Y no estamos en fase de confirmación
+    if (Object.keys(currentScopes).length === 0 && !confirmingScopes) {
+      toast.info('Estás a punto de crear un control sin scopes. Confirma para continuar.');
+      setConfirmingScopes(true); // Entra en fase de confirmación
+      setCooldownActive(true);   // Activa el cooldown
+      setButtonText('Confirmar');   // Cambia el texto del botón
+
+      // Desactiva el cooldown después de 2 segundos
+      setTimeout(() => {
+        setCooldownActive(false); 
+      }, 2000);
+
+      // Importante: Detiene la ejecución aquí. El usuario debe volver a hacer clic.
+      return; 
+    }
+
+    // Si llegamos aquí, significa:
+    // 1. Hay scopes presentes, O
+    // 2. No hay scopes, pero 'confirmingScopes' es TRUE (el usuario está confirmando)
+    setLoading(true); // Activa el loading solo cuando se va a realizar la submisión real
     try {
-      // Guardar catalogId si está disponible
       if (catalogId) {
         saveDraftCatalogId(catalogId);
-        // Asegúrate de que el control esté asociado al catálogo
         data.catalogId = catalogId;
       }
 
-      // If customSubmit is provided, use it instead of the default submit behavior
+      const dataToSubmit = {
+        ...data,
+        startDate: data.startDate ? data.startDate.toISOString() : undefined,
+        endDate: data.endDate ? data.endDate.toISOString() : undefined,
+        scopes: currentScopes, // Utiliza el objeto de scopes actual
+        // endpoint is now part of data.params, so no need to explicitly pass it here
+      };
+
       if (customSubmit) {
-        const result = await customSubmit(data);
+        const result = await customSubmit(dataToSubmit);
         onSuccess(result);
       } else {
-        // Default behavior: create control and scope set
-        const response = await createControl(data);
+        const response = await createControl(dataToSubmit);
         const createdControl = response.data || response;
         
-        // Then create the scope set using the control ID if scopes exist
-        if (Object.keys(data.scopes).length > 0) {
+        if (Object.keys(dataToSubmit.scopes).length > 0) {
           const scopeSetData = {
             controlId: createdControl.id,
-            scopes: data.scopes
+            scopes: dataToSubmit.scopes
           };
-          
           await createScopeSet(scopeSetData);
         }
         
-        toast.success('Control created successfully with associated scopes');
+        toast.success('Control creado exitosamente con scopes asociados');
         onSuccess(createdControl);
       }
+      // Resetea el estado de confirmación tras una submisión exitosa
+      setConfirmingScopes(false);
+      setCooldownActive(false);
+      setButtonText('Save');
     } catch (error) {
-      console.error('Error creating control and scopes:', error);
-      // Handle specific error cases
+      console.error('Error creando control y scopes:', error);
       if (error.status === 400) {
-        const errorMessage = error.message || 'Validation error in control data';
+        const errorMessage = error.message || 'Error de validación en los datos del control';
         toast.error(errorMessage);
       } else {
         const errorMessage = error.response?.data?.msg || 
-                            error.response?.data?.message ||
-                            'Failed to create control and associate scopes';
+                             error.response?.data?.message ||
+                             'Falló la creación del control y la asociación de scopes';
         toast.error(errorMessage);
       }
+      // Resetea el estado de confirmación en caso de error para permitir un nuevo intento
+      setConfirmingScopes(false);
+      setCooldownActive(false);
+      setButtonText('Save');
     } finally {
-      setLoading(false);
+      setLoading(false); // Asegura que 'loading' siempre se desactive al finalizar la operación
     }
   };
 
   // Function to format date for display in the calendar field
   const formatDate = (date) => {
     if (!date) return '';
-    if (typeof date === 'string') {
-      return format(new Date(date), 'PPP');
-    }
-    return format(date, 'PPP');
+    const dateObj = typeof date === 'string' ? parseDate(date) : date;
+    return dateObj ? format(dateObj, 'PPP') : '';
   };
 
   return (
@@ -244,18 +289,21 @@ export function NewControlForm({ catalogId, onClose, onSuccess, initialMashupId,
           <DialogTitle>Add New Control</DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Name*</FormLabel>
+                    <FormLabel>Name <span className="text-red-500">*</span></FormLabel>
                     <FormControl>
-                      <Input placeholder="Control name" {...field} />
+                      <Input placeholder="Control name" {...field} maxLength={40} />
                     </FormControl>
                     <FormMessage />
+                    <div className="text-xs text-muted-foreground text-right">
+                      {field.value?.length || 0}/40
+                    </div>
                   </FormItem>
                 )}
               />
@@ -264,7 +312,7 @@ export function NewControlForm({ catalogId, onClose, onSuccess, initialMashupId,
                 name="period"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Period*</FormLabel>
+                    <FormLabel>Period <span className="text-red-500">*</span></FormLabel>
                     <Select 
                       onValueChange={field.onChange} 
                       defaultValue={field.value}
@@ -292,11 +340,14 @@ export function NewControlForm({ catalogId, onClose, onSuccess, initialMashupId,
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Description</FormLabel>
+                  <FormLabel>Description <span className="text-red-500">*</span></FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Control description" {...field} />
+                    <Textarea placeholder="Control description" {...field} maxLength={140} rows={3} />
                   </FormControl>
                   <FormMessage />
+                  <div className="text-xs text-muted-foreground text-right">
+                    {field.value?.length || 0}/140
+                  </div>
                 </FormItem>
               )}
             />
@@ -307,7 +358,7 @@ export function NewControlForm({ catalogId, onClose, onSuccess, initialMashupId,
                 name="startDate"
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>Start Date*</FormLabel>
+                    <FormLabel>Start Date <span className="text-red-500">*</span></FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
@@ -317,6 +368,7 @@ export function NewControlForm({ catalogId, onClose, onSuccess, initialMashupId,
                               'w-full pl-3 text-left font-normal',
                               !field.value && 'text-muted-foreground'
                             )}
+                            type="button"
                           >
                             {field.value ? (
                               formatDate(field.value)
@@ -330,12 +382,8 @@ export function NewControlForm({ catalogId, onClose, onSuccess, initialMashupId,
                       <PopoverContent className="w-auto p-0" align="start">
                         <Calendar
                           mode="single"
-                          selected={field.value ? new Date(field.value) : undefined}
-                          onSelect={(date) => {
-                            if (date) {
-                              field.onChange(date.toISOString().split('T')[0]);
-                            }
-                          }}
+                          selected={field.value}
+                          onSelect={(date) => handleDateSelect(date, field.onChange)}
                           initialFocus
                         />
                       </PopoverContent>
@@ -350,7 +398,7 @@ export function NewControlForm({ catalogId, onClose, onSuccess, initialMashupId,
                 name="endDate"
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>End Date (Optional)</FormLabel>
+                    <FormLabel>End Date <span className="text-red-500">*</span></FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
@@ -360,6 +408,7 @@ export function NewControlForm({ catalogId, onClose, onSuccess, initialMashupId,
                               'w-full pl-3 text-left font-normal',
                               !field.value && 'text-muted-foreground'
                             )}
+                            type="button"
                           >
                             {field.value ? (
                               formatDate(field.value)
@@ -373,14 +422,11 @@ export function NewControlForm({ catalogId, onClose, onSuccess, initialMashupId,
                       <PopoverContent className="w-auto p-0" align="start">
                         <Calendar
                           mode="single"
-                          selected={field.value ? new Date(field.value) : undefined}
-                          onSelect={(date) => {
-                            if (date) {
-                              field.onChange(date.toISOString().split('T')[0]);
-                            } else {
-                              field.onChange(null);
-                            }
-                          }}
+                          selected={field.value}
+                          onSelect={(date) => handleDateSelect(date, field.onChange)}
+                          disabled={(date) => 
+                            form.getValues('startDate') && date < form.getValues('startDate')
+                          }
                           initialFocus
                         />
                       </PopoverContent>
@@ -391,14 +437,13 @@ export function NewControlForm({ catalogId, onClose, onSuccess, initialMashupId,
               />
             </div>
 
-            {/* Conditionally render the mashup selection field */}
             {isMashupFieldVisible && (
               <FormField
                 control={form.control}
                 name="mashupId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Mashup*</FormLabel>
+                    <FormLabel>Mashup <span className="text-red-500">*</span></FormLabel>
                     <Select 
                       onValueChange={field.onChange} 
                       defaultValue={field.value}
@@ -422,8 +467,23 @@ export function NewControlForm({ catalogId, onClose, onSuccess, initialMashupId,
               />
             )}
 
+            {/* Updated FormField for endpoint to be part of params */}
+            <FormField
+              control={form.control}
+              name="params.endpoint" // Changed name to point to params.endpoint
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Mashup Endpoint</FormLabel> {/* Changed label */}
+                  <FormControl>
+                    <Input placeholder="Endpoint will appear here" {...field} disabled={true} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <div className="space-y-2">
-              <FormLabel>Parameters*</FormLabel>
+              <FormLabel>Parameters <span className="text-red-500">*</span></FormLabel>
               <div className="flex space-x-2">
                 <Select 
                   value={selectedParam}
@@ -435,8 +495,8 @@ export function NewControlForm({ catalogId, onClose, onSuccess, initialMashupId,
                   </SelectTrigger>
                   <SelectContent className="max-h-60 overflow-y-auto">
                     {Object.keys(availableParams).map((paramName) => (
-                      // Avoid including already added parameters
-                      !Object.hasOwn(watchParams, paramName) && (
+                      // Exclude 'endpoint' from the selectable parameters, as it's displayed separately
+                      paramName !== 'endpoint' && !Object.hasOwn(watchParams, paramName) && (
                         <SelectItem className="hover:cursor-pointer" key={paramName} value={paramName}>
                           {paramName}
                         </SelectItem>
@@ -461,19 +521,22 @@ export function NewControlForm({ catalogId, onClose, onSuccess, initialMashupId,
               </div>
               <div className="mt-2 flex flex-wrap gap-2">
                 {Object.entries(watchParams).map(([key, value]) => (
-                  <div key={key} className="flex items-center rounded-md bg-gray-100">
-                    <Badge key={key} variant="outline" className="px-2 py-1">
-                      <span>{key}: {value}</span>
-                      <div 
-                        role="button"
-                        tabIndex="0"
-                        className="ml-1 flex cursor-pointer items-center text-center"
-                        onClick={() => removeParam(key)}
-                      >
-                        <X size="14" />
-                      </div>
-                    </Badge>
-                  </div>
+                  // Exclude 'endpoint' from the displayed parameters in this list
+                  key !== 'endpoint' && (
+                    <div key={key} className="flex items-center rounded-md bg-gray-100">
+                      <Badge key={key} variant="outline" className="px-2 py-1">
+                        <span>{key}: {value}</span>
+                        <div 
+                          role="button"
+                          tabIndex="0"
+                          className="ml-1 flex cursor-pointer items-center text-center"
+                          onClick={() => removeParam(key)}
+                        >
+                          <X size="14" />
+                        </div>
+                      </Badge>
+                    </div>
+                  )
                 ))}
               </div>
               {form.formState.errors.params && (
@@ -481,15 +544,16 @@ export function NewControlForm({ catalogId, onClose, onSuccess, initialMashupId,
               )}
             </div>
 
+            {/* Scopes field (reverted to previous method) */}
             <div className="space-y-2">
-              <FormLabel>Scopes (Optional)</FormLabel>
+              <FormLabel>Scopes (Opcional)</FormLabel>
               <div className="flex space-x-2">
                 <Select 
                   value={selectedScope} 
                   onValueChange={setSelectedScope}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select scope" />
+                    <SelectValue placeholder="Selecciona un scope" />
                   </SelectTrigger>
                   <SelectContent className="max-h-60 overflow-y-auto">
                     {availableScopes.map((scope) => (
@@ -500,9 +564,10 @@ export function NewControlForm({ catalogId, onClose, onSuccess, initialMashupId,
                   </SelectContent>
                 </Select>
                 <Input
-                  placeholder="Scope value"
+                  placeholder="Valor del scope"
                   value={scopeValue}
                   onChange={(e) => setScopeValue(e.target.value)}
+                  disabled={!selectedScope}
                 />
                 <div className="flex items-center">
                   <div
@@ -530,22 +595,39 @@ export function NewControlForm({ catalogId, onClose, onSuccess, initialMashupId,
                   </div>
                 ))}
               </div>
+              {form.formState.errors.scopes && (
+                <p className="text-sm text-destructive font-medium">{form.formState.errors.scopes.message}</p>
+              )}
             </div>
 
             <DialogFooter className="flex justify-end space-x-2">
               <Button
-                onClick={onClose}
+                onClick={() => {
+                  setConfirmingScopes(false); // Reset confirmation on cancel
+                  setCooldownActive(false);   // Clear cooldown on cancel
+                  setButtonText('Save');      // Reset button text on cancel
+                  onClose();
+                }}
                 variant="outline"
                 type="button"
               >
-                Cancel
+                Cancelar
               </Button>
               <Button
                 type="submit"
-                disabled={loading}
-                variant="destructive"
+                disabled={loading || cooldownActive}
               >
-                {loading ? 'Creating...' : 'Save'}
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creando...
+                  </>
+                ) : (
+                  <>
+                    <Check className="mr-2 h-4 w-4"/>
+                    {buttonText}
+                  </>
+                )}
               </Button>
             </DialogFooter>
           </form>

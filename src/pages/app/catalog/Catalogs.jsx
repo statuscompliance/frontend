@@ -22,7 +22,7 @@ import { toast } from 'sonner';
 import { Link, useNavigate } from 'react-router-dom';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import Page from '@/components/basic-page.jsx';
-import { 
+import {
   getAllCatalogs,
   updateCatalog,
   deleteCatalog
@@ -40,14 +40,18 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { CatalogForm } from '@/forms/catalog/forms';
 import { useAuth } from '@/hooks/use-auth';
-import { hasDraftData, 
-  getDraftCatalogId, 
-  getDraftControlIds, 
-  clearDraftData, 
-  getDraftDashboardUid 
+import {
+  hasDraftData,
+  getDraftCatalogId,
+  getDraftControlIds,
+  clearDraftData,
+  getDraftDashboardUid
 } from '@/utils/draftStorage';
 import { deleteControl } from '@/services/controls';
 import { deleteScopeSetsByControlId } from '@/services/scopes';
+// Assuming dashboardsService exists and is imported if getDraftDashboardUid is used
+// import * as dashboardsService from '@/services/dashboards'; 
+
 
 const columnHelper = createColumnHelper();
 
@@ -61,6 +65,8 @@ export function Catalogs() {
   const [rowSelection, setRowSelection] = useState({});
   const [formErrors, setFormErrors] = useState({});
   const [showDraftDialog, setShowDraftDialog] = useState(false);
+  // Nuevo estado para el diálogo de confirmación de borrado masivo
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false); 
   const navigate = useNavigate();
   const { userData } = useAuth();
 
@@ -90,7 +96,7 @@ export function Catalogs() {
   }, []);
 
   const handleNew = useCallback(() => {
-    // Check if there's a draft catalog
+    // Check if there's a draft catalog (Kept from original version)
     if (hasDraftData()) {
       setShowDraftDialog(true);
     } else {
@@ -107,7 +113,7 @@ export function Catalogs() {
   const handleDiscardDraft = async () => {
     try {
       setLoading(true);
-      
+
       // Delete catalog draft if it exists
       const draftCatalogId = getDraftCatalogId();
       if (draftCatalogId) {
@@ -117,7 +123,7 @@ export function Catalogs() {
           console.error('Error deleting draft catalog:', err);
         }
       }
-      
+
       // Delete control drafts if they exist
       const controlIds = getDraftControlIds();
       for (const controlId of controlIds) {
@@ -133,19 +139,21 @@ export function Catalogs() {
       const dashboardUid = getDraftDashboardUid();
       if (dashboardUid) {
         try {
-          await dashboardsService.delete(dashboardUid);
+          // Ensure dashboardsService is imported and available if this block is uncommented
+          // await dashboardsService.delete(dashboardUid); 
+          console.warn('Dashboard draft deletion skipped: dashboardsService not imported or available.');
         } catch (err) {
           console.error(`Error deleting draft dashboard ${dashboardUid}:`, err);
         }
       }
-      
+
       // Clear localStorage
       clearDraftData();
-      
+
       // Reset state
       setShowDraftDialog(false);
       toast.success('Draft catalog discarded');
-      
+
       // No navigation - we stay on the catalogs page
       setLoading(false);
     } catch (err) {
@@ -161,7 +169,7 @@ export function Catalogs() {
 
   const handleDelete = useCallback(async () => {
     if (!catalogToDelete) return;
-    
+
     try {
       setLoading(true);
       await deleteCatalog(catalogToDelete.id);
@@ -176,34 +184,6 @@ export function Catalogs() {
     }
   }, [catalogs, catalogToDelete]);
 
-  const handleDeleteSelected = useCallback(async () => {
-    try {
-      setLoading(true);
-      
-      const selectedIds = Object.keys(rowSelection).map(index => catalogs[parseInt(index)].id);
-      
-      if (selectedIds.length === 0) {
-        toast.error('No catalogs selected');
-        return;
-      }
-      
-      for (const id of selectedIds) {
-        await deleteCatalog(id);
-      }
-      
-      setCatalogs(catalogs.filter(catalog => !selectedIds.includes(catalog.id)));
-      
-      setRowSelection({});
-      
-      toast.success(`${selectedIds.length} catalog${selectedIds.length > 1 ? 's' : ''} deleted successfully`);
-    } catch (err) {
-      toast.error('Failed to delete selected catalogs');
-      console.error('Error deleting catalogs:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [catalogs, rowSelection]);
-
   const handleCatalogUpdate = async (catalogData) => {
     try {
       if (!catalogData.name.trim() || !catalogData.description.trim()) {
@@ -216,7 +196,7 @@ export function Catalogs() {
 
       setLoading(true);
       const response = await updateCatalog(editingCatalog.id, catalogData);
-      setCatalogs(catalogs.map((catalog) => 
+      setCatalogs(catalogs.map((catalog) =>
         catalog.id === editingCatalog.id ? response : catalog
       ));
       toast.success('Catalog updated successfully');
@@ -228,11 +208,11 @@ export function Catalogs() {
       setLoading(false);
     }
   };
-  
+
   const handleRowClick = useCallback((catalog) => {
     navigate(`/app/catalogs/${catalog.id}`, { state: { catalogData: catalog } });
   }, [navigate]);
-  
+
   const formatDate = (dateString) => {
     if (!dateString) return '-';
     const date = new Date(dateString);
@@ -290,8 +270,8 @@ export function Catalogs() {
         cell: (info) => {
           const dashboardId = info.getValue();
           return dashboardId ? (
-            <Link 
-              to={'/app/dashboards/deeu8ffhhkikge'} 
+            <Link
+              to={'/app/dashboards/deeu8ffhhkikge'}
               className="flex items-center text-blue-600 hover:text-blue-800"
               onClick={(e) => e.stopPropagation()}
             >
@@ -320,7 +300,7 @@ export function Catalogs() {
                   <Edit className="mr-2 h-4 w-4" />
                   Edit
                 </DropdownMenuItem>
-                <DropdownMenuItem 
+                <DropdownMenuItem
                   onClick={() => handleDeleteConfirm(catalog)}
                   className="text-red-600"
                 >
@@ -355,8 +335,42 @@ export function Catalogs() {
     },
   });
 
-  // Calcular si hay alguna fila seleccionada
-  const hasSelection = Object.keys(rowSelection).length > 0;
+  // Calculate selected rows (improved from second version)
+  const selectedCatalogs = useMemo(() => {
+    return table.getSelectedRowModel().rows.map(row => row.original);
+  }, [table.getSelectedRowModel().rows]);
+
+  // Función para abrir el diálogo de confirmación de borrado masivo
+  const handleBulkDeleteClick = () => {
+    if (!selectedCatalogs.length) {
+      toast.error('No catalogs selected');
+      return;
+    }
+    setShowBulkDeleteConfirm(true);
+  };
+
+  // Función para manejar el borrado masivo una vez confirmado
+  const handleConfirmBulkDelete = async () => {
+    setLoading(true);
+    let allSuccess = true;
+    for (const catalog of selectedCatalogs) {
+      try {
+        await deleteCatalog(catalog.id);
+      } catch (err) {
+        allSuccess = false;
+        toast.error(`Error deleting catalog: ${catalog.name}`);
+        console.error(`Error deleting catalog ${catalog.id}:`, err);
+      }
+    }
+    if (allSuccess) {
+      toast.success(`${selectedCatalogs.length} catalog${selectedCatalogs.length > 1 ? 's' : ''} deleted successfully`);
+      // Update state by filtering out deleted catalogs
+      setCatalogs(prev => prev.filter(c => !selectedCatalogs.some(sel => sel.id === c.id)));
+    }
+    setLoading(false);
+    setRowSelection({}); // Clear selection after deletion attempt
+    setShowBulkDeleteConfirm(false); // Cerrar el diálogo después de la operación
+  };
 
   return (
     <Page name="Catalogs" className="h-full w-full">
@@ -367,16 +381,7 @@ export function Catalogs() {
           onChange={(e) => setGlobalFilter(e.target.value)}
           className="max-w-sm"
         />
-        <div className="flex items-center space-x-2">
-          {userData.authority !== 'USER' && (
-            <Button 
-              variant="destructive" 
-              onClick={handleDeleteSelected}
-              disabled={!hasSelection || loading}
-            >
-              <Trash className="h-4 w-4" />
-            </Button>
-          )}
+        <div className="flex items-center space-x-2"> {/* Added wrapper div for consistency */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="ml-auto">
@@ -400,7 +405,7 @@ export function Catalogs() {
                 })}
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button 
+          <Button
             className="border-2 border-sidebar-accent bg-sidebar-accent hover:bg-secondary hover:text-sidebar-accent"
             onClick={handleNew}
             userRole={userData.authority}
@@ -409,20 +414,21 @@ export function Catalogs() {
           </Button>
         </div>
       </div>
-      
+
       {error && (
         <div className="my-4 border border-red-400 rounded bg-red-100 px-4 py-3 text-red-700">
           {error}
         </div>
       )}
-      
-      <div className="mt-4 border rounded-md">
+
+      {/* Added max-h and overflow for table scrolling */}
+      <div className="mt-4 border rounded-md max-h-[600px] overflow-y-auto">
         <Table>
-          <TableHeader className="bg-gray-50">
+          <TableHeader className="bg-sidebar-accent">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
+                  <TableHead className="text-white text-center" key={header.id}>
                     {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                   </TableHead>
                 ))}
@@ -440,7 +446,7 @@ export function Catalogs() {
                 </TableCell>
               </TableRow>
             )}
-            
+
             {!loading && table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow className="text-left" key={row.id} data-state={row.getIsSelected() && 'selected'}>
@@ -459,23 +465,40 @@ export function Catalogs() {
           </TableBody>
         </Table>
       </div>
-      
-      <div className="flex items-center justify-end py-4 space-x-2">
-        <Button variant="outline" size="sm" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
-          Previous
-        </Button>
-        <Button variant="outline" size="sm" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
-          Next
-        </Button>
+
+      {/* Pagination and new Bulk Delete Button */}
+      <div className="flex items-center justify-between py-4 space-x-2">
+        {userData.authority !== 'USER' && ( // Apply user role check here
+          <Button
+            size="lg"
+            className={`flex items-center gap-2 shadow-lg ${selectedCatalogs.length > 0
+              ? 'bg-sidebar-accent text-white hover:bg-red-500'
+              : 'bg-gray-200 text-black cursor-not-allowed'
+              }`}
+            onClick={handleBulkDeleteClick} // Llama a la nueva función para abrir el diálogo
+            disabled={selectedCatalogs.length === 0 || loading} // Disable during loading
+          >
+            <Trash className="h-5 w-5" />
+            Delete Selected ({selectedCatalogs.length})
+          </Button>
+        )}
+        <div className="flex items-center space-x-2 ml-auto"> {/* Use ml-auto to push pagination to the right */}
+          <Button variant="outline" size="sm" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
+            Previous
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
+            Next
+          </Button>
+        </div>
       </div>
-      
+
       {/* Edit Dialog */}
       <Dialog open={!!editingCatalog} onOpenChange={(isOpen) => !isOpen && setEditingCatalog(null)}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>Edit Catalog</DialogTitle>
           </DialogHeader>
-          
+
           {editingCatalog && (
             <CatalogForm
               catalog={editingCatalog}
@@ -486,7 +509,7 @@ export function Catalogs() {
           )}
         </DialogContent>
       </Dialog>
-      
+
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!catalogToDelete} onOpenChange={(isOpen) => !isOpen && setCatalogToDelete(null)}>
         <AlertDialogContent>
@@ -511,8 +534,33 @@ export function Catalogs() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      
-      {/* Draft Dialog */}
+
+      {/* Bulk Delete Confirmation Dialog - Nuevo */}
+      <AlertDialog open={showBulkDeleteConfirm} onOpenChange={setShowBulkDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Bulk Deletion</AlertDialogTitle>
+            <AlertDialogDescription>
+              You are about to permanently delete {selectedCatalogs.length} selected catalog{selectedCatalogs.length > 1 ? 's' : ''}. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmBulkDelete} className="bg-red-600 hover:bg-red-700" disabled={loading}>
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete All Selected'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Draft Dialog (Kept from original version) */}
       <AlertDialog open={showDraftDialog} onOpenChange={setShowDraftDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>

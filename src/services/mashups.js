@@ -212,3 +212,18 @@ export async function executeNodeRedMashup(endpoint, body, credentials, accessTo
     throw error;
   }
 }
+
+/**
+ * Deletes a Node-RED flow by its ID.
+ * @param {string} flowId - The ID of the flow to delete.
+ * @returns {Promise<any>} - The response from the Node-RED API.
+ */
+export async function deleteFlow(flowId) {
+  try {
+    const response = await nodeRedClient.delete(`/flow/${flowId}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error deleting Node-RED flow with ID ${flowId}:`, error);
+    throw error;
+  }
+}

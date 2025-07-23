@@ -17,13 +17,15 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Edit, Trash, MoreHorizontal, ChevronDown, Loader2, ExternalLink, Play } from 'lucide-react'; // Import 'Play'
+import { Edit, Trash, MoreHorizontal, ChevronDown, Loader2, ExternalLink, Play } from 'lucide-react';
 import { toast } from 'sonner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import Page from '@/components/basic-page.jsx';
 import {
   getAllNodeRedFlows,
-} from '@/services/mashups';
+  // Assuming deleteFlow exists in mashups service for actual deletion
+  // deleteFlow, 
+} from '@/services/mashups'; // Import deleteFlow if it exists
 import {
   AlertDialog,
   AlertDialogAction,
@@ -56,17 +58,21 @@ export function Mashups() {
   const navigate = useNavigate();
   const nodeRedUrl = import.meta.env.VITE_NODE_RED_URL || 'http://localhost:1880';
 
+  // Nuevo estado para el diálogo de confirmación de borrado masivo
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+  // Estados para la paginación
+  const [pageIndex, setPageIndex] = useState(0);
+  const pageSize = 10; // Número de elementos por página, igual que en Catalogs.jsx
+
 
   // Fetch flows on component mount
   useEffect(() => {
-    // Add isMounted flag for safe state updates
     let isMounted = true;
 
     const fetchFlows = async () => {
       try {
         setLoading(true);
         const response = await getAllNodeRedFlows();
-        // Assuming getAllNodeRedFlows returns 'mainInputType' and 'endpoint' (not 'url')
         if (isMounted) {
           setFlows(response.data);
           setError(null);
@@ -86,11 +92,47 @@ export function Mashups() {
 
     fetchFlows();
 
-    // Cleanup function: set isMounted to false when component unmounts
     return () => {
       isMounted = false;
     };
-  }, []); // Dependencies: empty array to run only once on mount
+  }, []);
+
+  // Reset pageIndex when filters change
+  useEffect(() => {
+    setPageIndex(0);
+  }, [globalFilter]); // Only globalFilter affects the full dataset for now
+
+  // Filtrar y paginar los datos
+  const filteredFlows = useMemo(() => {
+    if (!globalFilter) {
+      return flows;
+    }
+    const lowerCaseFilter = globalFilter.toLowerCase();
+    return flows.filter(flow =>
+      flow.name?.toLowerCase().includes(lowerCaseFilter) ||
+      flow.description?.toLowerCase().includes(lowerCaseFilter) ||
+      flow.endpoint?.toLowerCase().includes(lowerCaseFilter)
+    );
+  }, [flows, globalFilter]);
+
+  const paginatedFlows = useMemo(() => {
+    const start = pageIndex * pageSize;
+    const end = start + pageSize;
+    return filteredFlows.slice(start, end);
+  }, [filteredFlows, pageIndex, pageSize]);
+
+  const totalPages = Math.ceil(filteredFlows.length / pageSize);
+  const canPreviousPage = pageIndex > 0;
+  const canNextPage = pageIndex < totalPages - 1;
+
+  const goToPreviousPage = () => {
+    setPageIndex(prev => Math.max(0, prev - 1));
+  };
+
+  const goToNextPage = () => {
+    setPageIndex(prev => Math.min(totalPages - 1, prev + 1));
+  };
+
 
   const handleDeleteConfirm = useCallback((flow) => {
     setFlowToDelete(flow);
@@ -101,8 +143,9 @@ export function Mashups() {
 
     try {
       setLoading(true);
-      // Here would be the implementation to delete the flow
-      // await deleteFlow(flowToDelete.id); // Uncomment and implement deleteFlow
+      // Placeholder for actual deleteFlow service call
+      // await deleteFlow(flowToDelete.id); 
+      console.log(`Simulating deletion of flow with ID: ${flowToDelete.id}`); // Simulate deletion
       setFlows(flows.filter((flow) => flow.id !== flowToDelete.id));
       toast.success('Flow deleted successfully');
     } catch (err) {
@@ -114,13 +157,10 @@ export function Mashups() {
     }
   }, [flows, flowToDelete]);
 
-
   // Handler to navigate to the test page for a specific mashup
   const handleOpenTestView = useCallback((mashup) => {
     navigate('/app/mashups/control-test', { state: { mashup } });
   }, [navigate]);
-
-  // Delete handler remains the same
 
 
   const columns = useMemo(
@@ -193,7 +233,7 @@ export function Mashups() {
                   <Edit className="mr-2 h-4 w-4" />
                   Edit in Node-RED
                 </DropdownMenuItem>
-                <DropdownMenuItem 
+                <DropdownMenuItem
                   onClick={() => handleOpenTestView(flow)}
                   disabled={!(flow.endpoint && flow.mainInputType === 'http in')}
                 >
@@ -217,7 +257,8 @@ export function Mashups() {
   );
 
   const table = useReactTable({
-    data: flows,
+    // Usar paginatedFlows para la tabla
+    data: paginatedFlows,
     columns,
     state: {
       globalFilter,
@@ -228,14 +269,57 @@ export function Mashups() {
     onRowSelectionChange: setRowSelection,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
+    // Deshabilitar getPaginationRowModel si manejamos la paginación manualmente
+    // getPaginationRowModel: getPaginationRowModel(), 
     onColumnVisibilityChange: setColumnVisibility,
-    initialState: {
-      pagination: {
-        pageSize: 10,
-      },
-    },
+    // No necesitamos initialState.pagination si lo manejamos manualmente
+    // initialState: {
+    //   pagination: {
+    //     pageSize: 10,
+    //   },
+    // },
   });
+
+  // Calculate selected rows (similar to Catalogs.jsx)
+  // MOVED: This useMemo now correctly accesses 'table' after its declaration.
+  const selectedFlows = useMemo(() => {
+    return table.getSelectedRowModel().rows.map(row => row.original);
+  }, [table.getSelectedRowModel().rows]);
+
+  // Función para abrir el diálogo de confirmación de borrado masivo
+  const handleOpenBulkDeleteConfirm = () => {
+    if (!selectedFlows.length) {
+      toast.error('No mashups selected');
+      return;
+    }
+    setShowBulkDeleteConfirm(true);
+  };
+
+  // Función para manejar el borrado masivo una vez confirmado
+  const handleConfirmBulkDelete = async () => {
+    setLoading(true);
+    let allSuccess = true;
+    for (const flow of selectedFlows) {
+      try {
+        // Placeholder for actual deleteFlow service call
+        // await deleteFlow(flow.id); 
+        console.log(`Simulating bulk deletion of flow with ID: ${flow.id}`); // Simulate deletion
+      } catch (err) {
+        allSuccess = false;
+        toast.error(`Error deleting mashup: ${flow.name || flow.id}`);
+        console.error(`Error deleting mashup ${flow.id}:`, err);
+      }
+    }
+    if (allSuccess) {
+      toast.success(`${selectedFlows.length} mashup${selectedFlows.length > 1 ? 's' : ''} deleted successfully`);
+      // Update state by filtering out deleted flows
+      setFlows(prev => prev.filter(f => !selectedFlows.some(sel => sel.id === f.id)));
+    }
+    setLoading(false);
+    setRowSelection({}); // Clear selection after deletion attempt
+    setShowBulkDeleteConfirm(false); // Cerrar el diálogo después de la operación
+  };
+
 
   return (
     <Page name="API Mashups" className="h-full w-full">
@@ -246,46 +330,47 @@ export function Mashups() {
           onChange={(e) => setGlobalFilter(e.target.value)}
           className="max-w-sm"
         />
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="ml-auto">
-              Columns <ChevronDown className="ml-2 h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {table
-              .getAllColumns()
-              .filter((column) => column.getCanHide())
-              .map((column) => {
-                return (
-                  <DropdownMenuItem key={column.id} className="capitalize">
-                    <Checkbox
-                      checked={column.getIsVisible()}
-                      onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                    />
-                    <span className="ml-2">
-                      {/* --- KEY CHANGE HERE --- */}
-                      {column.id === 'description' // Now 'description', not 'info'!
-                        ? 'Description'
-                        : column.id === 'numNodes'
-                          ? 'Total pipes'
-                          : column.id === 'name' // Now 'name', not 'label'!
-                            ? 'Mashup Name'
-                            : column.id === 'endpoint' // Added for 'endpoint' if not present before
-                              ? 'Mashup Endpoint'
-                              : column.id}
-                    </span>
-                  </DropdownMenuItem>
-                );
-              })}
-          </DropdownMenuContent>
-        </DropdownMenu>
-        <Button
-          className="border-2 border-sidebar-accent bg-sidebar-accent hover:bg-secondary hover:text-sidebar-accent"
-          onClick={() => window.open(nodeRedUrl, '_blank')}
-        >
-          <ExternalLink className="mr-2 h-4 w-4" /> Open Node-RED
-        </Button>
+        <div className="flex items-center space-x-2"> {/* Added wrapper div for consistency */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="ml-auto">
+                Columns <ChevronDown className="ml-2 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {table
+                .getAllColumns()
+                .filter((column) => column.getCanHide())
+                .map((column) => {
+                  return (
+                    <DropdownMenuItem key={column.id} className="capitalize">
+                      <Checkbox
+                        checked={column.getIsVisible()}
+                        onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                      />
+                      <span className="ml-2">
+                        {column.id === 'description'
+                          ? 'Description'
+                          : column.id === 'numNodes'
+                            ? 'Total pipes'
+                            : column.id === 'name'
+                              ? 'Mashup Name'
+                              : column.id === 'endpoint'
+                                ? 'Mashup Endpoint'
+                                : column.id}
+                      </span>
+                    </DropdownMenuItem>
+                  );
+                })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button
+            className="border-2 border-sidebar-accent bg-sidebar-accent hover:bg-secondary hover:text-sidebar-accent"
+            onClick={() => window.open(nodeRedUrl, '_blank')}
+          >
+            <ExternalLink className="mr-2 h-4 w-4" /> Open Node-RED
+          </Button>
+        </div>
       </div>
 
       {error && (
@@ -294,7 +379,7 @@ export function Mashups() {
         </div>
       )}
 
-      <div className="mt-4 border rounded-md">
+      <div className="mt-4 border rounded-md max-h-[600px] overflow-y-auto"> {/* Added max-h and overflow for table scrolling */}
         <Table>
           <TableHeader className="bg-gray-50">
             {table.getHeaderGroups().map((headerGroup) => (
@@ -338,16 +423,33 @@ export function Mashups() {
         </Table>
       </div>
 
-      <div className="flex items-center justify-end py-4 space-x-2">
-        <Button variant="outline" size="sm" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
-          Previous
-        </Button>
-        <Button variant="outline" size="sm" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
-          Next
-        </Button>
+      {/* Pagination and Bulk Delete Button */}
+      <div className="flex items-center justify-between py-4 space-x-2">
+        {userData.authority !== 'USER' && ( // Apply user role check here
+          <Button
+            size="lg"
+            className={`flex items-center gap-2 shadow-lg ${selectedFlows.length > 0
+              ? 'bg-sidebar-accent text-white hover:bg-red-500'
+              : 'bg-gray-200 text-black cursor-not-allowed'
+              }`}
+            onClick={handleOpenBulkDeleteConfirm} // Llama a la nueva función para abrir el diálogo
+            disabled={selectedFlows.length === 0 || loading} // Disable during loading
+          >
+            <Trash className="h-5 w-5" />
+            Delete Selected ({selectedFlows.length})
+          </Button>
+        )}
+        <div className="flex items-center space-x-2 ml-auto"> {/* Use ml-auto to push pagination to the right */}
+          <Button variant="outline" size="sm" onClick={goToPreviousPage} disabled={!canPreviousPage}>
+            Previous
+          </Button>
+          <Button variant="outline" size="sm" onClick={goToNextPage} disabled={!canNextPage}>
+            Next
+          </Button>
+        </div>
       </div>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Confirmation Dialog (for single delete) */}
       <AlertDialog open={!!flowToDelete} onOpenChange={(isOpen) => !isOpen && setFlowToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -358,7 +460,7 @@ export function Mashups() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-sidebar-accent">
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -366,6 +468,31 @@ export function Mashups() {
                 </>
               ) : (
                 'Delete'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk Delete Confirmation Dialog - Nuevo */}
+      <AlertDialog open={showBulkDeleteConfirm} onOpenChange={setShowBulkDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Bulk Deletion</AlertDialogTitle>
+            <AlertDialogDescription>
+              You are about to permanently delete {selectedFlows.length} selected mashup{selectedFlows.length > 1 ? 's' : ''}. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmBulkDelete} className="bg-red-600 hover:bg-red-700" disabled={loading}>
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete All Selected'
               )}
             </AlertDialogAction>
           </AlertDialogFooter>

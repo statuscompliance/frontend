@@ -88,9 +88,13 @@ export function DashboardForm({ onClose, onSubmit }) {
                 <FormItem>
                   <FormLabel>Dashboard Name</FormLabel>
                   <FormControl>
-                    <Input {...field} maxLength={100} />
+                    <Input {...field} maxLength={40} />
                   </FormControl>
                   <FormMessage />
+                  {/* Mostrar el contador de caracteres */}
+                  <div className="text-xs text-muted-foreground text-right">
+                    {field.value?.length || 0}/40
+                  </div>
                 </FormItem>
               )}
             />
@@ -101,11 +105,11 @@ export function DashboardForm({ onClose, onSubmit }) {
                 <FormItem>
                   <FormLabel>Folder</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value} disabled={loading}>
-                    <FormControl>
-                      <SelectTrigger>
+                    <SelectTrigger>
+                      <FormControl>
                         <SelectValue placeholder="Select folder" />
-                      </SelectTrigger>
-                    </FormControl>
+                      </FormControl>
+                    </SelectTrigger>
                     <SelectContent>
                       {folders.map((folder) => (
                         <SelectItem key={folder.uid} value={folder.uid}>
@@ -133,6 +137,8 @@ export function DashboardForm({ onClose, onSubmit }) {
                             'w-full pl-3 text-left font-normal',
                             !field.value && 'text-muted-foreground'
                           )}
+                          onBlur={field.onBlur}
+                          ref={field.ref}
                         >
                           {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
                           <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
@@ -168,6 +174,8 @@ export function DashboardForm({ onClose, onSubmit }) {
                             'w-full pl-3 text-left font-normal',
                             !field.value && 'text-muted-foreground'
                           )}
+                          onBlur={field.onBlur}
+                          ref={field.ref}
                         >
                           {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
                           <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
