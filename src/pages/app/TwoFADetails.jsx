@@ -32,6 +32,9 @@ export function TwoFADetails() {
           <CardDescription className="mt-2 text-muted-foreground">
             Protect your account by enabling 2FA. You’ll need to enter a one-time code
             from an authenticator app every time you log in.
+            <br />
+            <br />
+            <strong>Note:</strong> This feature currently works only with Chromium-based browsers.
           </CardDescription>
         </CardContent>
       </CardHeader>
