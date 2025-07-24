@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, Save, PieChart, BarChart, LineChart, Table2, Check, ArrowRight, AlertCircle } from 'lucide-react';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -33,12 +34,16 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 // Schema for dashboard configuration
 const dashboardConfigSchema = z.object({
-  title: z.string().min(1, { message: 'Dashboard title is required' }),
+  title: z.string()
+    .min(1, { message: 'Dashboard title is required' })
+    .max(40, { message: 'Dashboard title must be at most 40 characters' }),
   description: z.string().optional(),
   charts: z.array(
     z.object({
       type: z.string().min(1, { message: 'Chart type is required' }),
-      title: z.string().min(1, { message: 'Chart title is required' }),
+      title: z.string()
+        .min(1, { message: 'Chart title is required' })
+        .max(40, { message: 'Chart title must be at most 40 characters' }),
       controls: z.array(z.string()).min(1, { message: 'Select at least one control' }),
       position: z.object({
         x: z.number(),
@@ -68,6 +73,9 @@ const chartTypes = [
 export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalogId, onSubmit, isSubmitting, apiError = null }) {
   const [selectedChart, setSelectedChart] = useState(null);
   const [submitError, setSubmitError] = useState(null);
+  const [emptyWarning, setEmptyWarning] = useState(false);
+  const [confirmEnabled, setConfirmEnabled] = useState(true);
+  const [confirmMode, setConfirmMode] = useState(false);
 
   // Setup form with zod resolver
   const form = useForm({
@@ -128,7 +136,27 @@ export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalo
 
   const handleSubmit = (data) => {
     setSubmitError(null);
+    if (!data.charts || data.charts.length === 0) {
+      setEmptyWarning(true);
+      setConfirmEnabled(false);
+      setConfirmMode(false);
+      toast.warning('You are about to create an empty dashboard. Please confirm to continue.');
+      setTimeout(() => {
+        setConfirmEnabled(true);
+        setConfirmMode(true);
+      }, 2000);
+      return;
+    }
     onSubmit(data);
+  };
+
+  // Confirmación para dashboard vacío
+  const handleConfirmSubmit = (data) => {
+    setSubmitError(null);
+    onSubmit(data);
+    setConfirmMode(false);
+    setEmptyWarning(false);
+    setConfirmEnabled(true);
   };
 
   const ChartPreview = ({ type }) => {
@@ -157,7 +185,7 @@ export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalo
       )}
       
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+        <form onSubmit={form.handleSubmit(confirmMode ? handleConfirmSubmit : handleSubmit)} className="space-y-6">
           <div className="grid grid-cols-2 gap-6">
             <div>
               <FormField
@@ -167,9 +195,16 @@ export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalo
                   <FormItem>
                     <FormLabel>Dashboard Title <span className="text-red-500">*</span></FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter dashboard title" {...field} />
+                      <Input 
+                        placeholder="Enter dashboard title" 
+                        {...field}
+                        maxLength={40}
+                      />
                     </FormControl>
                     <FormMessage />
+                    <div className="text-xs text-muted-foreground text-right">
+                      {field.value?.length || 0}/40
+                    </div>
                   </FormItem>
                 )}
               />
@@ -210,9 +245,13 @@ export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalo
                     placeholder="Enter dashboard description" 
                     rows={2}
                     {...field} 
+                    maxLength={140}
                   />
                 </FormControl>
                 <FormMessage />
+                <div className="text-xs text-muted-foreground text-right">
+                  {field.value?.length || 0}/140
+                </div>
               </FormItem>
             )}
           />
@@ -223,7 +262,7 @@ export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalo
               <Button 
                 type="button" 
                 onClick={handleAddChart}
-                className="border-2 border-sidebar-accent bg-sidebar-accent hover:bg-secondary hover:text-sidebar-accent"
+                className="bg-white border border-black text-black hover:bg-gray-100"
                 variant="outline"
               >
                 Add Chart
@@ -258,9 +297,14 @@ export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalo
                               <Input 
                                 placeholder="Enter chart title" 
                                 value={chart.title} 
-                                onChange={(e) => handleChartChange(index, 'title', e.target.value)} 
+                                onChange={(e) => handleChartChange(index, 'title', e.target.value)}
+                                maxLength={40}
+                                style={{ width: '100%' }}
                               />
                             </FormControl>
+                            <div className="text-xs text-muted-foreground text-right">
+                              {chart.title?.length || 0}/40
+                            </div>
                           </FormItem>
 
                           <FormItem>
@@ -351,13 +395,22 @@ export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalo
           <div className="flex justify-end pt-4">
             <Button 
               type="submit" 
-              disabled={isSubmitting}
-              className="min-w-[120px] border-2 border-sidebar-accent bg-sidebar-accent hover:bg-secondary hover:text-sidebar-accent"
+              disabled={isSubmitting || !confirmEnabled}
+              className={
+                isSubmitting
+                  ? "min-w-[120px] bg-white border border-black text-black hover:bg-gray-100"
+                  : "min-w-[120px] bg-green-600 text-white"
+              }
             >
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Saving...
+                </>
+              ) : confirmMode ? (
+                <>
+                  Confirm
+                  <Check className="ml-2 h-4 w-4" />
                 </>
               ) : (
                 <>

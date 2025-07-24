@@ -1,13 +1,13 @@
 import * as z from 'zod';
 
 export const catalogSchema = z.object({
-  name: z.string().max(100, 'Name must be 100 characters or less').min(1, 'Name is required'),
-  description: z.string().min(1, 'Description is required'),
+  name: z.string().max(40, { message: 'Name must be at most 40 characters' }).min(1, 'Name is required'),
+  description: z.string().min(1, 'Description is required').max(140, { message: 'Description must be at most 140 characters' }),
 });
 
 export const controlSchema = z.object({
-  name: z.string().max(100, 'Name must be 100 characters or less').min(1, 'Name is required'),
-  description: z.string().min(1, 'Description is required'),
+  name: z.string().max(40, { message: 'Name must be at most 40 characters' }).min(1, 'Name is required'),
+  description: z.string().min(1, 'Description is required').max(140, { message: 'Description must be at most 140 characters' }),
   period: z.enum(['HOURLY', 'DAILY', 'WEEKLY', 'MONTHLY', 'ANNUALLY']),
   startDate: z.date().optional(),
   endDate: z.date().optional(),

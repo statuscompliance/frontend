@@ -26,8 +26,12 @@ import { cn } from '@/lib/utils';
 
 // Schema validation for catalog info
 const catalogInfoSchema = z.object({
-  name: z.string().min(1, { message: 'Catalog name is required' }),
-  description: z.string().min(1, { message: 'Description is required' }),
+  name: z.string()
+    .min(1, { message: 'Catalog name is required' })
+    .max(40, { message: 'Catalog name must be at most 40 characters' }),
+  description: z.string()
+    .min(1, { message: 'Description is required' })
+    .max(140, { message: 'Description must be at most 140 characters' }),
   startDate: z.date({
     required_error: 'Start date is required',
   }),
@@ -40,6 +44,8 @@ const catalogInfoSchema = z.object({
   message: 'End date must be after start date',
   path: ['endDate']
 });
+
+const LOCALSTORAGE_KEY = 'catalogWizardCache';
 
 export function CatalogInfoStep({ initialData = {}, onSubmit, isSubmitting, apiError = null }) {
   const [submitError, setSubmitError] = useState(null);
@@ -72,6 +78,21 @@ export function CatalogInfoStep({ initialData = {}, onSubmit, isSubmitting, apiE
       setSubmitError(apiError);
     }
   }, [apiError]);
+
+  // Guardar en localStorage cada vez que cambian los valores del formulario
+  useEffect(() => {
+    const subscription = form.watch((values) => {
+      try {
+        localStorage.setItem(LOCALSTORAGE_KEY, JSON.stringify({
+          ...initialData,
+          ...values
+        }));
+      } catch (e) {
+        // Silenciar error de almacenamiento
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form, initialData]);
 
   const handleSubmit = (data) => {
     setSubmitError(null);
@@ -108,10 +129,14 @@ export function CatalogInfoStep({ initialData = {}, onSubmit, isSubmitting, apiE
                   <Input 
                     placeholder="Enter catalog name" 
                     {...field} 
-                    disabled={isSubmitting} 
+                    disabled={isSubmitting}
+                    maxLength={40}
                   />
                 </FormControl>
                 <FormMessage />
+                <div className="text-xs text-muted-foreground text-right">
+                  {field.value?.length || 0}/40
+                </div>
               </FormItem>
             )}
           />
@@ -129,10 +154,14 @@ export function CatalogInfoStep({ initialData = {}, onSubmit, isSubmitting, apiE
                     placeholder="Enter catalog description" 
                     rows={4}
                     {...field} 
-                    disabled={isSubmitting} 
+                    disabled={isSubmitting}
+                    maxLength={140}
                   />
                 </FormControl>
                 <FormMessage />
+                <div className="text-xs text-muted-foreground text-right">
+                  {field.value?.length || 0}/140
+                </div>
               </FormItem>
             )}
           />

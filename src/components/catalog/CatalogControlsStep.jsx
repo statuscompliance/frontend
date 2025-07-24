@@ -34,8 +34,12 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 // Schema for control validation
 const controlSchema = z.object({
-  name: z.string().min(1, { message: 'Control name is required' }),
-  description: z.string().min(1, { message: 'Description is required' }),
+  name: z.string()
+    .min(1, { message: 'Control name is required' })
+    .max(40, { message: 'Control name must be at most 40 characters' }),
+  description: z.string()
+    .min(1, { message: 'Description is required' })
+    .max(140, { message: 'Description must be at most 140 characters' }),
   type: z.string().min(1, { message: 'Control type is required' }),
   severity: z.string().min(1, { message: 'Severity is required' }),
   implementation: z.string().optional(),
@@ -261,9 +265,16 @@ export function CatalogControlsStep({ initialControls = [], catalogId, onSubmit,
                   <FormItem>
                     <FormLabel>Control Name <span className="text-red-500">*</span></FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter control name" {...field} />
+                      <Input 
+                        placeholder="Enter control name" 
+                        {...field} 
+                        maxLength={40}
+                      />
                     </FormControl>
                     <FormMessage />
+                    <div className="text-xs text-muted-foreground text-right">
+                      {field.value?.length || 0}/40
+                    </div>
                   </FormItem>
                 )}
               />
@@ -340,9 +351,13 @@ export function CatalogControlsStep({ initialControls = [], catalogId, onSubmit,
                         placeholder="Enter control description" 
                         rows={2}
                         {...field} 
+                        maxLength={140}
                       />
                     </FormControl>
                     <FormMessage />
+                    <div className="text-xs text-muted-foreground text-right">
+                      {field.value?.length || 0}/140
+                    </div>
                   </FormItem>
                 )}
               />
@@ -352,7 +367,7 @@ export function CatalogControlsStep({ initialControls = [], catalogId, onSubmit,
                 name="implementation"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Implementation Details</FormLabel>
+                    <FormLabel>Implementation Details (Optional)</FormLabel>
                     <FormControl>
                       <Textarea 
                         placeholder="Describe how this control should be implemented" 
