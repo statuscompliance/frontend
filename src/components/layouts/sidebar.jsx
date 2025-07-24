@@ -1,4 +1,4 @@
-import {Home, FolderOpen, Shapes, Workflow, FileSliders, ChartNoAxesCombined, ChevronRight, ChevronsUpDown, LogOut, SquareAsterisk } from 'lucide-react';
+import {Home, FolderOpen, Shapes, Workflow, FileSliders, ChartNoAxesCombined, ChevronRight, ChevronsUpDown, LogOut, ShieldHalf, SquareAsterisk } from 'lucide-react';
 import { Link } from 'react-router';
 import { MoreHorizontal } from 'lucide-react';
 import {
@@ -88,6 +88,12 @@ const data = [
         url: '/logout',
         icon: LogOut,
       },
+      {
+        type: 'item',
+        title: '2FA Settings',
+        url: '/app/setting-2fa',
+        icon: ShieldHalf,
+      },
     ]
   }
 ];
@@ -128,7 +134,7 @@ export function AppSidebar() {
             <SidebarGroupContent>
               <SidebarMenu className="space-y-4 sm:space-y-2">
                 {group.items.map((item) => (
-                  (item.roles && item.roles.some(r => 
+                  (item.roles && item.roles.some(r =>
                     r === userData.authority.toLowerCase()
                   ) || item.roles == undefined) && (
                     item.items ? (
@@ -148,7 +154,7 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <SidebarMenuButton size="lg"> 
+                <SidebarMenuButton size="lg">
                   {(open || isMobile) ? (
                     <FooterButton />
                   ) : null}
