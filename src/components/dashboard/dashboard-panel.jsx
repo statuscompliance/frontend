@@ -3,9 +3,7 @@ import { dashboardsService } from '@/services/grafana/dashboards';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-
-// Obtenemos la URL base de Grafana desde las variables de entorno
-const GRAFANA_URL = import.meta.env.VITE_GRAFANA_URL || 'http://localhost:3100';
+import { GRAFANA_BASE_URL } from '@/api/grafanaClient';
 
 /**
  * Renders a Grafana panel inside our application using iframe
@@ -62,7 +60,7 @@ export function DashboardPanel({ dashboardUid, panel, height = 300, showTitle = 
     };
     
     // URL para el panel en modo solo (d-solo)
-    return `${GRAFANA_URL}/d-solo/${dashboardUid}/${panel.slug || 'dashboard'}?orgId=1&from=${timeRange.from}&to=${timeRange.to}&timezone=browser&theme=light&panelId=${panel.id}`;
+    return `${GRAFANA_BASE_URL}/d-solo/${dashboardUid}/${panel.slug || 'dashboard'}?orgId=1&from=${timeRange.from}&to=${timeRange.to}&timezone=browser&theme=light&panelId=${panel.id}`;
   };
 
   if (loading) {
