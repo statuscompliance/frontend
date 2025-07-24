@@ -1,5 +1,6 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useEffect, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -29,20 +30,40 @@ import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { dashboardFormSchema } from './schemas';
+import { foldersService } from '@/services/grafana/folders';
 
-// Mock folder data
-const mockFolders = [
-  { id: '1', name: 'Default' },
-  { id: '2', name: 'Folder 1' },
-  { id: '3', name: 'Folder 2' },
-];
+// Default folder option
+const defaultFolder = { uid: null, title: 'Default' };
 
 export function DashboardForm({ onClose, onSubmit }) {
+  const [folders, setFolders] = useState([defaultFolder]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchFolders = async () => {
+      try {
+        const response = await foldersService.getAll();
+        const fetchedFolders = response.data || response;
+        // Add the default folder and combine with fetched folders
+        setFolders([
+          defaultFolder,
+          ...fetchedFolders.map(folder => ({ uid: folder.uid, title: folder.title }))
+        ]);
+      } catch (error) {
+        console.error('Error loading folders:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFolders();
+  }, []);
+
   const form = useForm({
     resolver: zodResolver(dashboardFormSchema),
     defaultValues: {
       name: '',
-      folderId: '1',
+      folderId: null,
       startDate: new Date(),
       endDate: undefined,
     },
@@ -67,9 +88,13 @@ export function DashboardForm({ onClose, onSubmit }) {
                 <FormItem>
                   <FormLabel>Dashboard Name</FormLabel>
                   <FormControl>
-                    <Input {...field} maxLength={100} />
+                    <Input {...field} maxLength={40} />
                   </FormControl>
                   <FormMessage />
+                  {/* Mostrar el contador de caracteres */}
+                  <div className="text-xs text-muted-foreground text-right">
+                    {field.value?.length || 0}/40
+                  </div>
                 </FormItem>
               )}
             />
@@ -79,16 +104,16 @@ export function DashboardForm({ onClose, onSubmit }) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Folder</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
+                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={loading}>
+                    <SelectTrigger>
+                      <FormControl>
                         <SelectValue placeholder="Select folder" />
-                      </SelectTrigger>
-                    </FormControl>
+                      </FormControl>
+                    </SelectTrigger>
                     <SelectContent>
-                      {mockFolders.map((f) => (
-                        <SelectItem key={f.id} value={f.id}>
-                          {f.name}
+                      {folders.map((folder) => (
+                        <SelectItem key={folder.uid} value={folder.uid}>
+                          {folder.title}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -112,6 +137,8 @@ export function DashboardForm({ onClose, onSubmit }) {
                             'w-full pl-3 text-left font-normal',
                             !field.value && 'text-muted-foreground'
                           )}
+                          onBlur={field.onBlur}
+                          ref={field.ref}
                         >
                           {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
                           <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
@@ -147,6 +174,8 @@ export function DashboardForm({ onClose, onSubmit }) {
                             'w-full pl-3 text-left font-normal',
                             !field.value && 'text-muted-foreground'
                           )}
+                          onBlur={field.onBlur}
+                          ref={field.ref}
                         >
                           {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
                           <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
@@ -168,10 +197,7 @@ export function DashboardForm({ onClose, onSubmit }) {
               )}
             />
             <div className="flex justify-end space-x-2">
-              <Button type="button" variant="outline" onClick={onClose}>
-                Cancel
-              </Button>
-              <Button type="submit">Create Dashboard</Button>
+              <Button className="border-1 border-sidebar-accent bg-white text-sidebar-accent hover:bg-sidebar-accent hover:text-white" type="submit">Create Dashboard</Button>
             </div>
           </form>
         </Form>

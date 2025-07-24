@@ -146,10 +146,7 @@ export function SecretModal({ open, onClose, onSubmit, initialData }) {
             />
 
             <DialogFooter className="pt-4">
-              <Button variant="outline" onClick={onClose} type="button">
-                Cancel
-              </Button>
-              <Button type="submit">{isEditing ? 'Save changes' : 'Create Secret'}</Button>
+              <Button className="border-1 border-sidebar-accent bg-white text-sidebar-accent hover:bg-sidebar-accent hover:text-white" type="submit">{isEditing ? 'Save changes' : 'Create Secret'}</Button>
             </DialogFooter>
           </form>
         </Form>

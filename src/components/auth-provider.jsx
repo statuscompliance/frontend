@@ -16,7 +16,7 @@ export const AuthProvider = ({ children }) => {
   // Ref to store the interceptor references for cleanup
   const axiosInterceptorRef = useRef(null);
   const nodeRedInterceptorRef = useRef(null);
-  
+
   // Handle node token change
   useEffect(() => {
     if (nodeRedToken) {
@@ -31,17 +31,17 @@ export const AuthProvider = ({ children }) => {
   // Refresh token on app boot
   useEffect(() => {
     void refreshUserToken();
-    
+
     // Configure interceptors if authenticated
     if (isAuthenticated) {
       setupInterceptors();
     }
-    
+
     // Cleanup interceptors on unmount
     return () => {
       cleanupInterceptors();
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /**
@@ -49,12 +49,12 @@ export const AuthProvider = ({ children }) => {
    */
   const setupInterceptors = () => {
     cleanupInterceptors();
-    
+
     axiosInterceptorRef.current = axiosClient.interceptors.response.use(
       response => response,
       axiosLogoutInterceptor
     );
-    
+
     nodeRedInterceptorRef.current = nodeRedClient.interceptors.response.use(
       response => response,
       axiosLogoutInterceptor
@@ -69,7 +69,7 @@ export const AuthProvider = ({ children }) => {
       axiosClient.interceptors.response.eject(axiosInterceptorRef.current);
       axiosInterceptorRef.current = null;
     }
-    
+
     if (nodeRedInterceptorRef.current !== null) {
       nodeRedClient.interceptors.response.eject(nodeRedInterceptorRef.current);
       nodeRedInterceptorRef.current = null;
@@ -135,16 +135,16 @@ export const AuthProvider = ({ children }) => {
 
         try {
           const refreshed = await refreshUserToken();
-          
+
           if (!refreshed) {
             throw new Error('Token refresh failed');
           }
-          
+
           // Update the original request with the new access token
           if (userData?.accessToken) {
             originalRequest.headers['Authorization'] = `Bearer ${userData.accessToken}`;
           }
-          
+
           processQueue(null);
           return axiosClient(originalRequest);
         } catch (err) {
@@ -156,11 +156,19 @@ export const AuthProvider = ({ children }) => {
           isRefreshing = false;
         }
       }
-      
+
       // If the request has already been retried, reject the promise
       return Promise.reject(error);
     };
-  })();  
+  })();
+
+
+  const encodeToBase64 = (str) => {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(str);
+    const binaryString = String.fromCharCode.apply(null, data)
+    return btoa(binaryString);
+  };
 
   /**
    * Logs in with a registered user
@@ -169,8 +177,10 @@ export const AuthProvider = ({ children }) => {
    * @param {string} credentials.password - Password
    * @returns {Promise} - Promise with the response
    */
-  async function authenticate ({ username, password }) {
+  async function authenticate({ username, password }) {
+    const basicAuth = encodeToBase64(`${username}:${password}`);
     const { message: _, ...userData } = await apiClient.post('/users/signIn', { username, password });
+    userData.basicAuth = basicAuth;
     setUserData(userData);
     setupInterceptors();
   };

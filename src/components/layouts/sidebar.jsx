@@ -1,5 +1,5 @@
-import {Home, FolderOpen, Shapes, Workflow, FileSliders, ChartNoAxesCombined, ChevronRight, ChevronsUpDown, LogOut, SquareAsterisk } from 'lucide-react';
-import { Link } from 'react-router';
+import {Home, FolderOpen, Shapes, Workflow, FileSliders, ChartNoAxesCombined, ChevronRight, ChevronsUpDown, LogOut, SquareAsterisk, GitGraph, LucideGitGraph, GitGraphIcon, LucidePencil, LucideGlasses, LucideFileArchive, LucideFileCheck, LucideFile, LucideLockKeyhole, LucideLogOut, LucideHome, LucideEdit2, LucideEdit, LucideEdit3, LucideFileEdit, LucideActivity, LucideMap, LucideClipboard, LucideScreenShare, LucideChartArea, LucideChartNetwork, LucideChartSpline, LucideActivitySquare, LucideChartColumn, LucideChartColumnBig, LucideCakeSlice, LucideChartPie, LucideWorkflow } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom'; // Import useLocation
 import { MoreHorizontal } from 'lucide-react';
 import {
   useSidebar,
@@ -42,32 +42,32 @@ const data = [
       {
         title: 'Home',
         url: '/app',
-        icon: Home,
+        icon: LucideHome,
       },
       {
         title: 'Catalogs',
         url: '/app/catalogs',
-        icon: FolderOpen,
+        icon: LucideFile,
       },
       {
         title: 'Dashboards',
         url: '/app/dashboards',
-        icon: ChartNoAxesCombined,
+        icon: LucideChartPie,
       },
       {
         title: 'Scopes',
         url: '/app/scopes',
-        icon: Shapes,
+        icon: LucideGlasses,
       },
       {
         title: 'Mashups',
         url: '/app/mashups',
-        icon: FileSliders,
+        icon: LucideWorkflow,
       },
       {
         title: 'Editor',
         url: '/app/editor',
-        icon: Workflow,
+        icon: LucideScreenShare,
         roles: ['admin', 'developer'],
       },
     ]
@@ -80,13 +80,13 @@ const data = [
         type: 'item',
         title: 'Secrets',
         url: '/app/secrets',
-        icon: SquareAsterisk,
+        icon: LucideLockKeyhole,
       },
       {
         type: 'item',
         title: 'Logout',
         url: '/logout',
-        icon: LogOut,
+        icon: LucideLogOut,
       },
     ]
   }
@@ -128,7 +128,7 @@ export function AppSidebar() {
             <SidebarGroupContent>
               <SidebarMenu className="space-y-4 sm:space-y-2">
                 {group.items.map((item) => (
-                  (item.roles && item.roles.some(r => 
+                  (item.roles && item.roles.some(r =>
                     r === userData.authority.toLowerCase()
                   ) || item.roles == undefined) && (
                     item.items ? (
@@ -148,7 +148,7 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <SidebarMenuButton size="lg"> 
+                <SidebarMenuButton size="lg">
                   {(open || isMobile) ? (
                     <FooterButton />
                   ) : null}
@@ -176,10 +176,21 @@ export function AppSidebar() {
 }
 
 function NonCollapsibleItem({ item, ...props }) {
+  const location = useLocation(); // Get current location
+  const isActive = location.pathname === item.url; // Check if the item's URL matches the current path
+
   return (
     <SidebarMenuItem key={props.key ? props.key : null}>
       <SidebarMenuButton asChild tooltip={item.title}>
-        <Link to={item.url}>
+        <Link
+          to={item.url}
+          className={`${isActive ? 'active-link' : ''} transition-all duration-300 ease-in-out`}
+          style={isActive ? {
+            transform: 'translateX(10px)', // Adjust the 10px to control the shift
+            background: 'linear-gradient(to left, transparent 0%, #ca5262ff 100%)', // Red gradient
+            color: 'white', // Ensure text is visible on red background
+          } : {}}
+        >
           <item.icon />
           <span className="text-base font-medium">{item.title}</span>
         </Link>
@@ -205,12 +216,24 @@ function NonCollapsibleItem({ item, ...props }) {
 }
 
 function CollapsibleItem({ item, ...props }) {
+  const location = useLocation(); // Get current location
+  // Check if any sub-item's URL matches the current path for collapsed items
+  const isActive = item.items?.some(subItem => location.pathname === subItem.url) || location.pathname === item.url;
+
+
   return (
     <Collapsible asChild defaultOpen={item.active ? item.active : false} key={props.key ? props.key : null} className="group/collapsible">
       <SidebarMenuItem>
         <CollapsibleTrigger asChild>
           <SidebarMenuButton asChild tooltip={item.title}>
-            <Link to={item.url}>
+            <Link
+              to={item.url}
+              className={`${isActive ? 'active-link' : ''} transition-all duration-300 ease-in-out`}
+              style={isActive ? {
+                transform: 'translateX(10px)', // Adjust the 10px to control the shift
+                background: 'linear-gradient(to right, transparent 0%, #dc2626 100%)', // Red gradient
+              } : {}}
+            >
               <item.icon/>
               <span className="text-base font-medium">{item.title}</span>
               <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
@@ -222,7 +245,16 @@ function CollapsibleItem({ item, ...props }) {
             {item.items && item.items.map((subItem) => (
               <SidebarMenuSubItem key={subItem.title}>
                 <SidebarMenuSubButton asChild>
-                  <Link to={subItem.url} className="text-base font-medium">{subItem.title}</Link>
+                  <Link
+                    to={subItem.url}
+                    className={`text-base font-medium ${location.pathname === subItem.url ? 'active-link' : ''} transition-all duration-300 ease-in-out`}
+                    style={location.pathname === subItem.url ? {
+                      transform: 'translateX(10px)', // Adjust the 10px to control the shift
+                      background: 'linear-gradient(to right, transparent 0%, #dc2626 100%)', // Red gradient
+                    } : {}}
+                  >
+                    {subItem.title}
+                  </Link>
                 </SidebarMenuSubButton>
               </SidebarMenuSubItem>
             ))}
@@ -234,13 +266,23 @@ function CollapsibleItem({ item, ...props }) {
 }
 
 function FooterItem({ item, ...props }) {
+  const location = useLocation(); // Get current location for footer items
+  const isActive = location.pathname === item.url;
+
   return (
     item.type === 'separator' ? (
       <DropdownMenuSeparator key={props.key ? props.key : null}/>
     ) :
       item.type === 'item' ? (
         <DropdownMenuItem asChild key={props.key ? props.key : null} className="hover:cursor-pointer">
-          <Link to={item.url}>
+          <Link
+            to={item.url}
+            className={`${isActive ? 'active-link' : ''} flex items-center gap-2 w-full transition-all duration-300 ease-in-out`} // Added flex and gap for consistent icon/text alignment
+            style={isActive ? {
+              transform: 'translateX(10px)', // Adjust the 10px to control the shift
+              background: 'linear-gradient(to right, transparent 0%, #dc2626 100%)', // Red gradient
+            } : {}}
+          >
             <item.icon/>
             <span className="text-base font-medium">{item.title}</span>
           </Link>

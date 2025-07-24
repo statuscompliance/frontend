@@ -38,14 +38,8 @@ function LoginCard() {
   }
 
   return (
-    <Card className="max-w-md w-full rounded-lg shadow-sm">
-      <CardHeader className="items-start">
-        <CardTitle>Log In</CardTitle>
-        <CardDescription>Log In to STATUS</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <LoginForm form={form} onSubmit={onSubmit} isLoading={isLoading} error={error} />
-      </CardContent>
+    <Card className="w-full max-w-md mx-auto p-6 bg-white shadow-lg rounded-lg">
+      <LoginForm form={form} onSubmit={onSubmit} isLoading={isLoading} error={error} />
     </Card>
   );
 }
