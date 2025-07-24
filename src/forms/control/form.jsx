@@ -355,6 +355,7 @@ export function ControlForm({ onSubmit, onCancel, defaultValues }) {
           <Button 
             type="submit" 
             disabled={cooldownActive} // Disable during cooldown
+            className="border-1 border-sidebar-accent bg-white text-sidebar-accent hover:bg-sidebar-accent hover:text-white"
           >
             {cooldownActive ? (
               <>

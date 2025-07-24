@@ -82,7 +82,10 @@ export function ScopeForm({ onSubmit, initialValues }) {
             </FormItem>
           )}
         />
-        <Button type="submit">{initialValues ? 'Update Scope' : 'Add Scope'}</Button>
+        <div className="flex justify-end pt-4">
+          <Button className="border-1 border-sidebar-accent bg-white text-sidebar-accent hover:bg-sidebar-accent hover:text-white" type="submit">{initialValues ? 'Update Scope' : 'Add Scope'}            
+          </Button>
+        </div>
       </form>
     </Form>
   );

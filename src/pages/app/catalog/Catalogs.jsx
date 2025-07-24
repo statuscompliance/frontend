@@ -22,6 +22,7 @@ import { toast } from 'sonner';
 import { Link, useNavigate } from 'react-router-dom';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import Page from '@/components/basic-page.jsx';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   getAllCatalogs,
   updateCatalog,
@@ -376,126 +377,145 @@ export function Catalogs() {
   };
 
   return (
-    <Page name="Catalogs" className="h-full w-full">
-      <div className="flex items-center justify-between gap-x-4">
-        <div className="relative">
-          <Search className="absolute left-4 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search catalogs..."
-            value={globalFilter ?? ''}
-            onChange={(e) => setGlobalFilter(e.target.value)}
-            className="pl-10 max-w-sm"
-          />
-        </div>
-        <div className="flex items-center space-x-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="ml-auto">
-                Columns <ChevronDown className="ml-2 h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {table
-                .getAllColumns()
-                .filter((column) => column.getCanHide())
-                .map((column) => {
-                  return (
-                    <DropdownMenuItem key={column.id} className="capitalize">
-                      <Checkbox
-                        checked={column.getIsVisible()}
-                        onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                      />
-                      <span className="ml-2">
-                        {column.id === 'name' ? 'API Name' : column.id}
-                      </span>
-                    </DropdownMenuItem>
-                  );
-                })}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <Button
-            className="border-1 border-sidebar-accent bg-white text-sidebar-accent hover:bg-sidebar-accent hover:text-white"
-            onClick={handleNew}
-          >
-            <Plus className="mr-2 h-4 w-4" /> Add New Catalog
-          </Button>
-        </div>
-      </div>
+    <Page className="mx-auto p-4 container space-y-6"> {/* Adjusted Page className for consistent spacing */}
+      <Card className="bg-white shadow-lg rounded-lg"> {/* Main Card container */}
+        <CardHeader className="grid grid-cols-1 md:grid-cols-2 items-start gap-4 text-left border-b-2 border-gray-200 pb-4">
+          <div>
+            <CardTitle className="text-3xl font-bold text-gray-800">Catalogs</CardTitle>
+            <CardDescription className="text-lg text-gray-700">Manage your catalogs here.</CardDescription>
+          </div>
+          <div className="flex justify-end space-x-2">
+            <Button
+              className="add-catalog-button"
+              onClick={handleNew} // Use handleNew for "Add New Catalog"
+            >
+              <Plus className="mr-2 h-4 w-4" /> Add New Catalog
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="p-6"> {/* Added padding to card content */}
+          <div className="flex items-center justify-between py-4">
+            <div className="relative flex-grow"> {/* Added flex-grow to search input container */}
+              <Search className="absolute left-4 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search catalogs..."
+                value={globalFilter ?? ''}
+                onChange={(e) => setGlobalFilter(e.target.value)}
+                className="pl-10 max-w-sm rounded-md border border-gray-300 focus:ring-sidebar-accent focus:border-sidebar-accent"
+              />
+            </div>
+            <div className="flex items-center space-x-2 ml-auto"> {/* Moved column dropdown and bulk delete here */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="rounded-md border border-gray-300 hover:bg-gray-100">
+                    Columns <ChevronDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {table
+                    .getAllColumns()
+                    .filter((column) => column.getCanHide())
+                    .map((column) => {
+                      return (
+                        <DropdownMenuItem key={column.id} className="capitalize flex items-center">
+                          <Checkbox
+                            checked={column.getIsVisible()}
+                            onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                            id={`column-${column.id}`}
+                          />
+                          <label htmlFor={`column-${column.id}`} className="ml-2 cursor-pointer">
+                            {column.id === 'name' ? 'API Name' : column.id}
+                          </label>
+                        </DropdownMenuItem>
+                      );
+                    })}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
 
-      {error && (
-        <div className="my-4 border border-red-400 rounded bg-red-100 px-4 py-3 text-red-700">
-          {error}
-        </div>
-      )}
+          {error && (
+            <div className="my-4 border border-red-400 rounded bg-red-100 px-4 py-3 text-red-700">
+              {error}
+            </div>
+          )}
 
-      <div className="mt-4 border rounded-md max-h-[600px] overflow-y-auto">
-        <Table>
-          <TableHeader className="text-left bg-gray-400">
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead className="text-white text-left" key={header.id}>
-                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                  </TableHead>
+          <div className="border rounded-md overflow-hidden"> {/* Ensures rounded corners apply to table */}
+            <Table>
+              <TableHeader className="bg-gray-50"> {/* Added background to table header */}
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => (
+                      <TableHead key={header.id} className="text-gray-600 font-semibold"> {/* Styled table headers */}
+                        {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                      </TableHead>
+                    ))}
+                  </TableRow>
                 ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody className="text-left">
-            {loading && (
-              <TableRow >
-                <TableCell colSpan={columns.length} className="h-24 text-center">
-                  <div className="flex items-center justify-center">
-                    <Loader2 className="mr-2 h-6 w-6 animate-spin" />
-                    Loading catalogs...
-                  </div>
-                </TableCell>
-              </TableRow>
-            )}
-
-            {!loading && table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow className="text-left" key={row.id} data-state={row.getIsSelected() && 'selected'}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : !loading && (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
-                  No catalogs found.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
-
-      <div className="flex items-center justify-between py-4 space-x-2">
-        {userData.authority !== 'USER' && (
-          <Button
-            size="lg"
-            className={`flex items-center gap-2 shadow-lg ${selectedCatalogs.length > 0
-              ? 'border-1 border-sidebar-accent bg-white text-sidebar-accent hover:bg-sidebar-accent hover:text-white'
-              : 'bg-gray-200 text-black cursor-not-allowed'
-              }`}
-            onClick={handleBulkDeleteClick}
-            disabled={selectedCatalogs.length === 0 || loading}
-          >
-            <Trash className="h-5 w-5" />
-            Delete Selected ({selectedCatalogs.length})
-          </Button>
-        )}
-        <div className="flex items-center space-x-2 ml-auto">
-          <Button variant="outline" size="sm" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
-            Previous
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
-            Next
-          </Button>
-        </div>
-      </div>
+              </TableHeader>
+              <TableBody className="text-left">
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={columns.length} className="h-24 text-center text-gray-500">
+                      <div className="flex items-center justify-center">
+                        <Loader2 className="mr-2 h-6 w-6 animate-spin" />
+                        Loading catalogs...
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : table.getRowModel().rows?.length ? (
+                  table.getRowModel().rows.map((row) => (
+                    <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'} className="hover:bg-gray-50"> {/* Added hover effect */}
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={columns.length} className="h-24 text-center text-gray-500">
+                      No catalogs found.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+          <div className="flex items-center justify-between py-4 space-x-2">
+            <Button
+              className={`flex items-center gap-2 shadow-lg ${selectedCatalogs.length > 0
+                ? 'border-1 border-sidebar-accent bg-white text-sidebar-accent hover:bg-sidebar-accent hover:text-white'
+                : 'bg-gray-200 text-black cursor-not-allowed'
+                }`}
+              onClick={handleBulkDeleteClick}
+              disabled={selectedCatalogs.length === 0 || loading}
+              userRole={userData.authority}
+            >
+              <Trash className="h-4 w-4 mr-2" /> Delete Selected ({selectedCatalogs.length})
+            </Button>
+            <div className="flex items-center space-x-2 ml-auto">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => table.previousPage()}
+                disabled={!table.getCanPreviousPage()}
+                className="rounded-md border border-gray-300 hover:bg-gray-100"
+              >
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => table.nextPage()}
+                disabled={!table.getCanNextPage()}
+                className="rounded-md border border-gray-300 hover:bg-gray-100"
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Edit Dialog */}
       <Dialog open={!!editingCatalog} onOpenChange={(isOpen) => !isOpen && setEditingCatalog(null)}>
@@ -598,6 +618,52 @@ export function Catalogs() {
           userRole={userData.authority}
         />
       )}
+      <style jsx>{`
+        .add-catalog-button {
+          position: relative;
+          overflow: hidden;
+          /* Initial background and text color */
+          border: 1px solid var(--sidebar-accent); /* Using CSS variable for consistency */
+          background-color: white;
+          outline-offset: -2px;
+          outline: 2px solid transparent;
+          outline-color: #BD0A2E;
+          color: #BD0A2E;
+          transition: background-color 0.4s linear; /* Transition for the button's background */
+        }
+
+        .add-catalog-button::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%; /* Start off-screen to the left */
+          width: 100%; /* Width of the gradient */
+          height: 100%;
+          background: linear-gradient(to right, transparent 0%, #dc2626 50%, transparent 100%); /* Red gradient */
+          transition: left 0.4s linear; /* Animate the left property */
+          z-index: 1;
+        }
+
+        .add-catalog-button:hover::before {
+          left: 100%; /* Slide across to the right */
+        }
+
+        .add-catalog-button:hover {
+          background-color: #dc2626; /* Button turns red */
+          color: white; /* Text color on hover */
+          /* Add a delay to the background color change to let the gradient animation run first */
+          transition: background-color 0.3s ease-in-out 0.2s; /* 0.2s delay, slightly less than gradient duration */
+          color: white; /* Ensure text color changes to white on hover */
+          outline: 0px solid transparent;
+          outline-color: #BD0A2E;
+        }
+
+        /* Ensure text and icon are above the pseudo-element */
+        .add-catalog-button > * {
+          position: relative;
+          z-index: 2;
+        }
+      `}</style>
     </Page>
   );
 }
