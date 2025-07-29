@@ -162,7 +162,7 @@ export function CatalogForm({ catalog = {}, onSubmit, isSubmitting, errors = {} 
         <Button 
           type="submit" 
           disabled={isSubmitting}
-          className="border-1 border-sidebar-accent bg-white text-sidebar-accent hover:bg-sidebar-accent hover:text-white"
+          className="min-w-[120px]"
         >
           {isSubmitting ? (
             <>
@@ -170,7 +170,7 @@ export function CatalogForm({ catalog = {}, onSubmit, isSubmitting, errors = {} 
               Saving...
             </>
           ) : (
-            'Save'
+            'Continue'
           )}
         </Button>
       </div>

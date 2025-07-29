@@ -642,7 +642,6 @@ export function NewControlForm({ catalogId, onClose, onSuccess, initialMashupId,
               </Button>
               <Button
                 type="submit"
-                className="border-1 border-sidebar-accent bg-white text-sidebar-accent hover:bg-sidebar-accent hover:text-white"
                 disabled={loading || cooldownActive}
               >
                 {loading ? (

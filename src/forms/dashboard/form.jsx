@@ -197,7 +197,10 @@ export function DashboardForm({ onClose, onSubmit }) {
               )}
             />
             <div className="flex justify-end space-x-2">
-              <Button className="border-1 border-sidebar-accent bg-white text-sidebar-accent hover:bg-sidebar-accent hover:text-white" type="submit">Create Dashboard</Button>
+              <Button type="button" variant="outline" onClick={onClose}>
+                Cancel
+              </Button>
+              <Button type="submit">Create Dashboard</Button>
             </div>
           </form>
         </Form>

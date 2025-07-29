@@ -2,6 +2,8 @@ import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom'; // Importar Link
 import { Plus, FolderPlus, Trash, Loader2, Search, MoreHorizontal, ChevronDown, ExternalLink } from 'lucide-react'; // Importar iconos necesarios
 import { Button } from '@/components/ui/button';
+// Eliminamos la importación de DashboardList ya que lo reemplazaremos
+// import { DashboardList } from '@/components/dashboards/dashboard-list'; 
 import { DashboardForm } from '@/forms/dashboard/form';
 import { FolderForm } from '@/forms/folder/form';
 import { toast } from 'sonner';
@@ -41,7 +43,6 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'; // Import Card components
 
 const columnHelper = createColumnHelper();
 
@@ -54,6 +55,8 @@ export function Dashboards() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  // Eliminamos dashboardListRef ya que no usaremos el componente DashboardList
+  // const dashboardListRef = useRef(null); 
   const [selectedItemsCount, setSelectedItemsCount] = useState(0);
   const { userData } = useAuth();
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
@@ -61,6 +64,9 @@ export function Dashboards() {
   // Estados para la paginación
   const [pageIndex, setPageIndex] = useState(0);
   const pageSize = 10; // Número de elementos por página, igual que en Catalogs.jsx
+
+  // Eliminamos el estado draggedItem ya que el drag and drop se manejaría de otra forma en la tabla
+  // const [draggedItem, setDraggedItem] = useState(null);
 
   // Nuevos estados para react-table
   const [rowSelection, setRowSelection] = useState({});
@@ -184,6 +190,7 @@ export function Dashboards() {
     }
   };
 
+  // La función handleDeleteSelected ahora se llamará desde handleConfirmBulkDelete
   const handleDeleteSelected = async (selectedItemsToDelete) => {
     try {
       setLoading(true);
@@ -205,6 +212,7 @@ export function Dashboards() {
 
       if (allSuccess) {
         toast.success(`${selectedItemsToDelete.length} item${selectedItemsToDelete.length > 1 ? 's' : ''} deleted successfully`);
+        // Actualizar el estado de items filtrando los eliminados
         setItems(prev => prev.filter(i => !selectedItemsToDelete.some(sel => sel.uid === i.uid)));
       }
       setLoading(false);
@@ -216,19 +224,24 @@ export function Dashboards() {
     }
   };
 
+  // Implementación simulada de dashboardsService.update para drag-and-drop
+  // En un entorno real, esto interactuaría con tu API de Grafana
   useEffect(() => {
     if (!dashboardsService.update) {
       dashboardsService.update = async (uid, newFolderUid) => {
         console.log(`Simulating update for dashboard ${uid} to folder ${newFolderUid}`);
+        // Simular un retraso de red
         await new Promise(resolve => setTimeout(resolve, 500));
+        // Actualizar el estado localmente para reflejar el cambio
         setItems(prevItems => prevItems.map(item => {
           if (item.uid === uid && item.type === 'dash-db') {
+            // Aseguramos que 'items' sea un array antes de usar .find()
             const currentFolders = prevItems.filter(i => i.type === 'dash-folder') || [];
             const newFolder = currentFolders.find(f => f.uid === newFolderUid);
             return {
               ...item,
               folderUid: newFolderUid,
-              folderTitle: newFolder ? newFolder.title : 'General',
+              folderTitle: newFolder ? newFolder.title : 'General', // Asignar 'General' si la carpeta es null
             };
           }
           return item;
@@ -236,6 +249,7 @@ export function Dashboards() {
         return { success: true };
       };
     }
+    // Asegurarse de que foldersService.delete también esté definido si se usa
     if (!foldersService.delete) {
       foldersService.delete = async (uid) => {
         console.log(`Simulating deletion of folder: ${uid}`);
@@ -244,7 +258,7 @@ export function Dashboards() {
         return { success: true };
       };
     }
-  }, [items]);
+  }, [items]); // Depende de 'items' para que el mock de update tenga acceso a los títulos de las carpetas
 
   const getFoldersForForm = () => {
     const folders = items.filter(item => item.type === 'dash-folder');
@@ -259,6 +273,7 @@ export function Dashboards() {
     }
   };
 
+  // Actualizar selectedItemsCount basado en rowSelection de react-table
   useEffect(() => {
     setSelectedItemsCount(Object.keys(rowSelection).length);
   }, [rowSelection]);
@@ -273,11 +288,17 @@ export function Dashboards() {
   };
 
   const handleConfirmBulkDelete = async () => {
+    // Obtener los elementos seleccionados directamente de la tabla
     const itemsToDelete = table.getSelectedRowModel().rows.map(row => row.original);
     await handleDeleteSelected(itemsToDelete);
     setShowBulkDeleteConfirm(false);
   };
 
+  // Eliminamos handleDashboardDrop y sus props relacionadas ya que el drag and drop
+  // en una tabla requiere una implementación más específica a nivel de celda/fila.
+  // Si se desea, se puede reintroducir con un enfoque diferente.
+
+  // Definición de columnas para react-table
   const columns = useMemo(
     () => [
       {
@@ -337,13 +358,15 @@ export function Dashboards() {
                 <DropdownMenuItem onClick={() => handleItemClick(item)}>
                   {item.type === 'dash-db' ? 'View Dashboard' : 'Open Folder'}
                 </DropdownMenuItem>
+                {/* Si es un dashboard, se podría añadir una opción para abrir en Grafana */}
                 {item.type === 'dash-db' && (
                   <DropdownMenuItem onClick={() => window.open(`/grafana/d/${item.uid}`, '_blank')}>
                     <ExternalLink className="mr-2 h-4 w-4" /> Open in Grafana
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuItem
-                  onClick={() => {
+                  onClick={() => { /* Lógica para eliminar un solo elemento */
+                    // Por simplicidad, se puede reutilizar handleDeleteSelected con un array de un solo elemento
                     handleDeleteSelected([item]);
                   }}
                   className="text-red-600"
@@ -360,182 +383,141 @@ export function Dashboards() {
     [handleItemClick, handleDeleteSelected, userData.authority]
   );
 
+  // Inicialización de react-table
   const table = useReactTable({
-    data: paginatedItems,
+    data: paginatedItems, // Usamos los items paginados
     columns,
     state: {
-      globalFilter: filter,
+      globalFilter: filter, // Usamos 'filter' como globalFilter
       rowSelection,
       columnVisibility,
     },
-    onGlobalFilterChange: setFilter,
+    onGlobalFilterChange: setFilter, // Actualizar 'filter'
     onRowSelectionChange: setRowSelection,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(), // Keep this for pagination state management
+    // No usamos getPaginationRowModel aquí, ya que la paginación es manual
     onColumnVisibilityChange: setColumnVisibility,
+    // No necesitamos initialState.pagination si la paginación es manual
   });
 
   return (
-    <Page className="mx-auto p-4 container space-y-6"> {/* Adjusted Page className for consistent spacing */}
-      <Card className="bg-white shadow-lg rounded-lg"> {/* Main Card container */}
-        <CardHeader className="grid grid-cols-1 md:grid-cols-2 items-start gap-4 text-left border-b-2 border-gray-200 pb-4">
-          <div>
-            <CardTitle className="text-3xl font-bold text-gray-800">Dashboards</CardTitle>
-            <CardDescription className="text-lg text-gray-700">Manage your Grafana dashboards and folders here.</CardDescription>
+    <Page>
+      <div className="mb-4 flex items-center justify-between gap-x-4">
+        <div className='flex items-center space-x-2'>
+          {/* Barra de búsqueda unificada */}
+          <div className="relative">
+            <Search className="absolute left-4 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search dashboards and folders..."
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              className="pl-10 max-w-sm min-w-[350px]"
+            />
           </div>
-          <div className="flex justify-end space-x-2">
-            <Button
-              variant="outline"
-              onClick={handleAddFolder}
-              disabled={loading}
-              userRole={userData.authority}
-              className="border-1 border-gray-500 bg-white text-gray-500 hover:bg-gray-500 hover:text-white" // Consistent button style
-            >
-              <FolderPlus className="h-4 w-4 mr-2" /> Add Folder
-            </Button>
-            <Button
-              className="border-1 border-sidebar-accent bg-white text-sidebar-accent hover:bg-sidebar-accent hover:text-white"
-              onClick={handleAddDashboard}
-              disabled={loading}
-              userRole={userData.authority}
-            >
-              <Plus className="mr-2 h-4 w-4" /> Add Dashboard
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="p-6"> {/* Added padding to card content */}
-          <div className="flex items-center justify-between py-4">
-            <div className="flex items-center space-x-2 flex-grow"> {/* Added flex-grow to search and filter container */}
-              <div className="relative flex-grow">
-                <Search className="absolute left-4 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search dashboards and folders..."
-                  value={filter}
-                  onChange={(e) => setFilter(e.target.value)}
-                  className="pl-10 max-w-sm min-w-[350px] rounded-md border border-gray-300 focus:ring-sidebar-accent focus:border-sidebar-accent"
-                />
-              </div>
-              <Select value={filterBy} onValueChange={setFilterBy}>
-                <SelectTrigger className="w-[180px] rounded-md border border-gray-300 hover:bg-gray-100">
-                  <SelectValue placeholder="Show" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Items</SelectItem>
-                  <SelectItem value="dashboards">Dashboards Only</SelectItem>
-                  <SelectItem value="folders">Folders Only</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center space-x-2 ml-auto">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="rounded-md border border-gray-300 hover:bg-gray-100">
-                    Columns <ChevronDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {table
-                    .getAllColumns()
-                    .filter((column) => column.getCanHide())
-                    .map((column) => {
-                      return (
-                        <DropdownMenuItem key={column.id} className="capitalize flex items-center">
-                          <Checkbox
-                            checked={column.getIsVisible()}
-                            onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                            id={`column-${column.id}`}
-                          />
-                          <label htmlFor={`column-${column.id}`} className="ml-2 cursor-pointer">{column.id}</label>
-                        </DropdownMenuItem>
-                      );
-                    })}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
+          <Select value={filterBy} onValueChange={setFilterBy}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Show" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Items</SelectItem>
+              <SelectItem value="dashboards">Dashboards Only</SelectItem>
+              <SelectItem value="folders">Folders Only</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex items-center space-x-2">
+          <Button
+            variant="outline"
+            onClick={handleAddFolder}
+            disabled={loading}
+            userRole={userData.authority}
+          >
+            <FolderPlus className="h-4 w-4" />
+          </Button>
+          <Button
+            className="border-1 border-sidebar-accent bg-white text-sidebar-accent hover:bg-sidebar-accent hover:text-white"
+            variant="outline"
+            onClick={handleAddDashboard}
+            disabled={loading}
+            userRole={userData.authority}
+          >
+            <Plus className="mr-2 h-4 w-4" /> Add Dashboard
+          </Button>
+        </div>
+      </div>
+      {error && <div className="mb-4 text-red-500">{error}</div>}
 
-          {error && <div className="my-4 border border-red-400 rounded bg-red-100 px-4 py-3 text-red-700">{error}</div>}
-
-          <div className="border rounded-md overflow-hidden">
-            <Table>
-              <TableHeader className="bg-gray-50">
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow key={headerGroup.id}>
-                    {headerGroup.headers.map((header) => (
-                      <TableHead key={header.id} className="text-gray-600 font-semibold">
-                        {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                      </TableHead>
-                    ))}
-                  </TableRow>
+      {/* Tabla de Dashboards y Carpetas */}
+      <div className="mt-4 border rounded-md max-h-[600px] overflow-y-auto">
+        <Table>
+          <TableHeader className="text-left bg-gray-400">
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <TableHead className="text-white text-left" key={header.id}>
+                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                  </TableHead>
                 ))}
-              </TableHeader>
-              <TableBody className="text-left">
-                {loading ? (
-                  <TableRow>
-                    <TableCell colSpan={columns.length} className="h-24 text-center text-gray-500">
-                      <div className="flex items-center justify-center">
-                        <Loader2 className="mr-2 h-6 w-6 animate-spin" />
-                        Loading dashboards and folders...
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : table.getRowModel().rows?.length ? (
-                  table.getRowModel().rows.map((row) => (
-                    <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'} className="hover:bg-gray-50">
-                      {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
-                      ))}
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={columns.length} className="h-24 text-center text-gray-500">
-                      No dashboards or folders found.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-          <div className="flex items-center justify-between py-4">
-            <div>
-              <Button
-                size="lg"
-                className={`flex items-center gap-2 shadow-lg ${selectedItemsCount > 0
-                  ? 'border-1 border-sidebar-accent bg-white text-sidebar-accent hover:bg-sidebar-accent hover:text-white'
-                  : 'bg-gray-200 text-black cursor-not-allowed'
-                  }`}
-                onClick={handleOpenBulkDeleteConfirm}
-                disabled={loading || selectedItemsCount === 0}
-                userRole={userData.authority}
-              >
-                <Trash className="h-4 w-4 mr-2" /> Delete Selected ({selectedItemsCount})
-              </Button>
-            </div>
-            <div className="flex items-center justify-end py-4 space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={goToPreviousPage}
-                disabled={!canPreviousPage}
-                className="rounded-md border border-gray-300 hover:bg-gray-100"
-              >
-                Previous
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={goToNextPage}
-                disabled={!canNextPage}
-                className="rounded-md border border-gray-300 hover:bg-gray-100"
-              >
-                Next
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {loading && (
+              <TableRow>
+                <TableCell colSpan={columns.length} className="h-24 text-center">
+                  <div className="flex items-center justify-center">
+                    <Loader2 className="mr-2 h-6 w-6 animate-spin" />
+                    Loading dashboards and folders...
+                  </div>
+                </TableCell>
+              </TableRow>
+            )}
+
+            {!loading && table.getRowModel().rows?.length ? (
+              table.getRowModel().rows.map((row) => (
+                <TableRow className="text-left" key={row.id} data-state={row.getIsSelected() && 'selected'}>
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : !loading && (
+              <TableRow>
+                <TableCell colSpan={columns.length} className="h-24 text-center">
+                  No dashboards or folders found.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+      
+      {/* Botón de borrado masivo y controles de paginación */}
+      <div className="flex items-center justify-between py-4 space-x-2">
+        {userData.authority !== 'USER' && (
+          <Button
+            size="lg"
+            className={`flex items-center gap-2 shadow-lg ${selectedItemsCount > 0
+              ? 'border-1 border-sidebar-accent bg-white text-sidebar-accent hover:bg-sidebar-accent hover:text-white'
+              : 'bg-gray-200 text-black cursor-not-allowed'
+              }`}
+            onClick={handleOpenBulkDeleteConfirm}
+            disabled={loading || selectedItemsCount === 0}
+          >
+            <Trash className="h-5 w-5" />
+            Delete Selected ({selectedItemsCount})
+          </Button>
+        )}
+        <div className="flex items-center space-x-2 ml-auto">
+          <Button variant="outline" size="sm" onClick={goToPreviousPage} disabled={!canPreviousPage}>
+            Previous
+          </Button>
+          <Button variant="outline" size="sm" onClick={goToNextPage} disabled={!canNextPage}>
+            Next
+          </Button>
+        </div>
+      </div>
 
       {isDashboardFormOpen && (
         <DashboardForm
