@@ -515,6 +515,7 @@ export function CatalogWizard() {
           variant="outline"
           onClick={() => currentStep === 0 ? navigate('/app/catalogs') : goToPrevStep()}
           disabled={loading}
+          className="border-1 border-gray-500 bg-white text-gray-500 hover:bg-gray-500 hover:text-white"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           {currentStep === 0 ? 'Cancel' : 'Previous Step'}

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Check, AlertCircle, Trash, Plus } from 'lucide-react'; // Added Plus icon
+import { Loader2, Check, AlertCircle, Trash, Plus } from 'lucide-react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { z } from 'zod';
@@ -33,7 +33,8 @@ import { AddPanelForm } from '@/forms/dashboard/panel/form';
 import { dashboardsService } from '@/services/grafana/dashboards';
 import { Badge } from '@/components/ui/badge';
 import { DashboardPanel } from '@/components/dashboard/dashboard-panel';
-import { getDraftDashboardUid, clearDraftDashboardUid } from '@/utils/draftStorage';
+import { getDraftDashboardUid, clearDraftDashboardUid, getDraftCatalogId, clearDraftData } from '@/utils/draftStorage'; // Import getDraftCatalogId and clearDraftData
+import { updateCatalog, getCatalogById } from '@/services/catalogs'; // Import updateCatalog and getCatalogById
 
 // Dashboard configuration schema
 const dashboardConfigSchema = z.object({
@@ -212,13 +213,42 @@ export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalo
     }
   };
 
-  const handleSubmit = (data) => {
+  const handleSubmit = async (data) => {
     setSubmitError(null);
+    try {
+      const draftCatalogId = getDraftCatalogId();
+      if (!draftCatalogId) {
+        setSubmitError('No draft catalog ID found. Please start from the beginning.');
+        toast.error('Failed to save catalog: No draft ID.');
+        return;
+      }
 
-    // Clear dashboard UID from localStorage when finished
-    clearDraftDashboardUid();
+      // Fetch the existing draft catalog to merge dashboard data
+      const existingCatalog = await getCatalogById(draftCatalogId);
 
-    onSubmit(data);
+      const updatedCatalogData = {
+        ...existingCatalog, // Keep existing catalog data (startDate, endDate, tpaId, status)
+        name: data.title, // Map dashboard title to catalog name
+        description: data.description, // Map dashboard description to catalog description
+        dashboard_id: tempDashboardUid, // Link the dashboard UID
+        tpaId: existingCatalog.tpaId, // Keep existing tpaId
+        status: "finalized", // Keep existing status
+      };
+
+      await updateCatalog(draftCatalogId, updatedCatalogData);
+      toast.success('Catalog updated successfully with dashboard configuration!');
+
+      // Clear draft data after successful completion
+      clearDraftDashboardUid();
+      clearDraftData();
+
+      // Call the parent onSubmit to signal completion
+      onSubmit(data);
+    } catch (error) {
+      console.error('Error updating catalog with dashboard config:', error);
+      setSubmitError(error.message || 'Failed to update catalog with dashboard configuration.');
+      toast.error('Failed to save dashboard configuration to catalog.');
+    }
   };
 
   return (
@@ -298,6 +328,7 @@ export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalo
                       const grafanaUrl = import.meta.env.VITE_GRAFANA_URL || 'http://localhost:3100';
                       window.open(`${grafanaUrl}/d/${tempDashboardUid}`, '_blank');
                     }}
+                    className="border-1 border-gray-500 bg-white text-gray-500 hover:bg-gray-500 hover:text-white"
                   >
                     View Dashboard
                   </Button>
@@ -306,7 +337,7 @@ export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalo
                   type="button"
                   onClick={handleOpenAddPanel}
                   // Updated styling for the button: black background, white text, no border
-                  className="bg-black text-white hover:bg-gray-800"
+                  className="border-1 border-sidebar-accent bg-white text-sidebar-accent hover:bg-sidebar-accent hover:text-white"
                   disabled={!tempDashboardUid}
                 >
                   <Plus className="mr-2 h-4 w-4" /> {/* Added Plus icon */}
@@ -354,12 +385,13 @@ export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalo
                           </div>
                         )}
                       </CardContent>
-                      {/* <CardFooter className="flex justify-between">
-                        <Button 
-                          type="button" 
+                      <CardFooter className="flex justify-between">
+                        <Button
+                          type="button"
                           variant="destructive"
                           onClick={() => handleDeletePanel(index, panel.panelId)}
                           disabled={isRemovingPanel}
+                          // Removed userRole prop to make it visible for all roles
                         >
                           {isRemovingPanel ? (
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -368,7 +400,7 @@ export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalo
                           )}
                           Remove Panel
                         </Button>
-                      </CardFooter> */}
+                      </CardFooter>
                     </Card>
                   </TabsContent>
                 ))}
@@ -385,8 +417,7 @@ export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalo
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="border-1 border-sidebar-accent bg-white text-sidebar-accent hover:bg-sidebar-accent hover:text-white" // Updated styling for the button: green background, white text
-            // Removed variant="outline" as it conflicts with solid background
+              className="border-1 border-sidebar-accent bg-white text-sidebar-accent hover:bg-sidebar-accent hover:text-white"
             >
               {isSubmitting ? (
                 <>
