@@ -149,7 +149,7 @@ export function ControlForm({ onSubmit, onCancel, defaultValues }) {
                 <Input placeholder="Control name" {...field} maxLength={40} />
               </FormControl>
               <FormMessage />
-              <div className="text-xs text-muted-foreground text-right">
+              <div className="text-right text-xs text-muted-foreground">
                 {field.value?.length || 0}/40
               </div>
             </FormItem>
@@ -166,7 +166,7 @@ export function ControlForm({ onSubmit, onCancel, defaultValues }) {
                 <Textarea placeholder="Control description" {...field} maxLength={140} rows={3} />
               </FormControl>
               <FormMessage />
-              <div className="text-xs text-muted-foreground text-right">
+              <div className="text-right text-xs text-muted-foreground">
                 {field.value?.length || 0}/140
               </div>
             </FormItem>

@@ -12,18 +12,25 @@ import { Input } from '@/components/ui/input';
 import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from '@/components/ui/input-otp';
 import { REGEXP_ONLY_DIGITS } from 'input-otp';
 import { PasswordInput } from '@/components/forms/password-input';
-import logo from '@/assets/status.svg';
 
 export function LoginForm({ form, onSubmit, isLoading, error }) {
   return (
-    // Removed min-h-screen to prevent excessive height, keeping flex for centering
-    <div className="p-4 flex flex-col items-center justify-center h-50% bg-white">
-      {/* Site Icon at the very top */}
-      <div className="flex items-center w-50% h-50% justify-center"> {/* Added p-2 for padding */}
-        <img
-          src={logo}
-          alt="Site Logo" // Changed alt text for clarity
-          className="max-w-full max-h-full object-contain" // Ensure image scales within its container
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        {error && <FormMessage className="flex flex-col items-start text-base">{error}</FormMessage>}
+        <FormField
+          control={form.control}
+          name="username"
+          rules={{ required: true }}
+          render={({ field }) => (
+            <FormItem className="flex flex-col items-start">
+              <FormLabel className="text-base">Username</FormLabel>
+              <FormControl>
+                <Input placeholder="username" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
         />
         <FormField
           control={form.control}

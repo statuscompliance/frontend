@@ -92,7 +92,7 @@ export function DashboardForm({ onClose, onSubmit }) {
                   </FormControl>
                   <FormMessage />
                   {/* Mostrar el contador de caracteres */}
-                  <div className="text-xs text-muted-foreground text-right">
+                  <div className="text-right text-xs text-muted-foreground">
                     {field.value?.length || 0}/40
                   </div>
                 </FormItem>

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, ChartLine, Edit, Trash, Calendar, User, Bookmark, Clock, ExternalLink, Info, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, Edit, Trash, Calendar, User, Bookmark, Clock, ExternalLink, Info, ChevronDown, ChevronUp } from 'lucide-react';
 import { DashboardPanel } from '@/components/dashboard/dashboard-panel';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -15,7 +15,6 @@ import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
 import { parseTimeRange } from '@/utils/timeRangeParser';
 import { useAuth } from '@/hooks/use-auth';
-import { AddPanelForm } from '@/forms/dashboard/panel/form';
 
 
 const GRAFANA_URL = import.meta.env.VITE_GRAFANA_URL || 'http://localhost:3100';
@@ -29,7 +28,6 @@ export function DashboardDetails() {
   const [error, setError] = useState(null);
   const { userData } = useAuth();
   const [showDashboardInfo, setShowDashboardInfo] = useState(false);
-  const [showAddPanelForm, setShowAddPanelForm] = useState(false);
 
   useEffect(() => {
     const fetchDashboard = async () => {
@@ -37,7 +35,7 @@ export function DashboardDetails() {
         setLoading(true);
         const response = await dashboardsService.getById(id);
         setDashboard(response);
-
+        
         if (response?.dashboard?.panels && response.dashboard.panels.length > 0) {
           setPanels(response.dashboard.panels);
         } else {
@@ -72,20 +70,6 @@ export function DashboardDetails() {
 
   const handleBack = () => {
     navigate('/app/dashboards');
-  };
-
-  const handlePanelAdded = async (newPanel) => {
-    setShowAddPanelForm(false);
-    // Refresh panels to show the new one
-    try {
-      const response = await dashboardsService.getById(id);
-      if (response?.dashboard?.panels) {
-        setPanels(response.dashboard.panels);
-      }
-      toast.success('Panel added successfully');
-    } catch (err) {
-      console.error('Error refreshing panels:', err);
-    }
   };
 
   if (loading) {
@@ -165,11 +149,6 @@ export function DashboardDetails() {
         </div>
         <div className="flex space-x-2">
           {isEditable && userData.authority !== 'USER' && (
-            <Button variant="outline" onClick={() => setShowAddPanelForm(true)}>
-              <ChartLine className="mr-2 h-4 w-4" /> Add Panel
-            </Button>
-          )}
-          {isEditable && userData.authority !== 'USER' && (
             <Button variant="outline" onClick={() => navigate(`/app/dashboards/edit/${id}`)}>
               <Edit className="mr-2 h-4 w-4" /> Edit
             </Button>
@@ -198,7 +177,6 @@ export function DashboardDetails() {
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <div>
-                        <CardTitle>{panel.title}</CardTitle>
                         {panel.description && <CardDescription>{panel.description}</CardDescription>}
                       </div>
                       <Badge variant="outline">{panel.type}</Badge>
@@ -215,7 +193,6 @@ export function DashboardDetails() {
                       dashboardUid={uid} 
                       panel={panel} 
                       height={300}
-                      timeRange={parsedTimeRange}
                     />
                   </CardContent>
                   <CardFooter className="border-t p-2 text-xs text-muted-foreground">
@@ -350,7 +327,6 @@ export function DashboardDetails() {
                       dashboardUid={uid} 
                       panel={panel} 
                       height={200}
-                      timeRange={parsedTimeRange}  // Añade el timeRange para que se muestre el mismo rango que el dashboard
                     />
                   </CardContent>
                   <CardFooter className="p-4">
@@ -398,7 +374,6 @@ export function DashboardDetails() {
                         dashboardUid={uid} 
                         panel={panel} 
                         height={300}
-                        timeRange={parsedTimeRange}  // Añade el timeRange para que se muestre el mismo rango que el dashboard
                       />
                     </CardContent>
                     <CardFooter className="border-t p-2 text-xs text-muted-foreground">
@@ -613,15 +588,6 @@ export function DashboardDetails() {
             </Card>
           </TabsContent>
         </Tabs>
-      )}
-
-      {showAddPanelForm && (
-        <AddPanelForm 
-          dashboardUid={uid}
-          onClose={() => setShowAddPanelForm(false)}
-          onSuccess={handlePanelAdded}
-          dashboardTimeRange={parsedTimeRange}
-        />
       )}
     </Page>
   );

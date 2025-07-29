@@ -232,7 +232,7 @@ export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalo
         description: data.description, // Map dashboard description to catalog description
         dashboard_id: tempDashboardUid, // Link the dashboard UID
         tpaId: existingCatalog.tpaId, // Keep existing tpaId
-        status: "finalized", // Keep existing status
+        status: 'finalized', // Keep existing status
       };
 
       await updateCatalog(draftCatalogId, updatedCatalogData);
@@ -285,7 +285,7 @@ export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalo
                       />
                     </FormControl>
                     <FormMessage />
-                    <div className="text-xs text-muted-foreground text-right">
+                    <div className="text-right text-xs text-muted-foreground">
                       {field.value?.length || 0}/40 {/* Character counter */}
                     </div>
                   </FormItem>
@@ -309,7 +309,7 @@ export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalo
                   />
                 </FormControl>
                 <FormMessage />
-                <div className="text-xs text-muted-foreground text-right">
+                <div className="text-right text-xs text-muted-foreground">
                   {field.value?.length || 0}/140 {/* Character counter */}
                 </div>
               </FormItem>

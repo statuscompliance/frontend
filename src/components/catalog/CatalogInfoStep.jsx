@@ -136,7 +136,7 @@ export function CatalogInfoStep({ initialData = {}, onSubmit, isSubmitting, apiE
                 </FormControl>
                 <FormMessage />
                 {/* Character counter for name */}
-                <div className="text-xs text-muted-foreground text-right">
+                <div className="text-right text-xs text-muted-foreground">
                   {field.value?.length || 0}/40
                 </div>
               </FormItem>
@@ -162,7 +162,7 @@ export function CatalogInfoStep({ initialData = {}, onSubmit, isSubmitting, apiE
                 </FormControl>
                 <FormMessage />
                 {/* Character counter for description */}
-                <div className="text-xs text-muted-foreground text-right">
+                <div className="text-right text-xs text-muted-foreground">
                   {field.value?.length || 0}/140
                 </div>
               </FormItem>
