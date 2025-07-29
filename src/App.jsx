@@ -5,7 +5,7 @@ import { About } from '@/pages/About';
 import { Home } from '@/pages/app/Home';
 import { Login } from '@/pages/Login';
 import { Logout } from '@/pages/Logout';
-import { Verify2FA } from '@/pages/Verify2FA';
+
 import { Catalogs } from '@/pages/app/catalog/Catalogs';
 import { CatalogDetails } from '@/pages/app/catalog/CatalogDetails';
 import { ControlDetails } from '@/pages/app/ControlDetails';
@@ -22,9 +22,13 @@ import MainLayout from '@/layouts/MainLayout';
 import AppLayout from '@/layouts/AppLayout';
 import { Toaster } from '@/components/ui/sonner';
 import { AuthProvider, ProtectedRoute } from '@/components/auth-provider';
+import { Unauthorized } from './pages/Unauthorized.jsx';
+import { TwoFADetails } from './pages/app/TwoFADetails.jsx';
 import {Secrets} from '@/pages/app/Secrets';
 
 const allRolesAllowed = () => ['admin', 'user', 'developer'];
+
+
 
 function App() {
   return (
@@ -61,10 +65,8 @@ function App() {
                 <Route path="folders/:id" element={<FolderDetails />} />
               </Route>
               <Route path="scopes" element={<Scopes />} />
-              <Route path="mashups">
-                <Route index element={<Mashups />} />
-                <Route path="control-test" element={<ControlCreationAndTestPage />} />
-              </Route>
+              <Route path="mashups" element={<Mashups />} />
+              <Route path="setting-2fa" element={<TwoFADetails />} />
               <Route path="secrets" element={<Secrets />} />
               <Route path="editor">
                 <Route index element={<Editor />} />
@@ -72,13 +74,13 @@ function App() {
               </Route>
             </Route>
             { /* Routes here have no layout ON PURPOSE */ }
+            <Route path="/unauthorized" element={<Unauthorized />} /> *
             <Route path="/login" element={<Login />} />
             <Route path="/logout" element={
               <ProtectedRoute allowedRoles={allRolesAllowed()}>
                 <Logout />
               </ProtectedRoute>
             } />
-            <Route path="/verify-2fa" element={<Verify2FA />} />
           </Routes>
         </AuthProvider>
       </Router>

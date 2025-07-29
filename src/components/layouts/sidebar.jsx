@@ -1,5 +1,5 @@
-import {Home, FolderOpen, Shapes, Workflow, FileSliders, ChartNoAxesCombined, ChevronRight, ChevronsUpDown, LogOut, SquareAsterisk, GitGraph, LucideGitGraph, GitGraphIcon, LucidePencil, LucideGlasses, LucideFileArchive, LucideFileCheck, LucideFile, LucideLockKeyhole, LucideLogOut, LucideHome, LucideEdit2, LucideEdit, LucideEdit3, LucideFileEdit, LucideActivity, LucideMap, LucideClipboard, LucideScreenShare, LucideChartArea, LucideChartNetwork, LucideChartSpline, LucideActivitySquare, LucideChartColumn, LucideChartColumnBig, LucideCakeSlice, LucideChartPie, LucideWorkflow } from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom'; // Import useLocation
+import {Home, FolderOpen, Shapes, Workflow, FileSliders, ChartNoAxesCombined, ChevronRight, ChevronsUpDown, LogOut, ShieldHalf, SquareAsterisk } from 'lucide-react';
+import { Link } from 'react-router';
 import { MoreHorizontal } from 'lucide-react';
 import {
   useSidebar,
@@ -87,6 +87,12 @@ const data = [
         title: 'Logout',
         url: '/logout',
         icon: LucideLogOut,
+      },
+      {
+        type: 'item',
+        title: '2FA Settings',
+        url: '/app/setting-2fa',
+        icon: ShieldHalf,
       },
     ]
   }

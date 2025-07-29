@@ -12,10 +12,11 @@ export const AuthProvider = ({ children }) => {
   const [userData, setUserData] = useStorage('userData');
   const [, setNodeToken] = useStorage('token');
   const nodeRedToken = useMemo(() => userData?.nodeRedToken, [userData]);
-  const isAuthenticated = useMemo(() => !!userData, [userData]);
+  const isAuthenticated = useMemo(() => !!userData && !userData.requires2FA, [userData]);
   // Ref to store the interceptor references for cleanup
   const axiosInterceptorRef = useRef(null);
   const nodeRedInterceptorRef = useRef(null);
+  let isLoggingOut = false; // Flag to prevent multiple logout requests
 
   // Handle node token change
   useEffect(() => {
@@ -32,8 +33,8 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     void refreshUserToken();
 
-    // Configure interceptors if authenticated
-    if (isAuthenticated) {
+    // Configure interceptors if authenticated and not requiring 2FA
+    if (isAuthenticated && !userData?.requires2FA) {
       setupInterceptors();
     }
 
@@ -41,8 +42,8 @@ export const AuthProvider = ({ children }) => {
     return () => {
       cleanupInterceptors();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, userData?.requires2FA]);
 
   /**
    * Configures the interceptors for axios and nodeRed clients
@@ -80,7 +81,8 @@ export const AuthProvider = ({ children }) => {
    * Refreshes the user token
    */
   async function refreshUserToken() {
-    if (isAuthenticated) {
+    // Don't refresh token if user data indicates 2FA is required
+    if (isAuthenticated && userData?.accessToken && !userData?.requires2FA) {
       try {
         const { accessToken } = await refreshToken();
         setUserData((p) => ({ ...p, accessToken }));
@@ -162,40 +164,44 @@ export const AuthProvider = ({ children }) => {
     };
   })();
 
-
-  const encodeToBase64 = (str) => {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(str);
-    const binaryString = String.fromCharCode.apply(null, data)
-    return btoa(binaryString);
-  };
-
   /**
    * Logs in with a registered user
    * @param {object} credentials - User credentials
    * @param {string} credentials.username - Username
    * @param {string} credentials.password - Password
+   * @param {string} credentials.totpToken - TOTP token for 2FA
    * @returns {Promise} - Promise with the response
    */
-  async function authenticate({ username, password }) {
-    const basicAuth = encodeToBase64(`${username}:${password}`);
-    const { message: _, ...userData } = await apiClient.post('/users/signIn', { username, password });
-    userData.basicAuth = basicAuth;
+  async function authenticate ({ username, password, totpToken }) {
+    const response = await apiClient.post('/users/signIn', { username, password, totpToken });
+    
+    // If 2FA is required, don't set full user data yet
+    if (response.requires2FA) {
+      setUserData(response); // This will store the 2FA requirement info
+      return response; // Return the response so the UI can handle 2FA
+    }
+    
+    // Extract userData, excluding the message
+    const { message: _, ...userData } = response;
     setUserData(userData);
     setupInterceptors();
+    return userData;
   };
 
   /**
    * Logs out the current user
    */
-  function unauthenticate() {
+  async function unauthenticate() {
+    if (isLoggingOut) return; // Evita logout doble
+    isLoggingOut = true;
     try {
-      apiClient.get('/users/signOut');
+      await apiClient.get('/users/signOut');
     } catch (error) {
       console.error(error);
     } finally {
       cleanupInterceptors();
-      setUserData();
+      setUserData(null);
+      isLoggingOut = false;
     }
   };
 
