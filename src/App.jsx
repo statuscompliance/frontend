@@ -12,7 +12,6 @@ import { ControlDetails } from '@/pages/app/ControlDetails';
 import { ComputationDetails } from '@/pages/app/ComputationDetails';
 import { CatalogWizard } from './pages/app/catalog/CatalogWizard.jsx';
 import { Mashups } from '@/pages/app/Mashups';
-import { ControlCreationAndTestPage } from '@/pages/app/mashups/ControlCreationAndTestPage';
 import { Scopes } from '@/pages/app/Scopes';
 import { Dashboards } from '@/pages/app/Dashboards';
 import { DashboardDetails } from '@/pages/app/dashboard/DashboardDetails';

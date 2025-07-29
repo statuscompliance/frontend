@@ -52,8 +52,6 @@ import {
 import { Calendar } from '@/components/ui/calendar';
 import { format as formatDate } from 'date-fns';
 import { NewControlForm } from '@/forms/control/new/form';
-import { CatalogForm } from '@/forms/catalog/forms';
-import { updateCatalog } from '@/services/catalogs';
 
 const columnHelper = createColumnHelper();
 
@@ -72,8 +70,6 @@ export function CatalogDetails() {
   });
   const [selectedControls, setSelectedControls] = useState({});
   const [loading, setLoading] = useState(true);
-  const [formErrors, setFormErrors] = useState({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [showControlForm, setShowControlForm] = useState(false);
   const { userData } = useAuth();
   
@@ -135,8 +131,8 @@ export function CatalogDetails() {
   const fetchControls = async () => {
     setLoading(true);
     try {
-      const response = await getControlsByCatalogId(params.id, 'finalized');
-      response.forEach(control => control.result = control.name.includes('i')); // TODO: This logic is just for testing, it must be replaced by its corresponding feature in the backend
+      const response = await getControlsByCatalogId(params.id);
+      response.forEach(control => control.result = control.name.includes('i'));
       setControls(response);
       fetchScopesForControls(response);
     } catch (error) {
@@ -338,47 +334,8 @@ export function CatalogDetails() {
   });
 
   const handleEditCatalog = () => {
-    setEditingCatalog(true);
-    setFormErrors({});
-  };
-
-  const handleCatalogUpdate = async (catalogData) => {
-    try {
-      if (!catalogData.name.trim() || !catalogData.description.trim()) {
-        const errors = {};
-        if (!catalogData.name.trim()) errors.name = 'Catalog name is required';
-        if (!catalogData.description.trim()) errors.description = 'Description is required';
-        setFormErrors(errors);
-        return;
-      }
-
-      // Validar fechas
-      if (catalogData.startDate && catalogData.endDate && new Date(catalogData.endDate) < new Date(catalogData.startDate)) {
-        setFormErrors({ endDate: 'End date cannot be before start date' });
-        return;
-      }
-
-      setIsSubmitting(true);
-      // Preparar datos para la API (convertir objetos Date a strings ISO)
-      const apiData = {
-        ...catalogData,
-        startDate: catalogData.startDate ? catalogData.startDate.toISOString() : null,
-        endDate: catalogData.endDate ? catalogData.endDate.toISOString() : null
-      };
-
-      const updatedCatalog = await updateCatalog(catalog.id, apiData);
-      setCatalog({
-        ...catalog,
-        ...updatedCatalog
-      });
-      toast.success('Catalog updated successfully');
-      setEditingCatalog(false);
-    } catch (err) {
-      toast.error('Failed to update catalog');
-      console.error('Error updating catalog:', err);
-    } finally {
-      setIsSubmitting(false);
-    }
+    // Implement edit functionality for catalog
+    toast.info('Edit catalog functionality not implemented yet.');
   };
 
   const handleDeleteControls = async () => {
@@ -432,30 +389,19 @@ export function CatalogDetails() {
               </Button>
             </CardHeader>
             <CardContent>
-              {editingCatalog ? (
-                <CatalogForm 
-                  catalog={catalog}
-                  onSubmit={handleCatalogUpdate}
-                  isSubmitting={isSubmitting}
-                  errors={formErrors}
-                />
-              ) : (
-                <>
-                  <p className="mb-2 text-gray-600">{catalog?.description || ''}</p>
-                  <p className="text-sm">
-                    Duration: {catalog?.startDate ? format(new Date(catalog.startDate), 'yyyy-MM-dd') : 'N/A'} to {catalog?.endDate ? format(new Date(catalog.endDate), 'yyyy-MM-dd') : 'N/A'}
-                  </p>
-                  {catalog?.dashboardId && (
-                    <a
-                      href={`/app/dashboard/${catalog.dashboardId}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline"
-                    >
-                      View Dashboard
-                    </a>
-                  )}
-                </>
+              <p className="mb-2 text-gray-600">{catalog?.description || ''}</p>
+              <p className="text-sm">
+                Duration: {catalog?.startDate ? format(new Date(catalog.startDate), 'yyyy-MM-dd') : 'N/A'} to {catalog?.endDate ? format(new Date(catalog.endDate), 'yyyy-MM-dd') : 'N/A'}
+              </p>
+              {catalog?.dashboardId && (
+                <a
+                  href={`/app/dashboard/${catalog.dashboardId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline"
+                >
+                  View Dashboard
+                </a>
               )}
             </CardContent>
           </div>
@@ -709,4 +655,3 @@ export function CatalogDetails() {
     </Page>
   );
 }
-

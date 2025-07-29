@@ -89,12 +89,3 @@ export function updateScopeSet(id, scopeSetData) {
 export function getScopeSetsByControlId(controlId) {
   return apiClient.get(`/scopes/sets/control/${controlId}`);
 }
-
-/**
- * Deletes all scope sets by control ID
- * @param {string} controlId - Control ID
- * @returns {Promise} - Promise with the response
- */
-export function deleteScopeSetsByControlId(controlId) {
-  return apiClient.delete(`/scopes/sets/control/${controlId}`);
-}
