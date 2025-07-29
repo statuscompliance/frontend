@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { createControl } from '@/services/controls';
 import { getAllScopes, createScopeSet } from '@/services/scopes';
 import { getAllNodeRedFlows, getFlowParams } from '@/services/mashups';
-import { PlusCircle, X, CalendarIcon, Loader2, AlertCircle, Check, Lock } from 'lucide-react'; // Importar Lock
+import { PlusCircle, X, CalendarIcon, Loader2, Check, Lock } from 'lucide-react'; // Importar Lock
 import { Badge } from '@/components/ui/badge';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Calendar } from '@/components/ui/calendar';

@@ -75,7 +75,7 @@ export function SecretModal({ open, onClose, onSubmit, initialData }) {
     try {
       await onSubmit(values, initialData?.id);
     } catch (err) {
-      toast.error('Unexpected error while trying to submit the secret.');
+      toast.error('Unexpected error while trying to submit the secret, error: ', err);
     }
   };
 

@@ -30,7 +30,7 @@ export function Editor() {
 
   return (
     <Page flowName={flowName}>
-      <div className="container mx-auto px-4">
+      <div className="mx-auto px-4 container">
         <Card className="w-full overflow-hidden bg-muted">
           {error ? (
             <Alert variant="destructive" className="m-4">
