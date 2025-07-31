@@ -22,7 +22,7 @@ import { toast } from 'sonner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import Page from '@/components/basic-page.jsx';
 import { 
-  getAllApiFlows
+  getAllNodeRedFlows
 } from '@/services/mashups';
 import {
   AlertDialog,
@@ -62,7 +62,7 @@ export function Mashups() {
   const fetchFlows = async () => {
     try {
       setLoading(true);
-      const response = await getAllApiFlows();
+      const response = await getAllNodeRedFlows();
       setFlows(response.data);
       setError(null);
     } catch (err) {

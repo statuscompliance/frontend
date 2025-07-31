@@ -373,7 +373,7 @@ export function CatalogDetails() {
   }
 
   return (
-    <Page className="mx-auto p-4 container space-y-6">
+    <Page className="container mx-auto p-4 space-y-6">
       <Card className="p-4 text-left">
         
         <div className="grid grid-cols-2 items-start gap-4">
@@ -655,4 +655,3 @@ export function CatalogDetails() {
     </Page>
   );
 }
-

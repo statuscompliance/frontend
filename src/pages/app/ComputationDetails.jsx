@@ -182,7 +182,7 @@ export function ComputationDetails() {
   if (loading) {
     return (
       <Page 
-        className="mx-auto p-4 container space-y-6" 
+        className="container mx-auto p-4 space-y-6" 
         catalogData={catalogData}
         computationDate={computationDate}
       >
@@ -195,7 +195,7 @@ export function ComputationDetails() {
 
   return (
     <Page 
-      className="mx-auto p-4 container space-y-6" 
+      className="container mx-auto p-4 space-y-6" 
       catalogData={catalogData}
       computationDate={computationDate}
     >

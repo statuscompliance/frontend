@@ -329,7 +329,7 @@ export function ControlDetails() {
   if (loading) {
     return (
       <Page 
-        className="mx-auto p-4 container space-y-6" 
+        className="container mx-auto p-4 space-y-6" 
         catalogData={catalogData}
       >
         <div className="h-64 flex items-center justify-center">
@@ -342,7 +342,7 @@ export function ControlDetails() {
   if (!control) {
     return (
       <Page 
-        className="mx-auto p-4 container space-y-6" 
+        className="container mx-auto p-4 space-y-6" 
         catalogData={catalogData}
       >
         <div className="h-64 flex items-center justify-center">
@@ -354,7 +354,7 @@ export function ControlDetails() {
 
   return (
     <Page 
-      className="mx-auto p-4 container space-y-6" 
+      className="container mx-auto p-4 space-y-6" 
       catalogData={catalogData} // Pasamos los datos de catálogo al componente Page
     >
       <Card>

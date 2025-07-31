@@ -196,8 +196,8 @@ export function Scopes() {
 
   return (
     <Page className="mx-auto p-4 container space-y-6">
-      <Card>
-        <CardHeader className="grid grid-cols-2 items-start gap-4 text-left">
+      <Card className="bg-white shadow-lg rounded-lg"> {/* Added shadow and rounded corners to the main card */}
+        <CardHeader className="grid grid-cols-1 md:grid-cols-2 items-start gap-4 text-left border-b-2 border-gray-200 pb-4"> {/* Added border to header */}
           <div>
             <CardTitle>Scope Definitions</CardTitle>
             <CardDescription>Manage your scope definitions here.</CardDescription>

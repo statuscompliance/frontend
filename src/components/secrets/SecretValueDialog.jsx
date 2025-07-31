@@ -20,7 +20,7 @@ export function SecretValueDialog({ open, onClose, secret }) {
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="w-auto max-w-full">
+      <DialogContent className="max-w-full w-auto">
         <DialogHeader>
           <DialogTitle>Secret Value</DialogTitle>
           <DialogDescription>
@@ -33,8 +33,8 @@ export function SecretValueDialog({ open, onClose, secret }) {
             <strong>Name:</strong> {secret.name}
           </div>
           <div className="py-4">
-            <div className="bg-gray-100 rounded px-4 py-4 m-2 text-sm overflow-x-auto flex items-start justify-between">
-              <pre className="bg-transparent p-0 m-0 flex-1 select-all overflow-x-auto">
+            <div className="m-2 flex items-start justify-between overflow-x-auto rounded bg-gray-100 px-4 py-4 text-sm">
+              <pre className="m-0 flex-1 select-all overflow-x-auto bg-transparent p-0">
                 <code>{secret.value}</code>
               </pre>
               <Button
@@ -45,7 +45,7 @@ export function SecretValueDialog({ open, onClose, secret }) {
                 aria-label="Copy secret value"
                 title="Copy secret value"
               >
-                <Copy className="w-4 h-4" />
+                <Copy className="h-4 w-4" />
               </Button>
             </div>
           </div>
