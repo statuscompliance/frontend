@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -6,20 +6,22 @@ import { Check, ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import Page from '@/components/basic-page.jsx';
 import { createDraftCatalog, updateCatalog, getCatalogById, deleteCatalog } from '@/services/catalogs';
-import { getControlById, deleteControl } from '@/services/controls';
+import { getControlById, deleteControl, getControlsByCatalogId } from '@/services/controls';
 import { dashboardsService } from '@/services/grafana/dashboards';
 import { CatalogInfoStep } from '@/components/catalog/CatalogInfoStep';
 import { CatalogControlsStep } from '@/components/catalog/CatalogControlsStep';
 import { CatalogDashboardStep } from '@/components/catalog/CatalogDashboardStep';
-import { 
-  getDraftCatalogId, 
-  getDraftControlIds, 
-  clearDraftData, 
+import {
+  getDraftCatalogId,
+  getDraftControlIds,
+  clearDraftData,
   hasDraftData,
   saveDraftCatalogId,
   initializeControlIdsStorage,
   hasDraftDashboardUid,
-  getDraftDashboardUid
+  getDraftDashboardUid,
+  clearDraftControlIds,
+  clearDraftDashboardUid,
 } from '@/utils/draftStorage';
 import {
   AlertDialog,
@@ -57,375 +59,325 @@ export function CatalogWizard() {
   const [apiError, setApiError] = useState(null);
   const [showDraftDialog, setShowDraftDialog] = useState(false);
   const [hasDrafts, setHasDrafts] = useState(false);
-  const initialFetchCompleted = useRef(false);
-  const controlsFetchCompleted = useRef(false);
 
-  // Check for draft data on component mount
+  const initialDataLoadCompleted = React.useRef(false);
+
   useEffect(() => {
-    // Initialize control_draft_ids storage
     initializeControlIdsStorage();
-    
-    // Only check for drafts if we're not in edit mode
-    if (!isEditing) {
+    console.log('CatalogWizard mounted. isEditing:', isEditing);
+    if (!isEditing && !initialDataLoadCompleted.current) {
       const draftExists = hasDraftData();
-      setHasDrafts(draftExists);
-      
-      // Ya no mostramos automáticamente el diálogo, ahora sólo verificamos si hay un borrador
+      console.log('Checking for draft data. Exists:', draftExists);
       if (draftExists) {
         setHasDrafts(true);
+        setShowDraftDialog(true);
+      } else {
+        setLoading(false);
       }
+    } else if (isEditing && id && !initialDataLoadCompleted.current) {
+      console.log('Editing mode. Fetching catalog:', id);
+      fetchCatalog(id);
+    }
+  }, [isEditing, id]);
+
+  const fetchCatalog = useCallback(async (catalogIdToFetch) => {
+    setLoading(true);
+    console.log('Fetching catalog with ID:', catalogIdToFetch);
+    try {
+      const catalogResponse = await getCatalogById(catalogIdToFetch);
+      console.log('Catalog response:', catalogResponse);
+      if (catalogResponse) {
+        setCatalogData({
+          ...catalogResponse,
+          controls: catalogResponse.controls || [],
+          dashboardConfig: catalogResponse.dashboardConfig || {}
+        });
+        if (catalogResponse.dashboard_id) {
+          setCatalogData(prev => ({
+            ...prev,
+            dashboardConfig: { ...prev.dashboardConfig, uid: catalogResponse.dashboard_id }
+          }));
+        }
+        if (!isEditing) {
+          fetchDraftControls(catalogResponse.id);
+        }
+      }
+      initialDataLoadCompleted.current = true;
+    } catch (err) {
+      setError('Failed to load catalog data');
+      toast.error('Error loading catalog');
+      console.error('Error fetching catalog:', err);
+      if (!isEditing) {
+        handleDiscardDraft(true);
+      }
+    } finally {
+      setLoading(false);
     }
   }, [isEditing]);
 
-  // Fetch catalog data if editing or if we have a draft
-  useEffect(() => {
-    const fetchCatalog = async () => {
-      if (initialFetchCompleted.current) return;
-      
-      try {
-        setLoading(true);
-        let catalogResponse = null;
-        
-        if (isEditing) {
-          // Normal edit mode using URL parameter
-          catalogResponse = await getCatalogById(id);
-        } else if (hasDrafts && !showDraftDialog) {
-          // After user confirmed to continue with draft
-          const draftCatalogId = getDraftCatalogId();
-          if (draftCatalogId) {
-            catalogResponse = await getCatalogById(draftCatalogId);
-          }
-        }
-        
-        if (catalogResponse) {
-          setCatalogData({
-            ...catalogResponse,
-            controls: catalogResponse.controls || [],
-            dashboardConfig: catalogResponse.dashboardConfig || {}
-          });
-        }
-        
-        initialFetchCompleted.current = true;
-      } catch (err) {
-        setError('Failed to load catalog data');
-        toast.error('Error loading catalog');
-        console.error('Error fetching catalog:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if ((isEditing || (hasDrafts && !showDraftDialog)) && !loading && !initialFetchCompleted.current) {
-      fetchCatalog();
-    }
-  }, [id, isEditing, hasDrafts, showDraftDialog, loading]);
-
-  // Fetch draft controls if we have them
-  useEffect(() => {
-    const fetchDraftControls = async () => {
-      if (controlsFetchCompleted.current) return;
-      
-      try {
-        setLoading(true);
-        const controlIds = getDraftControlIds();
-        
-        if (controlIds && controlIds.length > 0) {
-          const controls = [];
-          
-          for (const controlId of controlIds) {
-            try {
-              const control = await getControlById(controlId);
-              if (control) {
-                controls.push(control);
-              }
-            } catch (err) {
-              console.error(`Error fetching control with ID ${controlId}:`, err);
-            }
-          }
-          
-          if (controls.length > 0) {
-            setCatalogData(prev => ({
-              ...prev,
-              controls
-            }));
-            
-            if (hasDrafts && !showDraftDialog) {
-              // Check if we have a dashboard draft and redirect to dashboard step if so
-              if (hasDraftDashboardUid()) {
-                setCurrentStep(2); // Dashboard step
-              } else {
-                setCurrentStep(1); // Controls step
-              }
-            }
-          } else if (hasDrafts && !showDraftDialog) {
-            // Check if we have a dashboard draft and redirect to dashboard step if so
-            if (hasDraftDashboardUid()) {
-              setCurrentStep(2); // Dashboard step
-            } else {
-              setCurrentStep(1); // Controls step
-            }
-          }
-        } else if (hasDrafts && !showDraftDialog) {
-          // Check if we have a dashboard draft and redirect to dashboard step if so
-          if (hasDraftDashboardUid()) {
-            setCurrentStep(2); // Dashboard step
-          } else {
-            setCurrentStep(1); // Controls step
-          }
-        }
-        
-        controlsFetchCompleted.current = true;
-      } catch (err) {
-        console.error('Error fetching draft controls:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    if (!isEditing && hasDrafts && !showDraftDialog && !controlsFetchCompleted.current) {
-      fetchDraftControls();
-    }
-  }, [isEditing, hasDrafts, showDraftDialog]);
-
-  const handleContinueDraft = () => {
-    setShowDraftDialog(false);
-    
-    // Check if we have a dashboard draft and directly go to dashboard step if needed
-    if (hasDraftDashboardUid()) {
-      setCurrentStep(2); // Dashboard step
-    }
-  };
-
-  const handleDiscardDraft = async () => {
+  const fetchDraftControls = useCallback(async (currentCatalogId) => {
+    setLoading(true);
+    console.log('Fetching draft controls for catalog ID:', currentCatalogId);
     try {
-      setLoading(true);
-      
-      // Delete catalog draft if it exists
+      const controlIds = getDraftControlIds();
+      let controlsToLoad = [];
+
+      if (isEditing && currentCatalogId) {
+        controlsToLoad = await getControlsByCatalogId(currentCatalogId, 'finalized');
+      } else if (controlIds && controlIds.length > 0) {
+        for (const controlId of controlIds) {
+          try {
+            const control = await getControlById(controlId);
+            if (control) {
+              controlsToLoad.push(control);
+            }
+          } catch (err) {
+            console.error(`Error fetching control with ID ${controlId}:`, err);
+          }
+        }
+      }
+
+      setCatalogData(prev => ({
+        ...prev,
+        controls: controlsToLoad
+      }));
+
+      if (!isEditing && (controlIds.length > 0 || hasDraftDashboardUid())) {
+        if (hasDraftDashboardUid()) {
+          setCurrentStep(2);
+        } else if (controlIds.length > 0) {
+          setCurrentStep(1);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching draft controls:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [isEditing]);
+
+  const handleContinueDraft = useCallback(() => {
+    setShowDraftDialog(false);
+    const draftCatalogId = getDraftCatalogId();
+    console.log('Continue draft clicked. Draft Catalog ID from localStorage:', draftCatalogId);
+    if (draftCatalogId) {
+      fetchCatalog(draftCatalogId);
+    } else {
+      fetchDraftControls();
+      setCurrentStep(1);
+    }
+  }, [fetchCatalog, fetchDraftControls]);
+
+  const handleDiscardDraft = useCallback(async (navigateToCatalogs = false) => {
+    setLoading(true);
+    console.log('Discard draft clicked.');
+    try {
       const draftCatalogId = getDraftCatalogId();
       if (draftCatalogId) {
-        try {
-          await deleteCatalog(draftCatalogId);
-        } catch (err) {
-          console.error('Error deleting draft catalog:', err);
-        }
+        console.log('Deleting draft catalog from API:', draftCatalogId);
+        try { await deleteCatalog(draftCatalogId); } catch (err) { console.error('Error deleting draft catalog:', err); }
       }
-      
-      // Delete control drafts if they exist
       const controlIds = getDraftControlIds();
-      for (const controlId of controlIds) {
-        try {
-          await deleteControl(controlId);
-        } catch (err) {
-          console.error(`Error deleting draft control ${controlId}:`, err);
+      if (controlIds && controlIds.length > 0) {
+        console.log('Deleting draft controls from API:', controlIds);
+        for (const controlId of controlIds) {
+          try { await deleteControl(controlId); } catch (err) { console.error(`Error deleting draft control ${controlId}:`, err); }
         }
       }
-      
-      // Delete dashboard draft if it exists
       const dashboardUid = getDraftDashboardUid();
       if (dashboardUid) {
-        try {
-          await dashboardsService.delete(dashboardUid);
-        } catch (err) {
-          console.error(`Error deleting draft dashboard ${dashboardUid}:`, err);
-        }
+        console.log('Deleting draft dashboard from API:', dashboardUid);
+        try { await dashboardsService.delete(dashboardUid); } catch (err) { console.error(`Error deleting draft dashboard ${dashboardUid}:`, err); }
       }
-      
-      // Clear localStorage
+
       clearDraftData();
-      
-      // Reset state and navigate back to catalogs list
+      console.log('All draft data cleared from localStorage.');
       setHasDrafts(false);
       setShowDraftDialog(false);
-      
-      navigate('/app/catalogs');
-      
+      setCatalogData({ name: '', description: '', controls: [], dashboardConfig: {} });
+      setCurrentStep(0);
+
       toast.success('Draft catalog discarded');
+      if (navigateToCatalogs) {
+        navigate('/app/catalogs');
+      }
     } catch (err) {
       toast.error('Error discarding draft catalog');
       console.error('Error discarding draft:', err);
     } finally {
       setLoading(false);
+      initialDataLoadCompleted.current = false;
     }
-  };
+  }, [navigate]);
 
-  const goToNextStep = () => {
+  const goToNextStep = useCallback(() => {
     setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
-  };
+    console.log('Moving to next step:', currentStep + 1);
+  }, [currentStep]);
 
-  const goToPrevStep = () => {
+  const goToPrevStep = useCallback(() => {
     setCurrentStep((prev) => Math.max(prev - 1, 0));
-  };
+    console.log('Moving to previous step:', currentStep - 1);
+  }, [currentStep]);
 
-  const handleCatalogInfoSubmit = async (catalogInfo) => {
+  const handleCatalogInfoSubmit = useCallback(async (catalogInfoData) => {
+    setLoading(true);
+    setApiError(null);
+    console.log('handleCatalogInfoSubmit called with data:', catalogInfoData);
     try {
-      setLoading(true);
-      setApiError(null);
-      
-      // If first step and not editing, create new catalog
-      if (currentStep === 0 && !isEditing) {
-        const response = await createDraftCatalog(catalogInfo);
-        
-        // Here we'll save the catalog ID immediately after creation
-        if (response && response.id) {
-          // Initialize localStorage storage
-          saveDraftCatalogId(response.id);
-          initializeControlIdsStorage();
-        }
-        
-        setCatalogData({
-          ...response,
-          controls: [],
-          dashboardConfig: {}
-        });
-        toast.success('Catalog information saved');
-        goToNextStep();
-      } else {
-        // Otherwise just update local state
+      let currentCatalogId = isEditing ? id : getDraftCatalogId();
+      let response;
+
+      if (currentCatalogId) {
+        console.log('Updating existing catalog/draft with ID:', currentCatalogId);
+        response = await updateCatalog(currentCatalogId, { ...catalogInfoData, status: 'draft' });
+        toast.success('Catalog information updated');
         setCatalogData(prev => ({
           ...prev,
-          ...catalogInfo
+          ...catalogInfoData,
+          id: response.id || currentCatalogId
         }));
-        toast.success('Catalog information updated');
         goToNextStep();
+      } else {
+        console.log('Creating new draft catalog.');
+        response = await createDraftCatalog(catalogInfoData);
+        console.log('Response from createDraftCatalog:', response);
+        if (response && response.id) {
+          saveDraftCatalogId(response.id);
+          console.log('Saved draft catalog ID to localStorage:', response.id);
+          initializeControlIdsStorage();
+          toast.success('Catalog draft created.');
+          setCatalogData(prev => ({
+            ...prev,
+            ...catalogInfoData,
+            id: response.id
+          }));
+          goToNextStep();
+        } else {
+          console.error('API did not return a valid catalog ID:', response);
+          throw new Error('API did not return a valid catalog ID after creation.');
+        }
       }
     } catch (err) {
       let errorMessage = 'Failed to save catalog information';
-      
-      if (err.response && err.response.status >= 400 && err.response.status < 500) {
-        if (err.response.data && err.response.data.message) {
-          errorMessage = err.response.data.message;
-        } else if (err.response.data && err.response.data.error) {
-          errorMessage = err.response.data.error;
-        }
+      if (err.response && err.response.data) {
+        errorMessage = err.response.data.message || err.response.data.error || errorMessage;
+      } else if (err.message) {
+        errorMessage = err.message;
       }
-      
       setApiError(errorMessage);
       toast.error(errorMessage);
       console.error('Error saving catalog information:', err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [isEditing, id, goToNextStep]);
 
-  const handleControlsSubmit = async (controls) => {
+  const handleControlsSubmit = useCallback(async (controlsData) => {
+    setLoading(true);
+    setApiError(null);
+    console.log('handleControlsSubmit called with controls:', controlsData);
     try {
-      setLoading(true);
-      setApiError(null);
-      
-      // Update catalog with controls
-      const updatedData = {
-        ...catalogData,
-        controls
-      };
-      
-      if (isEditing) {
-        await updateCatalog(id, { controls });
-      } else if (catalogData && catalogData.id) {
-        // Save catalog ID again for non-editing mode
-        saveDraftCatalogId(catalogData.id);
-      }
-      
-      setCatalogData(updatedData);
-      toast.success('Controls saved successfully');
+      setCatalogData(prev => ({
+        ...prev,
+        controls: controlsData
+      }));
       goToNextStep();
     } catch (err) {
       let errorMessage = 'Failed to save controls';
-      
-      if (err.response && err.response.status >= 400 && err.response.status < 500) {
-        if (err.response.data && err.response.data.message) {
-          errorMessage = err.response.data.message;
-        } else if (err.response.data && err.response.data.error) {
-          errorMessage = err.response.data.error;
-        }
+      if (err.response && err.response.data) {
+        errorMessage = err.response.data.message || err.response.data.error || errorMessage;
       }
-      
       setApiError(errorMessage);
       toast.error(errorMessage);
       console.error('Error saving controls:', err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [goToNextStep]);
 
-  const handleDashboardSubmit = async (dashboardConfig) => {
+  const handleDashboardSubmit = useCallback(async (dashboardConfigData) => {
+    setLoading(true);
+    setApiError(null);
+    console.log('handleDashboardSubmit called with config:', dashboardConfigData);
     try {
-      setLoading(true);
-      setApiError(null);
-      
-      // Update catalog with dashboard configuration
-      const updatedData = {
-        ...catalogData,
-        dashboardConfig
-      };
-      
-      if (isEditing) {
-        await updateCatalog(id, { dashboardConfig });
+      const currentCatalogId = isEditing ? id : getDraftCatalogId();
+      console.log('Finalizing catalog. Retrieved Catalog ID:', currentCatalogId);
+      if (!currentCatalogId) {
+        throw new Error('No catalog ID found to finalize.');
       }
-      
-      setCatalogData(updatedData);
+
+      const existingCatalog = await getCatalogById(currentCatalogId);
+      console.log('Existing catalog for merge:', existingCatalog);
+
+      const updatedCatalogData = {
+        ...existingCatalog, // Mantener datos existentes (startDate, endDate, tpaId, status)
+        name: dashboardConfigData.title, // Mapear título del dashboard a nombre del catálogo
+        description: dashboardConfigData.description, // Mapear descripción del dashboard a descripción del catálogo
+        dashboard_id: getDraftDashboardUid(), // Enlazar el UID del dashboard temporal
+        status: 'finalized', // Cambiar estado a 'finalized'
+      };
+      console.log('Updating catalog with final data:', updatedCatalogData);
+      await updateCatalog(currentCatalogId, updatedCatalogData);
       toast.success('Catalog created successfully');
-      
-      // Clear draft data on successful completion
+
+      // Mover clearDraftData() AQUÍ, después de que la actualización sea exitosa
       clearDraftData();
-      
-      // Navigate back to catalogs list
+      console.log('All draft data cleared after finalization.');
       navigate('/app/catalogs');
     } catch (err) {
       let errorMessage = 'Failed to save dashboard configuration';
-      
-      if (err.response && err.response.status >= 400 && err.response.status < 500) {
-        if (err.response.data && err.response.data.message) {
-          errorMessage = err.response.data.message;
-        } else if (err.response.data && err.response.data.error) {
-          errorMessage = err.response.data.error;
-        }
+      if (err.response && err.response.data) {
+        errorMessage = err.response.data.message || err.response.data.error || errorMessage;
+      } else if (err.message) {
+        errorMessage = err.message;
       }
-      
       setApiError(errorMessage);
       toast.error(errorMessage);
       console.error('Error saving dashboard:', err);
     } finally {
       setLoading(false);
     }
-  };
-  
-  const renderStepContent = () => {
+  }, [isEditing, id, navigate]);
+
+  const renderStepContent = useCallback(() => {
     switch (currentStep) {
-    case 0:
-      return (
-        <CatalogInfoStep 
-          initialData={catalogData} 
-          onSubmit={handleCatalogInfoSubmit} 
-          isSubmitting={loading}
-          apiError={apiError}
-        />
-      );
-    case 1:
-      return (
-        <CatalogControlsStep 
-          initialControls={catalogData.controls} 
-          catalogId={isEditing ? id : catalogData.id}
-          onSubmit={handleControlsSubmit} 
-          isSubmitting={loading}
-          apiError={apiError}
-          key={`controls-${isEditing ? id : catalogData.id}`}
-        />
-      );
-    case 2:
-      return (
-        <CatalogDashboardStep 
-          initialConfig={catalogData.dashboardConfig} 
-          catalogId={isEditing ? id : catalogData.id}
-          controls={catalogData.controls}
-          onSubmit={handleDashboardSubmit} 
-          isSubmitting={loading}
-          apiError={apiError}
-        />
-      );
-    default:
-      return null;
+      case 0:
+        return (
+          <CatalogInfoStep
+            initialData={catalogData}
+            onSubmit={handleCatalogInfoSubmit}
+            isSubmitting={loading}
+            apiError={apiError}
+          />
+        );
+      case 1:
+        return (
+          <CatalogControlsStep
+            initialControls={catalogData.controls}
+            catalogId={isEditing ? id : catalogData.id}
+            onSubmit={handleControlsSubmit}
+            isSubmitting={loading}
+            apiError={apiError}
+            key={`controls-${isEditing ? id : catalogData.id}`}
+          />
+        );
+      case 2:
+        return (
+          <CatalogDashboardStep
+            initialConfig={catalogData.dashboardConfig}
+            catalogId={isEditing ? id : catalogData.id}
+            controls={catalogData.controls}
+            onSubmit={handleDashboardSubmit}
+            isSubmitting={loading}
+            apiError={apiError}
+          />
+        );
+      default:
+        return null;
     }
-  };
+  }, [currentStep, catalogData, handleCatalogInfoSubmit, handleControlsSubmit, handleDashboardSubmit, loading, apiError, isEditing, id]);
+
 
   return (
     <Page name={isEditing ? 'Edit Catalog' : 'Create New Catalog'} className="h-full w-full">
@@ -433,17 +385,17 @@ export function CatalogWizard() {
       <AlertDialog open={showDraftDialog} onOpenChange={setShowDraftDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Unfinished Catalog Found</AlertDialogTitle>
+            <AlertDialogTitle>Borrador de Catálogo Existente</AlertDialogTitle>
             <AlertDialogDescription>
-              We found a catalog that you started creating but didn&apos;t finish. Would you like to continue where you left off?
+              Se ha detectado un borrador de catálogo. ¿Deseas continuar con él o crear uno nuevo?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={handleDiscardDraft} disabled={loading}>
-              {loading ? 'Discarding...' : 'Discard Draft'}
+            <AlertDialogCancel onClick={() => handleDiscardDraft(true)} disabled={loading}>
+              {loading ? 'Descartando...' : 'Crear Nuevo'}
             </AlertDialogCancel>
             <AlertDialogAction onClick={handleContinueDraft}>
-              Continue Draft
+              Continuar con Borrador
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -455,14 +407,13 @@ export function CatalogWizard() {
           {steps.map((step, index) => (
             <div key={step.id} className="flex items-center">
               {/* Step circle */}
-              <div 
-                className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
-                  index < currentStep
+              <div
+                className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${index < currentStep
                     ? 'bg-chart-1 border-chart-1 text-white'
                     : index === currentStep
                       ? 'border-chart-5 text-chart-5'
                       : 'border-gray-300 text-gray-300'
-                }`}
+                  }`}
               >
                 {index < currentStep ? (
                   <Check className="h-5 w-5" />
@@ -470,19 +421,17 @@ export function CatalogWizard() {
                   <span>{index + 1}</span>
                 )}
               </div>
-              
+
               {/* Step title */}
-              <div className={`ml-2 mr-6 ${
-                index <= currentStep ? 'text-gray-800' : 'text-gray-400'
-              }`}>
+              <div className={`ml-2 mr-6 ${index <= currentStep ? 'text-gray-800' : 'text-gray-400'
+                }`}>
                 {step.title}
               </div>
-              
+
               {/* Connector line */}
               {index < steps.length - 1 && (
-                <div className={`w-12 h-1 mr-2 ${
-                  index < currentStep ? 'bg-chart-1' : 'bg-gray-300'
-                }`}></div>
+                <div className={`w-12 h-1 mr-2 ${index < currentStep ? 'bg-chart-1' : 'bg-gray-300'
+                  }`}></div>
               )}
             </div>
           ))}
@@ -520,7 +469,7 @@ export function CatalogWizard() {
           <ArrowLeft className="mr-2 h-4 w-4" />
           {currentStep === 0 ? 'Cancel' : 'Previous Step'}
         </Button>
-        
+
         {/* This button is just for manual navigation during development */}
         {isDev && (
           <Button

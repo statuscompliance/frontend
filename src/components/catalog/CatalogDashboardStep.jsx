@@ -33,16 +33,15 @@ import { AddPanelForm } from '@/forms/dashboard/panel/form';
 import { dashboardsService } from '@/services/grafana/dashboards';
 import { Badge } from '@/components/ui/badge';
 import { DashboardPanel } from '@/components/dashboard/dashboard-panel';
-import { getDraftDashboardUid, clearDraftDashboardUid, getDraftCatalogId, clearDraftData } from '@/utils/draftStorage'; // Import getDraftCatalogId and clearDraftData
-import { updateCatalog, getCatalogById } from '@/services/catalogs'; // Import updateCatalog and getCatalogById
+import { getDraftDashboardUid } from '@/utils/draftStorage';
 
 // Dashboard configuration schema
 const dashboardConfigSchema = z.object({
   title: z.string()
     .min(1, { message: 'Dashboard title is required' })
-    .max(40, { message: 'Dashboard title must be at most 40 characters' }), // Added max length
+    .max(40, { message: 'Dashboard title must be at most 40 characters' }),
   description: z.string()
-    .max(140, { message: 'Description must be at most 140 characters' }) // Added max length
+    .max(140, { message: 'Description must be at most 140 characters' })
     .optional(),
   panels: z.array(
     z.object({
@@ -216,38 +215,20 @@ export function CatalogDashboardStep({ initialConfig = {}, controls = [], catalo
   const handleSubmit = async (data) => {
     setSubmitError(null);
     try {
-      const draftCatalogId = getDraftCatalogId();
-      if (!draftCatalogId) {
-        setSubmitError('No draft catalog ID found. Please start from the beginning.');
-        toast.error('Failed to save catalog: No draft ID.');
-        return;
-      }
-
-      // Fetch the existing draft catalog to merge dashboard data
-      const existingCatalog = await getCatalogById(draftCatalogId);
-
-      const updatedCatalogData = {
-        ...existingCatalog, // Keep existing catalog data (startDate, endDate, tpaId, status)
-        name: data.title, // Map dashboard title to catalog name
-        description: data.description, // Map dashboard description to catalog description
-        dashboard_id: tempDashboardUid, // Link the dashboard UID
-        tpaId: existingCatalog.tpaId, // Keep existing tpaId
-        status: 'finalized', // Keep existing status
-      };
-
-      await updateCatalog(draftCatalogId, updatedCatalogData);
-      toast.success('Catalog updated successfully with dashboard configuration!');
-
-      // Clear draft data after successful completion
-      clearDraftDashboardUid();
-      clearDraftData();
-
-      // Call the parent onSubmit to signal completion
-      onSubmit(data);
+      // The CatalogWizard parent component will handle fetching the catalog
+      // by draftCatalogId and updating it with the dashboard config.
+      // This component just needs to pass the dashboard config data up.
+      onSubmit({
+        title: data.title,
+        description: data.description,
+        panels: data.panels,
+        showSummaryStats: data.showSummaryStats,
+        uid: tempDashboardUid // Pass the dashboard UID up to the parent
+      });
     } catch (error) {
-      console.error('Error updating catalog with dashboard config:', error);
-      setSubmitError(error.message || 'Failed to update catalog with dashboard configuration.');
-      toast.error('Failed to save dashboard configuration to catalog.');
+      console.error('Error submitting dashboard config from step:', error);
+      setSubmitError(error.message || 'Failed to submit dashboard configuration.');
+      toast.error('Failed to submit dashboard configuration.');
     }
   };
 
