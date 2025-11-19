@@ -40,6 +40,14 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { CatalogForm } from '@/forms/catalog/forms';
 import { useAuth } from '@/hooks/use-auth';
+import { hasDraftData, 
+  getDraftCatalogId, 
+  getDraftControlIds, 
+  clearDraftData, 
+  getDraftDashboardUid 
+} from '@/utils/draftStorage';
+import { deleteControl } from '@/services/controls';
+import { deleteScopeSetsByControlId } from '@/services/scopes';
 
 const columnHelper = createColumnHelper();
 
@@ -52,6 +60,7 @@ export function Catalogs() {
   const [globalFilter, setGlobalFilter] = useState('');
   const [rowSelection, setRowSelection] = useState({});
   const [formErrors, setFormErrors] = useState({});
+  const [showDraftDialog, setShowDraftDialog] = useState(false);
   const navigate = useNavigate();
   const { userData } = useAuth();
 
@@ -81,8 +90,70 @@ export function Catalogs() {
   }, []);
 
   const handleNew = useCallback(() => {
-    navigate('/app/catalogs/new');
+    // Check if there's a draft catalog
+    if (hasDraftData()) {
+      setShowDraftDialog(true);
+    } else {
+      // No draft, proceed directly to the wizard
+      navigate('/app/catalogs/new');
+    }
   }, [navigate]);
+
+  const handleContinueDraft = () => {
+    setShowDraftDialog(false);
+    navigate('/app/catalogs/new');
+  };
+
+  const handleDiscardDraft = async () => {
+    try {
+      setLoading(true);
+      
+      // Delete catalog draft if it exists
+      const draftCatalogId = getDraftCatalogId();
+      if (draftCatalogId) {
+        try {
+          await deleteCatalog(draftCatalogId);
+        } catch (err) {
+          console.error('Error deleting draft catalog:', err);
+        }
+      }
+      
+      // Delete control drafts if they exist
+      const controlIds = getDraftControlIds();
+      for (const controlId of controlIds) {
+        try {
+          await deleteScopeSetsByControlId(controlId);
+          await deleteControl(controlId);
+        } catch (err) {
+          console.error(`Error deleting draft control ${controlId}:`, err);
+        }
+      }
+
+      // Delete dashboard draft if it exists
+      const dashboardUid = getDraftDashboardUid();
+      if (dashboardUid) {
+        try {
+          await dashboardsService.delete(dashboardUid);
+        } catch (err) {
+          console.error(`Error deleting draft dashboard ${dashboardUid}:`, err);
+        }
+      }
+      
+      // Clear localStorage
+      clearDraftData();
+      
+      // Reset state
+      setShowDraftDialog(false);
+      toast.success('Draft catalog discarded');
+      
+      // No navigation - we stay on the catalogs page
+      setLoading(false);
+    } catch (err) {
+      toast.error('Error discarding draft catalog');
+      console.error('Error discarding draft:', err);
+      setLoading(false);
+    }
+  };
 
   const handleDeleteConfirm = useCallback((catalog) => {
     setCatalogToDelete(catalog);
@@ -104,6 +175,34 @@ export function Catalogs() {
       setCatalogToDelete(null);
     }
   }, [catalogs, catalogToDelete]);
+
+  const handleDeleteSelected = useCallback(async () => {
+    try {
+      setLoading(true);
+      
+      const selectedIds = Object.keys(rowSelection).map(index => catalogs[parseInt(index)].id);
+      
+      if (selectedIds.length === 0) {
+        toast.error('No catalogs selected');
+        return;
+      }
+      
+      for (const id of selectedIds) {
+        await deleteCatalog(id);
+      }
+      
+      setCatalogs(catalogs.filter(catalog => !selectedIds.includes(catalog.id)));
+      
+      setRowSelection({});
+      
+      toast.success(`${selectedIds.length} catalog${selectedIds.length > 1 ? 's' : ''} deleted successfully`);
+    } catch (err) {
+      toast.error('Failed to delete selected catalogs');
+      console.error('Error deleting catalogs:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [catalogs, rowSelection]);
 
   const handleCatalogUpdate = async (catalogData) => {
     try {
@@ -256,6 +355,9 @@ export function Catalogs() {
     },
   });
 
+  // Calcular si hay alguna fila seleccionada
+  const hasSelection = Object.keys(rowSelection).length > 0;
+
   return (
     <Page name="Catalogs" className="h-full w-full">
       <div className="flex items-center justify-between gap-x-4">
@@ -265,36 +367,47 @@ export function Catalogs() {
           onChange={(e) => setGlobalFilter(e.target.value)}
           className="max-w-sm"
         />
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="ml-auto">
-              Columns <ChevronDown className="ml-2 h-4 w-4" />
+        <div className="flex items-center space-x-2">
+          {userData.authority !== 'USER' && (
+            <Button 
+              variant="destructive" 
+              onClick={handleDeleteSelected}
+              disabled={!hasSelection || loading}
+            >
+              <Trash className="h-4 w-4" />
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {table
-              .getAllColumns()
-              .filter((column) => column.getCanHide())
-              .map((column) => {
-                return (
-                  <DropdownMenuItem key={column.id} className="capitalize">
-                    <Checkbox
-                      checked={column.getIsVisible()}
-                      onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                    />
-                    <span className="ml-2">{column.id === 'dashboard_id' ? 'Dashboard' : column.id}</span>
-                  </DropdownMenuItem>
-                );
-              })}
-          </DropdownMenuContent>
-        </DropdownMenu>
-        <Button 
-          className="border-2 border-sidebar-accent bg-sidebar-accent hover:bg-secondary hover:text-sidebar-accent"
-          onClick={handleNew}
-          userRole={userData.authority}
-        >
-          <Plus className="mr-2 h-4 w-4" /> Add New Catalog
-        </Button>
+          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="ml-auto">
+                Columns <ChevronDown className="ml-2 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {table
+                .getAllColumns()
+                .filter((column) => column.getCanHide())
+                .map((column) => {
+                  return (
+                    <DropdownMenuItem key={column.id} className="capitalize">
+                      <Checkbox
+                        checked={column.getIsVisible()}
+                        onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                      />
+                      <span className="ml-2">{column.id === 'dashboard_id' ? 'Dashboard' : column.id}</span>
+                    </DropdownMenuItem>
+                  );
+                })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button 
+            className="border-2 border-sidebar-accent bg-sidebar-accent hover:bg-secondary hover:text-sidebar-accent"
+            onClick={handleNew}
+            userRole={userData.authority}
+          >
+            <Plus className="mr-2 h-4 w-4" /> Add New Catalog
+          </Button>
+        </div>
       </div>
       
       {error && (
@@ -394,6 +507,26 @@ export function Catalogs() {
               ) : (
                 'Delete'
               )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      
+      {/* Draft Dialog */}
+      <AlertDialog open={showDraftDialog} onOpenChange={setShowDraftDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unfinished Catalog Found</AlertDialogTitle>
+            <AlertDialogDescription>
+              We found a catalog that you started creating but didn&apos;t finish. Would you like to continue where you left off?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleDiscardDraft} disabled={loading}>
+              {loading ? 'Discarding...' : 'Discard Draft'}
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleContinueDraft}>
+              Continue Draft
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

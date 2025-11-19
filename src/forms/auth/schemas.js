@@ -13,7 +13,7 @@ export const verify2FASchema = z.object({
   totpToken: z
     .string({ required_error: '2FA token is required' })
     .length(6, '2FA token must be 6 digits')
-    .transform((val) => val.trim()),
+    .regex(/^\d{6}$/, 'Token must be numeric'),
 });
 
 export const changePasswordSchema = z.object({
@@ -29,4 +29,9 @@ export const changePasswordSchema = z.object({
 }).refine((data) => data.newPassword === data.confirmPassword, {
   message: 'Passwords do not match',
   path: ['confirmPassword'],
+});
+
+export const disable2FASchema = z.object({
+  totpToken: z.string().regex(/^\d{6}$/, '2FA token must be 6 digits'),
+  password: z.string().min(1, 'Password is required'),
 });

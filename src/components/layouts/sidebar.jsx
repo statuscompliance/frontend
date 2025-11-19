@@ -1,4 +1,4 @@
-import {Home, FolderOpen, Shapes, Workflow, FileSliders, ChartNoAxesCombined, ChevronRight, ChevronsUpDown, LogOut } from 'lucide-react';
+import {Home, FolderOpen, Shapes, Workflow, FileSliders, ChartNoAxesCombined, ChevronRight, ChevronsUpDown, LogOut, ShieldHalf, SquareAsterisk, Database, Link2 } from 'lucide-react';
 import { Link } from 'react-router';
 import { MoreHorizontal } from 'lucide-react';
 import {
@@ -55,6 +55,16 @@ const data = [
         icon: ChartNoAxesCombined,
       },
       {
+        title: 'Datasources',
+        url: '/app/datasources',
+        icon: Database,
+      },
+      {
+        title: 'Linkers',
+        url: '/app/linkers',
+        icon: Link2,
+      },
+      {
         title: 'Scopes',
         url: '/app/scopes',
         icon: Shapes,
@@ -78,9 +88,21 @@ const data = [
     items: [
       {
         type: 'item',
+        title: 'Secrets',
+        url: '/app/secrets',
+        icon: SquareAsterisk,
+      },
+      {
+        type: 'item',
         title: 'Logout',
         url: '/logout',
         icon: LogOut,
+      },
+      {
+        type: 'item',
+        title: '2FA Settings',
+        url: '/app/setting-2fa',
+        icon: ShieldHalf,
       },
     ]
   }
@@ -122,7 +144,7 @@ export function AppSidebar() {
             <SidebarGroupContent>
               <SidebarMenu className="space-y-4 sm:space-y-2">
                 {group.items.map((item) => (
-                  (item.roles && item.roles.some(r => 
+                  (item.roles && item.roles.some(r =>
                     r === userData.authority.toLowerCase()
                   ) || item.roles == undefined) && (
                     item.items ? (
@@ -142,7 +164,7 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <SidebarMenuButton size="lg"> 
+                <SidebarMenuButton size="lg">
                   {(open || isMobile) ? (
                     <FooterButton />
                   ) : null}

@@ -2,10 +2,15 @@ import { apiClient } from '@/api/apiClient';
 
 /**
  * Gets all controls
+ * @param {string} [status] - Optional status filter: 'draft' or 'finalized'
  * @returns {Promise} - Promise with the list of controls
  */
-export function getAllControls() {
-  return apiClient.get('/controls');
+export function getAllControls(status) {
+  const config = {};
+  if (status === 'draft' || status === 'finalized') {
+    config.params = { status };
+  }
+  return apiClient.get('/controls', config);
 }
 
 /**
@@ -48,10 +53,15 @@ export function deleteControl(id) {
 /**
  * Gets all controls for a catalog
  * @param {string} catalogId - Catalog ID
+ * @param {string} status - Optional status filter ('finalized' or 'draft')
  * @returns {Promise} - Promise with the list of controls
  */
-export function getControlsByCatalogId(catalogId) {
-  return apiClient.get(`/catalogs/${catalogId}/controls`);
+export function getControlsByCatalogId(catalogId, status = null) {
+  let url = `/catalogs/${catalogId}/controls`;
+  if (status) {
+    url += `?status=${encodeURIComponent(status)}`;
+  }
+  return apiClient.get(url);
 }
 
 /**
@@ -120,4 +130,37 @@ export function addPanelToControl(controlId, panelId, data) {
  */
 export function deletePanelFromControl(controlId, panelId) {
   return apiClient.delete(`/controls/${controlId}/panels/${panelId}`);
+}
+
+/**
+ * Creates a new draft control
+ * @param {object} controlData - Control data
+ * @returns {Promise} - Promise with the created draft control
+ * @throws {Error} - Error with message from the server
+ */
+export function createDraftControl(controlData) {
+  return apiClient.post('/controls/drafts', controlData)
+    .then(response => response.data || response)
+    .catch(error => {
+      // Extract the specific error message if available
+      if (error.response && error.response.data) {
+        const errorData = error.response.data;
+        // Throw a new error with the specific message
+        throw {
+          status: error.response.status,
+          message: errorData.error || errorData.message || 'Failed to create draft control'
+        };
+      }
+      // Rethrow the original error if no detailed info
+      throw error;
+    });
+}
+
+/**
+ * Finalizes a draft control
+ * @param {string} id - Control ID
+ * @returns {Promise} - Promise with the finalized control
+ */
+export function finalizeControl(id) {
+  return apiClient.patch(`/controls/${id}/finalize`);
 }

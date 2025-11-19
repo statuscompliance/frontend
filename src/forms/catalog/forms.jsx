@@ -3,19 +3,27 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Calendar as CalendarIcon } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 export function CatalogForm({ catalog = {}, onSubmit, isSubmitting, errors = {} }) {
   const [formData, setFormData] = useState({
     name: '',
-    description: ''
+    description: '',
+    startDate: null,
+    endDate: null
   });
 
   useEffect(() => {
     if (catalog) {
       setFormData({
         name: catalog.name || '',
-        description: catalog.description || ''
+        description: catalog.description || '',
+        startDate: catalog.startDate ? new Date(catalog.startDate) : null,
+        endDate: catalog.endDate ? new Date(catalog.endDate) : null
       });
     }
   }, [catalog]);
@@ -25,6 +33,13 @@ export function CatalogForm({ catalog = {}, onSubmit, isSubmitting, errors = {} 
     setFormData((prev) => ({
       ...prev,
       [name]: value
+    }));
+  };
+
+  const handleDateChange = (date, field) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: date
     }));
   };
 
@@ -70,6 +85,77 @@ export function CatalogForm({ catalog = {}, onSubmit, isSubmitting, errors = {} 
         {errors.description && (
           <p className="mt-1 text-sm text-red-500">{errors.description}</p>
         )}
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="startDate" className="text-base font-medium">
+            Start Date
+          </Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                id="startDate"
+                variant="outline"
+                className={cn(
+                  'w-full justify-start text-left font-normal',
+                  !formData.startDate && 'text-muted-foreground',
+                  errors.startDate && 'border-red-500'
+                )}
+                disabled={isSubmitting}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {formData.startDate ? format(formData.startDate, 'PPP') : 'Select start date'}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={formData.startDate}
+                onSelect={(date) => handleDateChange(date, 'startDate')}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+          {errors.startDate && (
+            <p className="mt-1 text-sm text-red-500">{errors.startDate}</p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="endDate" className="text-base font-medium">
+            End Date
+          </Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                id="endDate"
+                variant="outline"
+                className={cn(
+                  'w-full justify-start text-left font-normal',
+                  !formData.endDate && 'text-muted-foreground',
+                  errors.endDate && 'border-red-500'
+                )}
+                disabled={isSubmitting}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {formData.endDate ? format(formData.endDate, 'PPP') : 'Select end date'}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={formData.endDate}
+                onSelect={(date) => handleDateChange(date, 'endDate')}
+                initialFocus
+                disabled={(date) => formData.startDate && date < formData.startDate}
+              />
+            </PopoverContent>
+          </Popover>
+          {errors.endDate && (
+            <p className="mt-1 text-sm text-red-500">{errors.endDate}</p>
+          )}
+        </div>
       </div>
       
       <div className="flex justify-end pt-4">
