@@ -13,5 +13,8 @@ export const controlSchema = z.object({
     message: 'At least one parameter is required'
   }),
   scopes: z.record(z.string()).optional(),
-  catalogId: z.string().min(1, { message: 'Catalog ID is required' })
+  catalogId: z.number({
+    required_error: 'Catalog ID is required',
+    invalid_type_error: 'Catalog ID must be a number'
+  })
 });

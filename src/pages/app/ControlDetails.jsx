@@ -26,59 +26,68 @@ import { getComputationsByControlId } from '@/services/controls';
 
 const columnHelper = createColumnHelper();
 
-// Mock computations data based on the provided example
-const randomLocations = ['Champs-Élysées', 'Montmartre', 'La Défense', 'Opéra', 'Saint-Germain'];
-
 const mockComputations = [
   {
     id: '60bf2620-1075-4d00-aead-7e57fe811469',
     computationGroup: '6956b9d1-8b7d-4422-a7d7-cc4f8dba523f',
     value: true,
     scope: {
-      country: 'France',
-      city: 'Paris',
-      declaration: 'declaration 86791',
-      location: randomLocations[0],
+      country: 'Spain',
+      city: 'Seville'
     },
     evidences: [
       { 
-        id: 'fbc4c50a-c21a-45f3-87af-27116ac8d56c', 
-        key: 'AND operation', 
-        value: [true, true], 
+        id: 'e1', 
+        key: 'procedure_formally_documented', 
+        value: true, 
         result: true,
-        from: '2023-06-01T08:00:00',
-        to: '2023-06-01T17:30:00'
+        from: '2025-01-01T08:00:00',
+        to: '2025-01-01T17:30:00'
+      },
+      {
+        id: 'e2',
+        key: 'assigned_responsible_role',
+        value: true,
+        result: true,
+        from: '2025-01-01T08:00:00',
+        to: '2025-01-01T17:30:00'
       }
     ],
     period: {
-      from: '2025-01-01T00:00:00.000Z',
-      to: '2025-01-01T00:59:59.999Z'
+      from: '2025-09-18T22:00:00.000Z',
+      to: '2025-09-21T22:00:00.000Z'
     },
     controlId: '1234'
   },
   {
     id: '70bf2620-1075-4d00-aead-7e57fe811470',
     computationGroup: '7956b9d1-8b7d-4422-a7d7-cc4f8dba524f',
-    value: false,
+    value: true,
     scope: {
-      country: 'France',
-      city: 'Paris',
-      declaration: 'declaration 12345',
-      location: randomLocations[1],
+      country: 'Spain',
+      city: 'Seville'
     },
     evidences: [
       {
-        id: '2cfd4036-22c7-4533-babf-b339f2237acb',
-        key: 'url',
-        value: 'https://github.com/statuscompliance/infrastructure/blob/examples/files/receipts/payment81001.pdf',
+        id: 'e3',
+        key: 'signed_or_reviewed_by_stic',
+        value: true,
         result: true,
-        from: '2023-06-02T09:15:00',
-        to: '2023-06-02T19:45:00'
+        from: '2025-01-02T09:15:00',
+        to: '2025-01-02T19:45:00'
+      },
+      {
+        id: 'e4',
+        key: 'detailed_steps_included',
+        value: true,
+        result: true,
+        from: '2025-01-02T09:15:00',
+        to: '2025-01-02T19:45:00'
       }
     ],
     period: {
-      from: '2025-01-02T00:00:00.000Z',
-      to: '2025-01-02T00:59:59.999Z'
+      from: '2025-09-22T22:00:00.000Z',
+      to: '2025-09-25T22:00:00.000Z'
     },
     controlId: '1234'
   },
@@ -87,54 +96,68 @@ const mockComputations = [
     computationGroup: '8956b9d1-8b7d-4422-a7d7-cc4f8dba525f',
     value: true,
     scope: {
-      country: 'France',
-      city: 'Paris',
-      declaration: 'declaration 67890',
-      location: randomLocations[2],
+      country: 'Spain',
+      city: 'Seville'
     },
     evidences: [
       { 
-        id: '3', 
-        key: 'password_length', 
-        value: 10, 
+        id: 'e5', 
+        key: 'explicit_role_responsibilities', 
+        value: true, 
         result: true,
-        from: '2023-06-03T07:30:00',
-        to: '2023-06-03T16:00:00'
+        from: '2025-01-03T07:30:00',
+        to: '2025-01-03T16:00:00'
+      },
+      {
+        id: 'e6',
+        key: 'guidelines_for_anomaly_reporting',
+        value: true,
+        result: true,
+        from: '2025-01-03T07:30:00',
+        to: '2025-01-03T16:00:00'
       }
     ],
     period: {
-      from: '2025-01-03T00:00:00.000Z',
-      to: '2025-01-03T00:59:59.999Z'
+      from: '2025-09-26T22:00:00.000Z',
+      to: '2025-09-29T22:00:00.000Z'
     },
     controlId: '1234'
   },
   {
     id: '90bf2620-1075-4d00-aead-7e57fe811472',
     computationGroup: '9956b9d1-8b7d-4422-a7d7-cc4f8dba526f',
-    value: false,
+    value: true,
     scope: {
-      country: 'France',
-      city: 'Paris',
-      declaration: 'declaration 54321',
-      location: randomLocations[3],
+      country: 'Spain',
+      city: 'Seville'
     },
     evidences: [
       { 
-        id: '4', 
-        key: 'special_char_present', 
-        value: false, 
-        result: false,
-        from: '2023-06-04T10:00:00',
-        to: '2023-06-04T18:30:00'
+        id: 'e7', 
+        key: 'procedure_formally_documented', 
+        value: true, 
+        result: true,
+        from: '2025-01-04T10:00:00',
+        to: '2025-01-04T18:30:00'
+      },
+      {
+        id: 'e8',
+        key: 'signed_or_reviewed_by_stic',
+        value: true,
+        result: true,
+        from: '2025-01-04T10:00:00',
+        to: '2025-01-04T18:30:00'
       }
     ],
     period: {
-      from: '2025-01-04T00:00:00.000Z',
-      to: '2025-01-04T00:59:59.999Z'
+      from: '2025-09-30T22:00:00.000Z',
+      to: '2025-10-03T22:00:00.000Z'
     },
     controlId: '1234'
   }
 ];
+
+
 
 // Mock scopes data
 const mockAvailableScopes = [
@@ -329,7 +352,7 @@ export function ControlDetails() {
   if (loading) {
     return (
       <Page 
-        className="mx-auto p-4 container space-y-6" 
+        className="container mx-auto p-4 space-y-6" 
         catalogData={catalogData}
       >
         <div className="h-64 flex items-center justify-center">
@@ -342,7 +365,7 @@ export function ControlDetails() {
   if (!control) {
     return (
       <Page 
-        className="mx-auto p-4 container space-y-6" 
+        className="container mx-auto p-4 space-y-6" 
         catalogData={catalogData}
       >
         <div className="h-64 flex items-center justify-center">
@@ -354,7 +377,7 @@ export function ControlDetails() {
 
   return (
     <Page 
-      className="mx-auto p-4 container space-y-6" 
+      className="container mx-auto p-4 space-y-6" 
       catalogData={catalogData} // Pasamos los datos de catálogo al componente Page
     >
       <Card>

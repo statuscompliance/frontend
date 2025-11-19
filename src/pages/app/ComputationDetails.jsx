@@ -25,38 +25,49 @@ const columnHelper = createColumnHelper();
 // Mock evidences if needed when we don't have real data
 const mockEvidences = [
   { 
-    id: 'fbc4c50a-c21a-45f3-87af-27116ac8d56c', 
-    key: 'AND operation', 
-    value: [true, true], 
-    result: true,
-    from: '2025-01-01T01:00:00',
-    to: '2025-01-01T01:59:59'
-  },
-  {
-    id: '2cfd4036-22c7-4533-babf-b339f2237acb',
-    key: 'url',
-    value: 'https://github.com/statuscompliance/infrastructure/blob/examples/files/receipts/payment81001.pdf',
+    id: 'e1', 
+    key: 'procedure_formally_documented', 
+    value: 'Procedure documented in the internal security manual', 
     result: true,
     from: '2025-01-01T01:00:00',
     to: '2025-01-01T01:59:59'
   },
   { 
-    id: '3', 
-    key: 'password_length', 
-    value: 10, 
+    id: 'e2', 
+    key: 'signed_or_reviewed_by_stic', 
+    value: true, // boolean makes sense here
     result: true,
     from: '2025-01-01T01:00:00',
     to: '2025-01-01T01:59:59'
   },
   { 
-    id: '4', 
-    key: 'special_char_present', 
-    value: false, 
-    result: false,
+    id: 'e3', 
+    key: 'detailed_steps_included', 
+    value: 'Steps for procedure clearly described with step-by-step instructions', 
+    result: true,
     from: '2025-01-01T01:00:00',
     to: '2025-01-01T01:59:59'
   },
+  { 
+    id: 'e4', 
+    key: 'assigned_responsible_role', 
+    value: 'Role explicitly assigned to Security Officer', 
+    result: true,
+    from: '2025-01-01T01:00:00',
+    to: '2025-01-01T01:59:59'
+  },
+  { 
+    id: 'e5', 
+    key: 'guidelines_for_anomaly_reporting', 
+    value: 'Procedure includes instructions to report anomalous behavior', 
+    result: true,
+    from: '2025-01-01T01:00:00',
+    to: '2025-01-01T01:59:59'
+  }
 ];
+
+
+
 
 export function ComputationDetails() {
   const params = useParams();
@@ -182,7 +193,7 @@ export function ComputationDetails() {
   if (loading) {
     return (
       <Page 
-        className="mx-auto p-4 container space-y-6" 
+        className="container mx-auto p-4 space-y-6" 
         catalogData={catalogData}
         computationDate={computationDate}
       >
@@ -195,7 +206,7 @@ export function ComputationDetails() {
 
   return (
     <Page 
-      className="mx-auto p-4 container space-y-6" 
+      className="container mx-auto p-4 space-y-6" 
       catalogData={catalogData}
       computationDate={computationDate}
     >

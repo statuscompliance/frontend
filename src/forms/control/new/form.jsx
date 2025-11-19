@@ -18,8 +18,10 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { controlSchema } from './schemas';
+import { saveDraftCatalogId } from '@/utils/draftStorage';
+import { getAllLinkers } from '@/services/linkers';
 
-export function NewControlForm({ catalogId, onClose, onSuccess }) {
+export function NewControlForm({ catalogId, onClose, onSuccess, customSubmit = null }) {
   const [loading, setLoading] = useState(false);
   const [availableScopes, setAvailableScopes] = useState([]);
   const [availableMashups, setAvailableMashups] = useState([]);
@@ -29,6 +31,7 @@ export function NewControlForm({ catalogId, onClose, onSuccess }) {
   const [scopeValue, setScopeValue] = useState('');
   const [selectedParam, setSelectedParam] = useState('');
   const [paramValue, setParamValue] = useState('');
+  const [availableLinkers, setAvailableLinkers] = useState([]);
 
   // Setup form with zod validation
   const form = useForm({
@@ -42,7 +45,8 @@ export function NewControlForm({ catalogId, onClose, onSuccess }) {
       mashupId: '',
       params: {},
       scopes: {},
-      catalogId: catalogId
+      catalogId: catalogId,
+      linkerId: '', // Añadido linkerId
     }
   });
 
@@ -50,6 +54,7 @@ export function NewControlForm({ catalogId, onClose, onSuccess }) {
   const watchMashupId = watch('mashupId');
   const watchParams = watch('params');
   const watchScopes = watch('scopes');
+  const watchLinkerId = form.watch('linkerId');
 
   useEffect(() => {
     // Fetch available scopes for the dropdown
@@ -74,8 +79,20 @@ export function NewControlForm({ catalogId, onClose, onSuccess }) {
       }
     };
 
+    // Fetch available linkers for the dropdown
+    const fetchLinkers = async () => {
+      try {
+        const response = await getAllLinkers();
+        setAvailableLinkers(response);
+      } catch (error) {
+        console.error('Error fetching linkers:', error);
+        toast.error('Failed to fetch available linkers');
+      }
+    };
+
     fetchScopes();
     fetchMashups();
+    fetchLinkers();
   }, []);
 
   // When mashupId changes, fetch the params
@@ -96,7 +113,6 @@ export function NewControlForm({ catalogId, onClose, onSuccess }) {
       const updatedParams = { ...fetchedParams, threshold: '' }; // Add threshold param
       setAvailableParams(updatedParams);
       
-      // Buscar la URL del mashup seleccionado y añadirla como parámetro "endpoint"
       const selectedMashup = availableMashups.find(mashup => mashup.id === flowId);
       if (selectedMashup && selectedMashup.url) {
         const updatedFormParams = { ...getValues('params'), endpoint: selectedMashup.url };
@@ -140,34 +156,63 @@ export function NewControlForm({ catalogId, onClose, onSuccess }) {
     setValue('params', updatedParams);
   };
 
+  useEffect(() => {
+    // Si se proporciona un catalogId, asegúrate de guardarlo
+    if (catalogId) {
+      saveDraftCatalogId(catalogId);
+    }
+  }, [catalogId]);
+
   const onSubmit = async (data) => {
     setLoading(true);
-
+  
     try {
-      // First create the control
-      const createdControl = await createControl(data);
-      
-      // Then create the scope set using the control ID if scopes exist
-      if (Object.keys(data.scopes).length > 0) {
-        const scopeSetData = {
-          controlId: createdControl.id,
-          scopes: data.scopes
-        };
-        
-        await createScopeSet(scopeSetData);
+      // Guardar catalogId si está disponible
+      if (catalogId) {
+        saveDraftCatalogId(catalogId);
+        // Asegúrate de que el control esté asociado al catálogo
+        data.catalogId = catalogId;
       }
-      
-      toast.success('Control created successfully with associated scopes');
-      onSuccess();
+
+      // If customSubmit is provided, use it instead of the default submit behavior
+      if (customSubmit) {
+        const result = await customSubmit(data);
+        onSuccess(result);
+      } else {
+        // Default behavior: create control and scope set
+        const response = await createControl(data);
+        const createdControl = response.data || response;
+        
+        // Then create the scope set using the control ID if scopes exist
+        if (Object.keys(data.scopes).length > 0) {
+          const scopeSetData = {
+            controlId: createdControl.id,
+            scopes: data.scopes
+          };
+          
+          await createScopeSet(scopeSetData);
+        }
+        
+        toast.success('Control created successfully with associated scopes');
+        onSuccess(createdControl);
+      }
     } catch (error) {
       console.error('Error creating control and scopes:', error);
-      const errorMessage = error.response?.data.error || 'Failed to create control and associate scopes';
-      toast.error(errorMessage);
+      // Handle specific error cases
+      if (error.status === 400) {
+        const errorMessage = error.message || 'Validation error in control data';
+        toast.error(errorMessage);
+      } else {
+        const errorMessage = error.response?.data?.msg || 
+                            error.response?.data?.message ||
+                            'Failed to create control and associate scopes';
+        toast.error(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
   };
-  
+
   // Function to format date for display in the calendar field
   const formatDate = (date) => {
     if (!date) return '';
@@ -359,6 +404,35 @@ export function NewControlForm({ catalogId, onClose, onSuccess }) {
               )}
             />
 
+            {/* Nuevo campo para seleccionar Linker */}
+            <FormField
+              control={form.control}
+              name="linkerId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Linker*</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select linker" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent className="max-h-60 overflow-y-auto">
+                      {availableLinkers.map((linker) => (
+                        <SelectItem key={linker.id} value={linker.id}>
+                          {linker.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <div className="space-y-2">
               <FormLabel>Parameters*</FormLabel>
               <div className="flex space-x-2">
@@ -480,6 +554,7 @@ export function NewControlForm({ catalogId, onClose, onSuccess }) {
               <Button
                 type="submit"
                 disabled={loading}
+                variant="destructive"
               >
                 {loading ? 'Creating...' : 'Save'}
               </Button>

@@ -12,6 +12,12 @@ export default [
   { ignores: ['dist', '**/components/ui/**'] },
   unocss,
   {
+    files: ['*.config.{js,cjs,mjs}'],
+    languageOptions: {
+      globals: globals.node,
+    }
+  },
+  {
     files: ['**/*.{js,jsx}'],
     languageOptions: {
       ecmaVersion: 2020,

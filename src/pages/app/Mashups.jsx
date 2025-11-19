@@ -17,7 +17,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Edit, Trash, MoreHorizontal, ChevronDown, Loader2, ExternalLink } from 'lucide-react';
+import { Edit, Trash, MoreHorizontal, ChevronDown, Loader2, ExternalLink, Play } from 'lucide-react';
 import { toast } from 'sonner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import Page from '@/components/basic-page.jsx';
@@ -36,6 +36,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useAuth } from '@/hooks/use-auth';
 import { Link } from 'react-router-dom';
+import { NODERED_BASE_URL } from '@/api/nodeRedClient';
 
 const columnHelper = createColumnHelper();
 
@@ -52,7 +53,6 @@ export function Mashups() {
     numNodes: false,
   });
   const { userData } = useAuth();
-  const nodeRedUrl = import.meta.env.VITE_NODE_RED_URL || 'http://localhost:1880';
 
   // Fetch flows on component mount
   useEffect(() => {
@@ -95,6 +95,15 @@ export function Mashups() {
       setFlowToDelete(null);
     }
   }, [flows, flowToDelete]);
+
+  const handleTest = useCallback(async (flow) => {
+    try {
+      // Implementation for testing the flow would go here
+      toast.success(`Testing flow "${flow.label || 'Untitled Flow'}"`);
+    } catch (err) {
+      toast.error('Failed to test flow: ' + err.message);
+    }
+  }, []);
 
   const columns = useMemo(
     () => [
@@ -162,15 +171,19 @@ export function Mashups() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                <DropdownMenuItem onClick={() => handleTest(flow)} className="">
+                  <Play className="mr-2 h-4 w-4 text-green-600" />
+                  Test
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => window.open(`/red#flow/${flow.id}`, '_blank')}>
                   <Edit className="mr-2 h-4 w-4" />
                   Edit in Node-RED
                 </DropdownMenuItem>
                 <DropdownMenuItem 
                   onClick={() => handleDeleteConfirm(flow)}
-                  className="text-red-600"
+                  className=""
                 >
-                  <Trash className="mr-2 h-4 w-4" />
+                  <Trash className="mr-2 h-4 w-4 text-red-600" />
                   Delete
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -179,7 +192,7 @@ export function Mashups() {
         },
       },
     ],
-    [handleDeleteConfirm, userData.authority]
+    [handleDeleteConfirm, handleTest, userData.authority]
   );
 
   const table = useReactTable({
@@ -245,7 +258,7 @@ export function Mashups() {
         </DropdownMenu>
         <Button 
           className="border-2 border-sidebar-accent bg-sidebar-accent hover:bg-secondary hover:text-sidebar-accent"
-          onClick={() => window.open(nodeRedUrl, '_blank')}
+          onClick={() => window.open(NODERED_BASE_URL, '_blank')}
         >
           <ExternalLink className="mr-2 h-4 w-4" /> Open Node-RED
         </Button>
