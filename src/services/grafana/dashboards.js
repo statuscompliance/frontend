@@ -97,7 +97,76 @@ export const dashboardsService = {
    */
   getPanelQuery: (uid, id) => {
     return apiClient.get(`/grafana/dashboard/${uid}/panel/${id}/query`);
-  }
+  },
+
+  /**
+   * Creates a new template for a dashboard
+   * @param {object} data - Template data
+   * @returns {Promise} - Promise with the created template
+   */
+  createTemplate: (data) => {
+    return apiClient.post('/grafana/dashboard/template', data);
+  },
+
+  /**
+   * Creates a temporary dashboard for panel previewing
+   * @param {object} panelConfig - Configuration for the panel to preview
+   * @param {string} [baseDashboardUid] - Optional UID of a dashboard to clone from
+   * @param {object} [options] - Additional options
+   * @returns {Promise} - Promise with the created temporary dashboard
+   */
+  createTemporaryDashboard: (panelConfig, baseDashboardUid = null, options = {}) => {
+    const data = {
+      panelConfig,
+      isTemporary: true,
+      title: `tmp-${baseDashboardUid}`,
+      baseDashboardUid,
+      timeRange: options.timeRange || { from: 'now-6h', to: 'now' },
+      autoCleanup: options.autoCleanup !== false // Enable automatic cleanup by default
+    };
+    return apiClient.post('/grafana/dashboard/temp', data);
+  },
+
+  /**
+   * Removes a specific panel from a dashboard
+   * @param {string} dashboardUid - Dashboard UID
+   * @param {string|number} panelId - Panel ID
+   * @returns {Promise} - Promise with the response
+   */
+  removePanel: async (dashboardUid, panelId) => {
+    try {
+      // Primero obtenemos el dashboard actual
+      const dashboard = await dashboardsService.getById(dashboardUid);
+      
+      if (!dashboard || !dashboard.dashboard) {
+        throw new Error('Dashboard not found');
+      }
+      
+      // Filtramos los paneles para eliminar el que queremos
+      const currentPanels = dashboard.dashboard.panels || [];
+      const filteredPanels = currentPanels.filter(panel => panel.id !== parseInt(panelId));
+      
+      // Si no se encontró el panel, terminar
+      if (currentPanels.length === filteredPanels.length) {
+        return { success: false, message: 'Panel not found in dashboard' };
+      }
+      
+      // Actualizamos el dashboard con la nueva lista de paneles
+      dashboard.dashboard.panels = filteredPanels;
+      
+      // Enviamos la actualización del dashboard
+      const response = await dashboardsService.update(dashboardUid, {
+        dashboard: dashboard.dashboard,
+        overwrite: true,
+        message: `Removed panel ${panelId}`
+      });
+      
+      return { success: true, data: response };
+    } catch (error) {
+      console.error('Error removing panel:', error);
+      throw error;
+    }
+  },
 };
 
 export default dashboardsService;

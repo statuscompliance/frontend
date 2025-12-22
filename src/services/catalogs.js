@@ -2,10 +2,12 @@ import { apiClient } from '@/api/apiClient';
 
 /**
  * Gets all catalogs
+ * @param {string} [status] - Optional status filter: 'draft' or 'finalized'
  * @returns {Promise} - Promise with the list of catalogs
  */
-export function getAllCatalogs() {
-  return apiClient.get('/catalogs');
+export function getAllCatalogs(statusValue = 'finalized') {
+  const url = `/catalogs${statusValue !== null ? `?status=${encodeURIComponent(statusValue)}` : ''}`;
+  return apiClient.get(url);
 }
 
 /**
@@ -58,4 +60,22 @@ export function getPointsByTpaId(tpaId, from = null, to = null) {
   if (to) params.to = to;
   
   return apiClient.get(`/catalogs/${tpaId}/points`, params);
+}
+
+/**
+ * Creates a new draft catalog
+ * @param {object} catalogData - Catalog data
+ * @returns {Promise} - Promise with the created draft catalog
+ */
+export function createDraftCatalog(catalogData) {
+  return apiClient.post('/catalogs/drafts', catalogData);
+}
+
+/**
+ * Finalizes a draft catalog
+ * @param {string} id - Catalog ID
+ * @returns {Promise} - Promise with the finalized catalog
+ */
+export function finalizeCatalog(id) {
+  return apiClient.patch(`/catalogs/${id}/finalize`);
 }

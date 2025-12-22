@@ -1,4 +1,4 @@
-import {Home, FolderOpen, Shapes, Workflow, FileSliders, ChartNoAxesCombined, ChevronRight, ChevronsUpDown, LogOut, ShieldHalf, SquareAsterisk } from 'lucide-react';
+import {Home, FolderOpen, Shapes, Workflow, FileSliders, ChartNoAxesCombined, ChevronRight, ChevronsUpDown, LogOut, ShieldHalf, SquareAsterisk, Database, Link2 } from 'lucide-react';
 import { Link } from 'react-router';
 import { MoreHorizontal } from 'lucide-react';
 import {
@@ -53,6 +53,16 @@ const data = [
         title: 'Dashboards',
         url: '/app/dashboards',
         icon: ChartNoAxesCombined,
+      },
+      {
+        title: 'Datasources',
+        url: '/app/datasources',
+        icon: Database,
+      },
+      {
+        title: 'Linkers',
+        url: '/app/linkers',
+        icon: Link2,
       },
       {
         title: 'Scopes',
