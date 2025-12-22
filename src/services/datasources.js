@@ -1,86 +1,111 @@
-import { mockDatasources, datasourceTypes } from './mockData';
+import { apiClient } from '@/api/apiClient';
 
-// Simulate API delay
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+const BASE_PATH = '/databinder/ds';
 
+/**
+ * Get all datasources for the authenticated user
+ * @returns {Promise<Array>} Array of datasources (without config field for security)
+ */
 export async function getAllDatasources() {
-  await delay(800);
-  return [...mockDatasources];
+  return apiClient.get(BASE_PATH);
 }
 
+/**
+ * Get a specific datasource by ID with full configuration
+ * @param {string} id - Datasource ID
+ * @returns {Promise<Object>} Datasource object with full config
+ */
 export async function getDatasourceById(id) {
-  await delay(500);
-  const datasource = mockDatasources.find(ds => ds.id === id);
-  if (!datasource) {
-    throw new Error(`Datasource with id ${id} not found`);
-  }
-  return { ...datasource };
+  return apiClient.get(`${BASE_PATH}/${id}`);
 }
 
+/**
+ * Create a new datasource
+ * @param {Object} datasourceData - Datasource configuration
+ * @param {string} datasourceData.name - Name of the datasource
+ * @param {string} datasourceData.definitionId - Type of datasource (rest-api, microsoft-graph, owncloud)
+ * @param {Object} datasourceData.config - Configuration object specific to the datasource type
+ * @param {string} [datasourceData.description] - Optional description
+ * @param {string} [datasourceData.environment] - Environment (dev, staging, production)
+ * @returns {Promise<Object>} Created datasource object
+ */
 export async function createDatasource(datasourceData) {
-  await delay(1000);
-  const newDatasource = {
-    id: Math.random().toString(36).substr(2, 9),
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    status: 'active',
-    connectionStatus: 'connected',
-    lastSyncTime: new Date().toISOString(),
-    ...datasourceData
-  };
-  
-  mockDatasources.push(newDatasource);
-  return { ...newDatasource };
+  return apiClient.post(BASE_PATH, datasourceData);
 }
 
+/**
+ * Update an existing datasource
+ * @param {string} id - Datasource ID
+ * @param {Object} datasourceData - Partial datasource data to update
+ * @returns {Promise<Object>} Updated datasource object
+ */
 export async function updateDatasource(id, datasourceData) {
-  await delay(800);
-  const index = mockDatasources.findIndex(ds => ds.id === id);
-  if (index === -1) {
-    throw new Error(`Datasource with id ${id} not found`);
-  }
-  
-  const updatedDatasource = {
-    ...mockDatasources[index],
-    ...datasourceData,
-    updatedAt: new Date().toISOString()
-  };
-  
-  mockDatasources[index] = updatedDatasource;
-  return { ...updatedDatasource };
+  return apiClient.patch(`${BASE_PATH}/${id}`, datasourceData);
 }
 
+/**
+ * Delete a datasource
+ * @param {string} id - Datasource ID
+ * @returns {Promise<void>}
+ */
 export async function deleteDatasource(id) {
-  await delay(600);
-  const index = mockDatasources.findIndex(ds => ds.id === id);
-  if (index === -1) {
-    throw new Error(`Datasource with id ${id} not found`);
-  }
-  
-  mockDatasources.splice(index, 1);
-  return { success: true };
+  return apiClient.delete(`${BASE_PATH}/${id}`);
 }
 
+/**
+ * Get available datasource type definitions
+ * @returns {Promise<Array>} Array of datasource type definitions
+ */
 export async function getDatasourceTypes() {
-  await delay(500);
-  return [...datasourceTypes];
+  return apiClient.get('/databinder/definitions/available');
 }
 
-export async function testDatasourceConnection(datasourceConfig) {
-  await delay(1500);
-  // Simulate random success/failure for demo purposes
-  const success = Math.random() > 0.2;
-  
-  if (success) {
-    return { 
-      status: 'connected',
-      message: 'Connection successful',
-      details: {
-        connectionTime: new Date().toISOString(),
-        apiVersion: '1.0'
-      }
-    };
-  } else {
-    throw new Error('Connection failed. Please check your credentials and try again.');
-  }
+/**
+ * Test datasource connection
+ * @param {string} id - Datasource ID
+ * @returns {Promise<Object>} Test result with status, message, and details
+ */
+export async function testDatasourceConnection(id) {
+  return apiClient.post(`${BASE_PATH}/${id}/test`);
+}
+
+/**
+ * Get available methods for a datasource
+ * @param {string} id - Datasource ID
+ * @returns {Promise<Object>} Available methods for the datasource
+ */
+export async function getDatasourceMethods(id) {
+  return apiClient.get(`${BASE_PATH}/${id}/methods`);
+}
+
+/**
+ * Get details of a specific method from a datasource
+ * @param {string} id - Datasource ID
+ * @param {string} methodName - Method name to get details for
+ * @returns {Promise<Object>} Method information including parameters and description
+ */
+export async function getDatasourceMethodDetails(id, methodName) {
+  return apiClient.get(`${BASE_PATH}/${id}/methods/${methodName}`);
+}
+
+/**
+ * Get details of all available methods for a datasource
+ * @param {string} id - Datasource ID
+ * @returns {Promise<Object>} All methods information with parameters and descriptions
+ */
+export async function getAllDatasourceMethods(id) {
+  return apiClient.get(`${BASE_PATH}/${id}/methods/all`);
+}
+
+/**
+ * Fetch data from a datasource using a specific method
+ * @param {string} id - Datasource ID
+ * @param {Object} fetchParams - Fetch parameters
+ * @param {string} [fetchParams.methodName] - Optional method to execute (defaults to 'default')
+ * @param {Object} [fetchParams.params] - Method parameters
+ * @param {Object} [fetchParams.propertyMapping] - Optional property mapping for transformation
+ * @returns {Promise<Object>} Fetched data with metadata
+ */
+export async function fetchDatasourceData(id, fetchParams) {
+  return apiClient.post(`${BASE_PATH}/${id}/fetch`, fetchParams);
 }

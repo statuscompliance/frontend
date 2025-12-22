@@ -36,6 +36,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useAuth } from '@/hooks/use-auth';
+import { useStorage } from '@/hooks/use-storage';
 
 const columnHelper = createColumnHelper();
 
@@ -47,6 +48,16 @@ export function Linkers() {
   const [linkerToDelete, setLinkerToDelete] = useState(null);
   const [globalFilter, setGlobalFilter] = useState('');
   const [rowSelection, setRowSelection] = useState({});
+  const [columnVisibility, setColumnVisibility] = useStorage('linkers-column-visibility', {
+    defaultValue: {
+      description: false,
+      environment: false,
+      executionStatus: false,
+      cacheStatus: false,
+      version: false,
+      updatedAt: false,
+    },
+  });
   const navigate = useNavigate();
   const { userData } = useAuth();
 
@@ -76,6 +87,10 @@ export function Linkers() {
 
   const handleNew = useCallback(() => {
     navigate('/app/linkers/new');
+  }, [navigate]);
+
+  const handleView = useCallback((linker) => {
+    navigate(`/app/linkers/${linker.id}`);
   }, [navigate]);
 
   const handleEdit = useCallback((linker) => {
@@ -148,28 +163,53 @@ export function Linkers() {
     return (
       <div className="flex flex-wrap gap-1">
         {datasourceIds.slice(0, 2).map(id => (
-          <Badge key={id} variant="outline" className="whitespace-nowrap">
+          <Badge key={id} variant="outline" className="whitespace-nowrap text-xs">
             {getDatasourceName(id)}
           </Badge>
         ))}
         {datasourceIds.length > 2 && (
-          <Badge variant="outline" className="whitespace-nowrap">
+          <Badge variant="outline" className="whitespace-nowrap text-xs">
             +{datasourceIds.length - 2} more
           </Badge>
         )}
       </div>
     );
   };
-
-  const getStatusBadge = (status) => {
+  
+  const getExecutionStatusBadge = (status) => {
     switch (status) {
-    case 'active':
-      return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Active</Badge>;
-    case 'inactive':
-      return <Badge variant="outline" className="bg-gray-100 text-gray-800 hover:bg-gray-100">Inactive</Badge>;
+    case 'success':
+      return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Success</Badge>;
+    case 'failure':
+      return <Badge variant="destructive">Failed</Badge>;
+    case 'pending':
+      return <Badge variant="outline" className="bg-yellow-100 text-yellow-800">Pending</Badge>;
+    case 'not_executed':
     default:
-      return <Badge variant="outline">{status}</Badge>;
+      return <Badge variant="outline" className="bg-gray-100 text-gray-800">Not Executed</Badge>;
     }
+  };
+  
+  const getCacheStatusBadge = (status) => {
+    switch (status) {
+    case 'fresh':
+      return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">Fresh</Badge>;
+    case 'stale':
+      return <Badge variant="outline" className="bg-orange-100 text-orange-800">Stale</Badge>;
+    case 'expired':
+      return <Badge variant="outline" className="bg-red-100 text-red-800">Expired</Badge>;
+    case 'none':
+    default:
+      return <Badge variant="outline" className="bg-gray-100 text-gray-800">No Cache</Badge>;
+    }
+  };
+
+  const getStatusBadge = (isActive) => {
+    return isActive ? (
+      <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Active</Badge>
+    ) : (
+      <Badge variant="outline" className="bg-gray-100 text-gray-800 hover:bg-gray-100">Inactive</Badge>
+    );
   };
 
   const columns = useMemo(
@@ -197,33 +237,74 @@ export function Linkers() {
       },
       columnHelper.accessor('name', {
         header: 'Name',
-        cell: (info) => info.getValue(),
+        cell: (info) => info.getValue() || <span className="text-gray-400 italic">Unnamed Linker</span>,
       }),
       columnHelper.accessor('description', {
         header: 'Description',
-        cell: (info) => info.getValue() || 'No description',
+        cell: (info) => info.getValue() || '-',
+        enableHiding: true,
       }),
-      columnHelper.accessor('datasources', {
+      columnHelper.accessor('datasourceIds', {
         header: 'Datasources',
         cell: (info) => renderDatasourcesList(info.getValue()),
+        enableHiding: true,
       }),
-      columnHelper.accessor('status', {
+      columnHelper.accessor('environment', {
+        header: 'Environment',
+        cell: (info) => {
+          const env = info.getValue();
+          if (!env) return '-';
+          const envColors = {
+            production: 'bg-red-100 text-red-800',
+            staging: 'bg-yellow-100 text-yellow-800',
+            dev: 'bg-blue-100 text-blue-800'
+          };
+          return <Badge className={envColors[env] || 'bg-gray-100 text-gray-800'}>{env}</Badge>;
+        },
+        enableHiding: true,
+      }),
+      columnHelper.accessor('isActive', {
         header: 'Status',
         cell: (info) => getStatusBadge(info.getValue()),
+        enableHiding: true,
       }),
-      columnHelper.accessor('config.refreshInterval', {
-        header: 'Refresh Interval',
-        cell: (info) => info.getValue() || '-',
+      columnHelper.accessor('executionStatus', {
+        header: 'Execution',
+        cell: (info) => getExecutionStatusBadge(info.getValue()),
+        enableHiding: true,
+      }),
+      columnHelper.accessor('cacheStatus', {
+        header: 'Cache',
+        cell: (info) => getCacheStatusBadge(info.getValue()),
+        enableHiding: true,
+      }),
+      columnHelper.accessor('version', {
+        header: 'Version',
+        cell: (info) => `v${info.getValue()}`,
+        enableHiding: true,
       }),
       columnHelper.accessor('updatedAt', {
         header: 'Last Updated',
         cell: (info) => formatDate(info.getValue()),
+        enableHiding: true,
       }),
       {
         id: 'actions',
         cell: ({ row }) => {
           const linker = row.original;
-          return userData.authority === 'USER' ? null : (
+          return userData.authority === 'USER' ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleView(linker);
+              }}
+            >
+              <LinkIcon className="h-4 w-4" />
+              <span className="ml-2">View</span>
+            </Button>
+          ) : (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="h-8 w-8 p-0">
@@ -259,9 +340,11 @@ export function Linkers() {
     state: {
       globalFilter,
       rowSelection,
+      columnVisibility,
     },
     onGlobalFilterChange: setGlobalFilter,
     onRowSelectionChange: setRowSelection,
+    onColumnVisibilityChange: setColumnVisibility,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -334,7 +417,7 @@ export function Linkers() {
         </div>
       )}
       
-      <div className="mt-4 border rounded-md">
+      <div className="mt-4 border rounded-md overflow-x-auto">
         <Table>
           <TableHeader className="bg-gray-50">
             {table.getHeaderGroups().map((headerGroup) => (
@@ -361,7 +444,7 @@ export function Linkers() {
             
             {!loading && table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow className="cursor-pointer text-left hover:bg-gray-50" key={row.id} data-state={row.getIsSelected() && 'selected'} onClick={() => userData.authority !== 'USER' && handleEdit(row.original)}>
+                <TableRow className="cursor-pointer text-left hover:bg-gray-50" key={row.id} data-state={row.getIsSelected() && 'selected'} onClick={() => handleView(row.original)}>
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id} onClick={(e) => cell.column.id === 'select' && e.stopPropagation()}>
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}

@@ -42,9 +42,11 @@ export function DatasourceEdit() {
   const [activeTab, setActiveTab] = useState('details');
   const [formData, setFormData] = useState({
     name: '',
-    type: '',
+    definitionId: '',
     description: '',
-    configuration: {}
+    environment: 'dev',
+    config: {},
+    isActive: true
   });
   const [errors, setErrors] = useState({});
 
@@ -62,15 +64,16 @@ export function DatasourceEdit() {
         const datasource = await getDatasourceById(id);
         setFormData({
           name: datasource.name || '',
-          type: datasource.type || '',
+          definitionId: datasource.definitionId || '',
           description: datasource.description || '',
-          configuration: datasource.configuration || {},
-          status: datasource.status || 'active'
+          environment: datasource.environment || 'dev',
+          config: datasource.config || {},
+          isActive: datasource.isActive !== undefined ? datasource.isActive : true
         });
         
-        // Establecer el estado de conexión basado en los datos del datasource
-        setConnectionStatus(datasource.connectionStatus === 'connected' ? 'success' : 
-          datasource.connectionStatus === 'error' ? 'error' : null);
+        // Establecer el estado de prueba basado en los datos del datasource
+        setConnectionStatus(datasource.testStatus === 'success' ? 'success' : 
+          datasource.testStatus === 'failure' ? 'error' : null);
       } catch (err) {
         toast.error('Failed to load datasource');
         console.error('Error loading datasource:', err);
@@ -102,8 +105,8 @@ export function DatasourceEdit() {
   const handleConfigChange = (field, value) => {
     setFormData({
       ...formData,
-      configuration: {
-        ...formData.configuration,
+      config: {
+        ...formData.config,
         [field]: value
       }
     });
@@ -124,19 +127,15 @@ export function DatasourceEdit() {
       newErrors.name = 'Name is required';
     }
     
-    if (!formData.type) {
-      newErrors.type = 'Datasource type is required';
+    if (!formData.definitionId) {
+      newErrors.definitionId = 'Datasource type is required';
     }
     
-    if (!formData.description.trim()) {
-      newErrors.description = 'Description is required';
-    }
-    
-    const selectedTypeData = datasourceTypes.find(type => type.id === formData.type);
+    const selectedTypeData = datasourceTypes.find(type => type.id === formData.definitionId);
     if (selectedTypeData) {
       // Validate required auth fields
-      selectedTypeData.authFields.forEach(field => {
-        if (field.required && !formData.configuration[field.name]) {
+      selectedTypeData.authFields?.forEach(field => {
+        if (field.required && !formData.config[field.name]) {
           newErrors[`config.${field.name}`] = `${field.label} is required`;
         }
       });
@@ -144,7 +143,7 @@ export function DatasourceEdit() {
       // Validate required config fields
       if (selectedTypeData.configFields) {
         selectedTypeData.configFields.forEach(field => {
-          if (field.required && !formData.configuration[field.name]) {
+          if (field.required && !formData.config[field.name]) {
             newErrors[`config.${field.name}`] = `${field.label} is required`;
           }
         });
@@ -156,19 +155,14 @@ export function DatasourceEdit() {
   };
 
   const handleTestConnection = async () => {
-    if (!validateForm()) {
-      toast.error('Please fill all required fields');
-      return;
-    }
-    
     try {
       setTestingConnection(true);
-      await testDatasourceConnection(formData.configuration);
-      setConnectionStatus('success');
-      toast.success('Connection test successful');
+      const result = await testDatasourceConnection(id);
+      setConnectionStatus(result.testStatus === 'success' ? 'success' : 'error');
+      toast.success(result.message || 'Connection test completed');
     } catch (err) {
       setConnectionStatus('error');
-      toast.error('Connection test failed');
+      toast.error(err.message || 'Connection test failed');
       console.error('Error testing connection:', err);
     } finally {
       setTestingConnection(false);
@@ -206,7 +200,7 @@ export function DatasourceEdit() {
   };
 
   const renderAuthFields = () => {
-    const selectedTypeData = datasourceTypes.find(type => type.id === formData.type);
+    const selectedTypeData = datasourceTypes.find(type => type.id === formData.definitionId);
     if (!selectedTypeData) return null;
     
     return (
@@ -224,7 +218,7 @@ export function DatasourceEdit() {
               <Input
                 id={field.name}
                 type={field.type}
-                value={formData.configuration[field.name] || ''}
+                value={formData.config[field.name] || ''}
                 onChange={(e) => handleConfigChange(field.name, e.target.value)}
                 placeholder={`Enter ${field.label.toLowerCase()}`}
                 className={errors[`config.${field.name}`] ? 'border-red-500' : ''}
@@ -234,8 +228,8 @@ export function DatasourceEdit() {
                 id={field.name}
                 type="text"
                 value={
-                  Array.isArray(formData.configuration[field.name])
-                    ? formData.configuration[field.name].join(', ')
+                  Array.isArray(formData.config[field.name])
+                    ? formData.config[field.name].join(', ')
                     : ''
                 }
                 onChange={(e) => handleConfigChange(field.name, e.target.value.split(',').map(s => s.trim()))}
@@ -244,7 +238,7 @@ export function DatasourceEdit() {
               />
             ) : field.type === 'select' ? (
               <Select
-                value={formData.configuration[field.name] || ''}
+                value={formData.config[field.name] || ''}
                 onValueChange={(value) => handleConfigChange(field.name, value)}
               >
                 <SelectTrigger className={errors[`config.${field.name}`] ? 'border-red-500' : ''}>
@@ -333,14 +327,14 @@ export function DatasourceEdit() {
               <Input
                 id={field.name}
                 type="text"
-                value={formData.configuration[field.name] || field.default || ''}
+                value={formData.config[field.name] || field.default || ''}
                 onChange={(e) => handleConfigChange(field.name, e.target.value)}
                 placeholder={`Enter ${field.label.toLowerCase()}`}
                 className={errors[`config.${field.name}`] ? 'border-red-500' : ''}
               />
             ) : field.type === 'select' ? (
               <Select
-                value={formData.configuration[field.name] || field.default || ''}
+                value={formData.config[field.name] || field.default || ''}
                 onValueChange={(value) => handleConfigChange(field.name, value)}
               >
                 <SelectTrigger className={errors[`config.${field.name}`] ? 'border-red-500' : ''}>
@@ -358,8 +352,8 @@ export function DatasourceEdit() {
               <div>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {field.options.map((option) => {
-                    const isSelected = Array.isArray(formData.configuration[field.name]) && 
-                                      formData.configuration[field.name].includes(option);
+                    const isSelected = Array.isArray(formData.config[field.name]) && 
+                                      formData.config[field.name].includes(option);
                     
                     return (
                       <Badge
@@ -367,8 +361,8 @@ export function DatasourceEdit() {
                         variant={isSelected ? 'default' : 'outline'}
                         className="cursor-pointer"
                         onClick={() => {
-                          const currentValues = Array.isArray(formData.configuration[field.name]) 
-                            ? [...formData.configuration[field.name]] 
+                          const currentValues = Array.isArray(formData.config[field.name]) 
+                            ? [...formData.config[field.name]] 
                             : [];
                           
                           if (isSelected) {
@@ -476,25 +470,14 @@ export function DatasourceEdit() {
                 </div>
                 
                 <div>
-                  <Label htmlFor="type" className="mb-1 block">
+                  <Label htmlFor="definitionId" className="mb-1 block">
                     Datasource Type <span className="text-red-500">*</span>
                   </Label>
                   <Select
-                    value={formData.type}
-                    onValueChange={(value) => {
-                      // Cambiar el tipo resetea la configuración
-                      if (value !== formData.type) {
-                        setFormData({
-                          ...formData,
-                          type: value,
-                          configuration: {}
-                        });
-                        setConnectionStatus(null);
-                      }
-                    }}
-                    disabled={true} // No permitir cambiar el tipo en la edición
+                    value={formData.definitionId}
+                    disabled={true}
                   >
-                    <SelectTrigger className={errors.type ? 'border-red-500' : ''}>
+                    <SelectTrigger className={errors.definitionId ? 'border-red-500' : ''}>
                       <SelectValue placeholder="Select datasource type" />
                     </SelectTrigger>
                     <SelectContent>
@@ -505,19 +488,51 @@ export function DatasourceEdit() {
                       ))}
                     </SelectContent>
                   </Select>
-                  {errors.type && <p className="mt-1 text-sm text-red-500">{errors.type}</p>}
+                  {errors.definitionId && <p className="mt-1 text-sm text-red-500">{errors.definitionId}</p>}
                   <p className="mt-1 text-xs text-gray-500">
                     The datasource type cannot be changed after creation.
                   </p>
                 </div>
                 
-                {formData.type && (
+                <div>
+                  <Label htmlFor="environment" className="mb-1 block">
+                    Environment
+                  </Label>
+                  <Select
+                    value={formData.environment}
+                    onValueChange={(value) => setFormData({ ...formData, environment: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select environment" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="dev">Development</SelectItem>
+                      <SelectItem value="staging">Staging</SelectItem>
+                      <SelectItem value="production">Production</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="isActive"
+                    checked={formData.isActive}
+                    onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                    className="h-4 w-4"
+                  />
+                  <Label htmlFor="isActive" className="cursor-pointer">
+                    Active
+                  </Label>
+                </div>
+                
+                {formData.definitionId && (
                   <div>
                     <div className="mb-2 mt-4">
                       <div className="flex flex-wrap gap-2">
                         {datasourceTypes
-                          .find(type => type.id === formData.type)
-                          ?.complianceStandards.map(standard => (
+                          .find(type => type.id === formData.definitionId)
+                          ?.complianceStandards?.map(standard => (
                             <Badge key={standard} variant="secondary">{standard}</Badge>
                           ))}
                       </div>

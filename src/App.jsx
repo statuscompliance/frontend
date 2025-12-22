@@ -19,9 +19,11 @@ import { FolderDetails } from '@/pages/app/dashboard/FolderDetails';
 import { Editor } from '@/pages/app/Editor';
 import { Datasources } from '@/pages/app/datasource/Datasources';
 import { DatasourceCreate } from '@/pages/app/datasource/DatasourceCreate';
+import { DatasourceDetail } from '@/pages/app/datasource/DatasourceDetail';
 import { DatasourceEdit } from '@/pages/app/datasource/DatasourceEdit';
 import { Linkers } from '@/pages/app/linker/Linkers';
 import { LinkerCreate } from '@/pages/app/linker/LinkerCreate';
+import { LinkerDetail } from '@/pages/app/linker/LinkerDetail';
 import { LinkerEdit } from '@/pages/app/linker/LinkerEdit';
 import MainLayout from '@/layouts/MainLayout';
 import AppLayout from '@/layouts/AppLayout';
@@ -72,11 +74,13 @@ function App() {
               <Route path="datasources">
                 <Route index element={<Datasources />} />
                 <Route path="new" element={<DatasourceCreate />} />
+                <Route path=":id" element={<DatasourceDetail />} />
                 <Route path=":id/edit" element={<DatasourceEdit />} />
               </Route>
               <Route path="linkers">
                 <Route index element={<Linkers />} />
                 <Route path="new" element={<LinkerCreate />} />
+                <Route path=":id" element={<LinkerDetail />} />
                 <Route path=":id/edit" element={<LinkerEdit />} />
               </Route>
               <Route path="scopes" element={<Scopes />} />

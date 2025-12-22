@@ -17,6 +17,14 @@ function generateBreadcrumbs(path, additionalData = {}) {
     const isCatalogId = segments[index-1] === 'catalogs' && !isNaN(segment);
     const catalogData = isCatalogId && additionalData.catalogData ? additionalData.catalogData : null;
     
+    // Detect if it's a datasource ID and if we have data for it
+    const isDatasourceId = segments[index-1] === 'datasources' && additionalData.datasource;
+    const datasourceData = isDatasourceId ? additionalData.datasource : null;
+    
+    // Detect if it's a linker ID and if we have data for it
+    const isLinkerId = segments[index-1] === 'linkers' && additionalData.linker;
+    const linkerData = isLinkerId ? additionalData.linker : null;
+    
     // Detect if we are in the control details view
     const isControlView = segments[index-1] === 'controls' && additionalData.control;
     
@@ -38,6 +46,10 @@ function generateBreadcrumbs(path, additionalData = {}) {
       name = 'Home';
     } else if (catalogData && isCatalogId) {
       name = catalogData.name || segment;
+    } else if (datasourceData && isDatasourceId) {
+      name = datasourceData.name || segment;
+    } else if (linkerData && isLinkerId) {
+      name = linkerData.name || 'Unnamed Linker';
     } else if (segment === 'controls') {
       const catalogHref = '/' + segments.slice(0, index).join('/');
       return { name: 'Controls', href: catalogHref, isLast, state: additionalData };
@@ -66,7 +78,7 @@ function generateBreadcrumbs(path, additionalData = {}) {
       href, 
       isLast,
       isClickable,
-      state: (segments[index-1] === 'catalogs' || segments[index] === 'catalogs' || isFolder || isDashboard || isEditor) ? additionalData : null,
+      state: (segments[index-1] === 'catalogs' || segments[index] === 'catalogs' || segments[index-1] === 'datasources' || segments[index] === 'datasources' || segments[index-1] === 'linkers' || segments[index] === 'linkers' || isFolder || isDashboard || isEditor) ? additionalData : null,
       uniqueKey: segments.slice(0, index + 1).join('/')
     };
   }).filter(crumb => crumb.name !== 'Home' || crumb.isLast);
@@ -80,6 +92,8 @@ export default function Page({ children, ...props }) {
   const controlData = props.control || location.state?.control;
   const folderData = props.folder || location.state?.folder;
   const dashboardData = props.dashboard || location.state?.dashboard;
+  const datasourceData = props.datasource || location.state?.datasource;
+  const linkerData = props.linker || location.state?.linker;
   const flowName = props.flowName || location.state?.flowName;
   const computationDate = props.computationDate || location.state?.computationDate;
   
@@ -88,6 +102,8 @@ export default function Page({ children, ...props }) {
     control: controlData, 
     folderData, 
     dashboardData, 
+    datasource: datasourceData,
+    linker: linkerData,
     flowName, 
     computationDate 
   };
@@ -96,7 +112,7 @@ export default function Page({ children, ...props }) {
 
   return (
     <div className="h-full space-y-8">
-      <header className="group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12 h-16 flex shrink-0 items-center gap-2 transition-[width,height] ease-linear">
+      <header className="h-16 flex shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
         <div className="flex items-center gap-2">
           <TooltipProvider>
             <Tooltip>

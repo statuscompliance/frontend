@@ -18,9 +18,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { Edit, Trash, MoreHorizontal, ChevronDown, Plus, Loader2, ExternalLink, RefreshCw } from 'lucide-react';
+import { Edit, Trash, MoreHorizontal, ChevronDown, Plus, Loader2, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import Page from '@/components/basic-page.jsx';
 import { 
@@ -39,6 +39,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useAuth } from '@/hooks/use-auth';
+import { useStorage } from '@/hooks/use-storage';
 
 const columnHelper = createColumnHelper();
 
@@ -49,6 +50,15 @@ export function Datasources() {
   const [datasourceToDelete, setDatasourceToDelete] = useState(null);
   const [globalFilter, setGlobalFilter] = useState('');
   const [rowSelection, setRowSelection] = useState({});
+  const [columnVisibility, setColumnVisibility] = useStorage('datasources-column-visibility', {
+    defaultValue: {
+      description: false,
+      environment: false,
+      testStatus: false,
+      version: false,
+      updatedAt: false,
+    },
+  });
   const [testingConnection, setTestingConnection] = useState(null);
   const navigate = useNavigate();
   const { userData } = useAuth();
@@ -77,13 +87,13 @@ export function Datasources() {
     navigate('/app/datasources/new');
   }, [navigate]);
 
+  const handleView = useCallback((datasource) => {
+    navigate(`/app/datasources/${datasource.id}`);
+  }, [navigate]);
+
   const handleEdit = useCallback((datasource) => {
     navigate(`/app/datasources/${datasource.id}/edit`);
   }, [navigate]);
-
-  const handleDeleteConfirm = useCallback((datasource) => {
-    setDatasourceToDelete(datasource);
-  }, []);
 
   const handleDelete = useCallback(async () => {
     if (!datasourceToDelete) return;
@@ -133,29 +143,29 @@ export function Datasources() {
   const handleTestConnection = useCallback(async (datasource) => {
     try {
       setTestingConnection(datasource.id);
-      await testDatasourceConnection(datasource.configuration);
+      const result = await testDatasourceConnection(datasource.id);
       
-      // Update the datasource status in the local state
+      // Update the datasource status based on test result
       setDatasources(prevDatasources => 
         prevDatasources.map(ds => 
           ds.id === datasource.id 
-            ? { ...ds, connectionStatus: 'connected', lastSyncTime: new Date().toISOString() } 
+            ? { ...ds, testStatus: result.testStatus, lastTestTime: result.lastTestTime } 
             : ds
         )
       );
       
-      toast.success('Connection test successful');
+      toast.success(result.message || 'Connection test successful');
     } catch (err) {
-      // Update the datasource status to error
+      // Update the datasource status to failure
       setDatasources(prevDatasources => 
         prevDatasources.map(ds => 
           ds.id === datasource.id 
-            ? { ...ds, connectionStatus: 'error' } 
+            ? { ...ds, testStatus: 'failure' } 
             : ds
         )
       );
       
-      toast.error('Connection test failed');
+      toast.error(err.message || 'Connection test failed');
       console.error('Error testing connection:', err);
     } finally {
       setTestingConnection(null);
@@ -168,38 +178,35 @@ export function Datasources() {
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  const getDatasourceTypeLabel = (type) => {
+  const getDatasourceTypeLabel = (definitionId) => {
     const typeMap = {
+      'rest-api': 'REST API',
       'microsoft-graph': 'Microsoft Graph',
-      'github-api': 'GitHub API',
-      'azure-security-center': 'Azure Security Center',
-      'aws-security-hub': 'AWS Security Hub',
-      'gdpr-assessment-tool': 'GDPR Assessment',
-      'iso27001-tracker': 'ISO 27001 Tracker'
+      'owncloud': 'OwnCloud'
     };
     
-    return typeMap[type] || type;
+    return typeMap[definitionId] || definitionId;
   };
 
-  const getStatusBadge = (status) => {
-    switch (status) {
-    case 'active':
-      return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Active</Badge>;
-    case 'inactive':
-      return <Badge variant="outline" className="bg-gray-100 text-gray-800 hover:bg-gray-100">Inactive</Badge>;
-    default:
-      return <Badge variant="outline">{status}</Badge>;
-    }
+  const getStatusBadge = (isActive) => {
+    return isActive ? (
+      <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Active</Badge>
+    ) : (
+      <Badge variant="outline" className="bg-gray-100 text-gray-800 hover:bg-gray-100">Inactive</Badge>
+    );
   };
 
-  const getConnectionStatusBadge = (status) => {
-    switch (status) {
-    case 'connected':
-      return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Connected</Badge>;
-    case 'error':
-      return <Badge variant="destructive">Error</Badge>;
+  const getTestStatusBadge = (testStatus) => {
+    switch (testStatus) {
+    case 'success':
+      return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Success</Badge>;
+    case 'failure':
+      return <Badge variant="destructive">Failed</Badge>;
+    case 'pending':
+      return <Badge variant="outline" className="bg-yellow-100 text-yellow-800">Pending</Badge>;
+    case 'not_tested':
     default:
-      return <Badge variant="outline">{status}</Badge>;
+      return <Badge variant="outline" className="bg-gray-100 text-gray-800">Not Tested</Badge>;
     }
   };
 
@@ -230,25 +237,48 @@ export function Datasources() {
         header: 'Name',
         cell: (info) => info.getValue(),
       }),
-      columnHelper.accessor('type', {
+      columnHelper.accessor('definitionId', {
         header: 'Type',
         cell: (info) => getDatasourceTypeLabel(info.getValue()),
       }),
       columnHelper.accessor('description', {
         header: 'Description',
-        cell: (info) => info.getValue() || 'No description',
+        cell: (info) => info.getValue() || '-',
+        enableHiding: true,
       }),
-      columnHelper.accessor('status', {
+      columnHelper.accessor('environment', {
+        header: 'Environment',
+        cell: (info) => {
+          const env = info.getValue();
+          if (!env) return '-';
+          const envColors = {
+            production: 'bg-red-100 text-red-800',
+            staging: 'bg-yellow-100 text-yellow-800',
+            dev: 'bg-blue-100 text-blue-800'
+          };
+          return <Badge className={envColors[env] || 'bg-gray-100 text-gray-800'}>{env}</Badge>;
+        },
+        enableHiding: true,
+      }),
+      columnHelper.accessor('isActive', {
         header: 'Status',
         cell: (info) => getStatusBadge(info.getValue()),
+        enableHiding: true,
       }),
-      columnHelper.accessor('connectionStatus', {
-        header: 'Connection',
-        cell: (info) => getConnectionStatusBadge(info.getValue()),
+      columnHelper.accessor('testStatus', {
+        header: 'Test Status',
+        cell: (info) => getTestStatusBadge(info.getValue()),
+        enableHiding: true,
       }),
-      columnHelper.accessor('lastSyncTime', {
-        header: 'Last Sync',
+      columnHelper.accessor('version', {
+        header: 'Version',
+        cell: (info) => `v${info.getValue()}`,
+        enableHiding: true,
+      }),
+      columnHelper.accessor('updatedAt', {
+        header: 'Last Updated',
         cell: (info) => formatDate(info.getValue()),
+        enableHiding: true,
       }),
       {
         id: 'actions',
@@ -299,20 +329,13 @@ export function Datasources() {
                   <Edit className="mr-2 h-4 w-4" />
                   Edit
                 </DropdownMenuItem>
-                <DropdownMenuItem 
-                  onClick={() => handleDeleteConfirm(datasource)}
-                  className="text-red-600"
-                >
-                  <Trash className="mr-2 h-4 w-4" />
-                  Delete
-                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           );
         },
       },
     ],
-    [handleDeleteConfirm, handleEdit, userData.authority, testingConnection, handleTestConnection]
+    [handleEdit, userData.authority, testingConnection, handleTestConnection]
   );
 
   const table = useReactTable({
@@ -321,9 +344,11 @@ export function Datasources() {
     state: {
       globalFilter,
       rowSelection,
+      columnVisibility,
     },
     onGlobalFilterChange: setGlobalFilter,
     onRowSelectionChange: setRowSelection,
+    onColumnVisibilityChange: setColumnVisibility,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -396,7 +421,7 @@ export function Datasources() {
         </div>
       )}
       
-      <div className="mt-4 border rounded-md">
+      <div className="mt-4 border rounded-md overflow-x-auto">
         <Table>
           <TableHeader className="bg-gray-50">
             {table.getHeaderGroups().map((headerGroup) => (
@@ -423,7 +448,7 @@ export function Datasources() {
             
             {!loading && table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow className="cursor-pointer text-left hover:bg-gray-50" key={row.id} data-state={row.getIsSelected() && 'selected'} onClick={() => userData.authority !== 'USER' && handleEdit(row.original)}>
+                <TableRow className="cursor-pointer text-left hover:bg-gray-50" key={row.id} data-state={row.getIsSelected() && 'selected'} onClick={() => handleView(row.original)}>
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id} onClick={(e) => cell.column.id === 'select' && e.stopPropagation()}>
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}

@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
 import Page from '@/components/basic-page.jsx';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import {
   Select,
   SelectContent,
@@ -22,7 +25,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Loader2, Save, Database, Shield, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Save } from 'lucide-react';
 import {
   Tabs,
   TabsContent,
@@ -30,6 +33,7 @@ import {
   TabsTrigger,
 } from '@/components/ui/tabs';
 import { createDatasource, getDatasourceTypes, testDatasourceConnection } from '@/services/datasources';
+import { datasourceFormSchema } from '@/forms/datasource/schemas';
 
 export function DatasourceCreate() {
   const navigate = useNavigate();
@@ -39,13 +43,22 @@ export function DatasourceCreate() {
   const [connectionStatus, setConnectionStatus] = useState(null);
   const [activeTab, setActiveTab] = useState('details');
   const [selectedType, setSelectedType] = useState('');
-  const [formData, setFormData] = useState({
-    name: '',
-    type: '',
-    description: '',
-    configuration: {}
+  
+  const form = useForm({
+    resolver: zodResolver(datasourceFormSchema),
+    defaultValues: {
+      name: '',
+      description: '',
+      definitionId: '',
+      environment: 'dev',
+      config: {
+        baseUrl: '',
+        username: '',
+        password: '',
+        timeout: 30000,
+      }
+    },
   });
-  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     async function fetchDatasourceTypes() {
@@ -63,122 +76,56 @@ export function DatasourceCreate() {
 
   const handleTypeChange = (value) => {
     setSelectedType(value);
-    setFormData({
-      ...formData,
-      type: value,
-      // Reset configuration when type changes
-      configuration: {}
-    });
+    form.setValue('definitionId', value);
     setConnectionStatus(null);
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value
-    });
-    
-    // Clear error for this field
-    if (errors[name]) {
-      setErrors({
-        ...errors,
-        [name]: ''
-      });
-    }
-  };
-
-  const handleConfigChange = (field, value) => {
-    setFormData({
-      ...formData,
-      configuration: {
-        ...formData.configuration,
-        [field]: value
-      }
-    });
-    
-    // Clear error for this field
-    if (errors[`config.${field}`]) {
-      setErrors({
-        ...errors,
-        [`config.${field}`]: ''
-      });
-    }
-  };
-
-  const validateForm = () => {
-    const newErrors = {};
-    
-    if (!formData.name.trim()) {
-      newErrors.name = 'Name is required';
-    }
-    
-    if (!formData.type) {
-      newErrors.type = 'Datasource type is required';
-    }
-    
-    if (!formData.description.trim()) {
-      newErrors.description = 'Description is required';
-    }
-    
-    const selectedTypeData = datasourceTypes.find(type => type.id === formData.type);
-    if (selectedTypeData) {
-      // Validate required auth fields
-      selectedTypeData.authFields.forEach(field => {
-        if (field.required && !formData.configuration[field.name]) {
-          newErrors[`config.${field.name}`] = `${field.label} is required`;
-        }
-      });
-      
-      // Validate required config fields
-      if (selectedTypeData.configFields) {
-        selectedTypeData.configFields.forEach(field => {
-          if (field.required && !formData.configuration[field.name]) {
-            newErrors[`config.${field.name}`] = `${field.label} is required`;
-          }
-        });
-      }
-    }
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleTestConnection = async () => {
-    if (!validateForm()) {
-      toast.error('Please fill all required fields');
-      return;
-    }
-    
+  const handleTestConnection = async (datasourceId) => {
     try {
       setTestingConnection(true);
-      await testDatasourceConnection(formData.configuration);
-      setConnectionStatus('success');
-      toast.success('Connection test successful');
+      const result = await testDatasourceConnection(datasourceId);
+      setConnectionStatus(result.testStatus === 'success' ? 'success' : 'error');
+      toast.success(result.message || 'Connection test completed');
+      return result;
     } catch (err) {
       setConnectionStatus('error');
-      toast.error('Connection test failed');
+      toast.error(err.message || 'Connection test failed');
       console.error('Error testing connection:', err);
+      throw err;
     } finally {
       setTestingConnection(false);
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!validateForm()) {
-      toast.error('Please fill all required fields');
-      return;
-    }
-    
+  const handleSubmit = async (values) => {
     try {
       setLoading(true);
-      await createDatasource(formData);
+      const result = await createDatasource(values);
       toast.success('Datasource created successfully');
+      
+      // Test the connection after creation
+      // Check different possible response structures
+      const datasourceId = result.datasource?.id || result.id || result.data?.id;
+      
+      if (datasourceId) {
+        setTestingConnection(true);
+        try {
+          const testResult = await handleTestConnection(datasourceId);
+          if (testResult.testStatus === 'success') {
+            toast.success('Connection test passed!');
+          }
+        } catch (testErr) {
+          // Test failed but datasource was created
+          toast.warning('Datasource created but connection test failed');
+          console.log('Connection test failed after creation:', testErr);
+        } finally {
+          setTestingConnection(false);
+        }
+      }
+      
       navigate('/app/datasources');
     } catch (err) {
-      toast.error('Failed to create datasource');
+      toast.error(err.message || 'Failed to create datasource');
       console.error('Error creating datasource:', err);
     } finally {
       setLoading(false);
@@ -187,7 +134,15 @@ export function DatasourceCreate() {
 
   const renderAuthFields = () => {
     const selectedTypeData = datasourceTypes.find(type => type.id === selectedType);
-    if (!selectedTypeData) return null;
+    if (!selectedTypeData || !selectedTypeData.authFields || selectedTypeData.authFields.length === 0) {
+      return (
+        <div className="py-4 text-center text-gray-500">
+          No authentication fields defined for this datasource type.
+        </div>
+      );
+    }
+    
+    const configValues = form.watch('config');
     
     return (
       <div className="space-y-4">
@@ -204,30 +159,28 @@ export function DatasourceCreate() {
               <Input
                 id={field.name}
                 type={field.type}
-                value={formData.configuration[field.name] || ''}
-                onChange={(e) => handleConfigChange(field.name, e.target.value)}
+                value={configValues[field.name] || ''}
+                onChange={(e) => form.setValue(`config.${field.name}`, e.target.value)}
                 placeholder={`Enter ${field.label.toLowerCase()}`}
-                className={errors[`config.${field.name}`] ? 'border-red-500' : ''}
               />
             ) : field.type === 'array' ? (
               <Input
                 id={field.name}
                 type="text"
                 value={
-                  Array.isArray(formData.configuration[field.name])
-                    ? formData.configuration[field.name].join(', ')
+                  Array.isArray(configValues[field.name])
+                    ? configValues[field.name].join(', ')
                     : ''
                 }
-                onChange={(e) => handleConfigChange(field.name, e.target.value.split(',').map(s => s.trim()))}
+                onChange={(e) => form.setValue(`config.${field.name}`, e.target.value.split(',').map(s => s.trim()))}
                 placeholder={`Enter ${field.label.toLowerCase()} (comma separated)`}
-                className={errors[`config.${field.name}`] ? 'border-red-500' : ''}
               />
             ) : field.type === 'select' ? (
               <Select
-                value={formData.configuration[field.name] || ''}
-                onValueChange={(value) => handleConfigChange(field.name, value)}
+                value={configValues[field.name] || ''}
+                onValueChange={(value) => form.setValue(`config.${field.name}`, value)}
               >
-                <SelectTrigger className={errors[`config.${field.name}`] ? 'border-red-500' : ''}>
+                <SelectTrigger>
                   <SelectValue placeholder={`Select ${field.label.toLowerCase()}`} />
                 </SelectTrigger>
                 <SelectContent>
@@ -239,50 +192,13 @@ export function DatasourceCreate() {
                 </SelectContent>
               </Select>
             ) : null}
-            
-            {errors[`config.${field.name}`] && (
-              <p className="mt-1 text-sm text-red-500">{errors[`config.${field.name}`]}</p>
-            )}
           </div>
         ))}
         
-        <div className="mt-6">
-          <Button
-            type="button"
-            onClick={handleTestConnection}
-            disabled={testingConnection}
-            className="w-full"
-          >
-            {testingConnection ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Testing Connection...
-              </>
-            ) : (
-              <>
-                {connectionStatus === 'success' ? (
-                  <CheckCircle2 className="mr-2 h-4 w-4" />
-                ) : (
-                  <Database className="mr-2 h-4 w-4" />
-                )}
-                Test Connection
-              </>
-            )}
-          </Button>
-          
-          {connectionStatus === 'success' && (
-            <div className="mt-3 flex items-center border border-green-200 rounded-md bg-green-50 p-3">
-              <CheckCircle2 className="mr-2 h-5 w-5 text-green-500" />
-              <p className="text-sm text-green-700">Connection successful. You can now save this datasource.</p>
-            </div>
-          )}
-          
-          {connectionStatus === 'error' && (
-            <div className="mt-3 flex items-center border border-red-200 rounded-md bg-red-50 p-3">
-              <Shield className="mr-2 h-5 w-5 text-red-500" />
-              <p className="text-sm text-red-700">Connection failed. Please check your credentials and try again.</p>
-            </div>
-          )}
+        <div className="mt-4 border border-blue-200 rounded-md bg-blue-50 p-3">
+          <p className="text-sm text-blue-700">
+            The connection will be tested automatically after creation.
+          </p>
         </div>
       </div>
     );
@@ -297,6 +213,8 @@ export function DatasourceCreate() {
         </div>
       );
     }
+    
+    const configValues = form.watch('config');
     
     return (
       <div className="space-y-4">
@@ -313,17 +231,16 @@ export function DatasourceCreate() {
               <Input
                 id={field.name}
                 type="text"
-                value={formData.configuration[field.name] || field.default || ''}
-                onChange={(e) => handleConfigChange(field.name, e.target.value)}
+                value={configValues[field.name] || field.default || ''}
+                onChange={(e) => form.setValue(`config.${field.name}`, e.target.value)}
                 placeholder={`Enter ${field.label.toLowerCase()}`}
-                className={errors[`config.${field.name}`] ? 'border-red-500' : ''}
               />
             ) : field.type === 'select' ? (
               <Select
-                value={formData.configuration[field.name] || field.default || ''}
-                onValueChange={(value) => handleConfigChange(field.name, value)}
+                value={configValues[field.name] || field.default || ''}
+                onValueChange={(value) => form.setValue(`config.${field.name}`, value)}
               >
-                <SelectTrigger className={errors[`config.${field.name}`] ? 'border-red-500' : ''}>
+                <SelectTrigger>
                   <SelectValue placeholder={`Select ${field.label.toLowerCase()}`} />
                 </SelectTrigger>
                 <SelectContent>
@@ -338,8 +255,8 @@ export function DatasourceCreate() {
               <div>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {field.options.map((option) => {
-                    const isSelected = Array.isArray(formData.configuration[field.name]) && 
-                                      formData.configuration[field.name].includes(option);
+                    const isSelected = Array.isArray(configValues[field.name]) && 
+                                      configValues[field.name].includes(option);
                     
                     return (
                       <Badge
@@ -347,20 +264,18 @@ export function DatasourceCreate() {
                         variant={isSelected ? 'default' : 'outline'}
                         className="cursor-pointer"
                         onClick={() => {
-                          const currentValues = Array.isArray(formData.configuration[field.name]) 
-                            ? [...formData.configuration[field.name]] 
+                          const currentValues = Array.isArray(configValues[field.name]) 
+                            ? [...configValues[field.name]] 
                             : [];
                           
                           if (isSelected) {
-                            // Remove from selection
-                            handleConfigChange(
-                              field.name, 
+                            form.setValue(
+                              `config.${field.name}`, 
                               currentValues.filter(val => val !== option)
                             );
                           } else {
-                            // Add to selection
-                            handleConfigChange(
-                              field.name, 
+                            form.setValue(
+                              `config.${field.name}`, 
                               [...currentValues, option]
                             );
                           }
@@ -371,15 +286,8 @@ export function DatasourceCreate() {
                     );
                   })}
                 </div>
-                {errors[`config.${field.name}`] && (
-                  <p className="mt-1 text-sm text-red-500">{errors[`config.${field.name}`]}</p>
-                )}
               </div>
             ) : null}
-            
-            {errors[`config.${field.name}`] && field.type !== 'multiselect' && (
-              <p className="mt-1 text-sm text-red-500">{errors[`config.${field.name}`]}</p>
-            )}
           </div>
         ))}
       </div>
@@ -389,18 +297,6 @@ export function DatasourceCreate() {
   return (
     <Page name="Create Data Source" className="h-full w-full">
       <div className="mx-auto max-w-3xl">
-        <div className="mb-6 flex items-center">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate('/app/datasources')}
-            className="mr-4"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Data Sources
-          </Button>
-        </div>
-        
         <Card>
           <CardHeader>
             <CardTitle>Create New Data Source</CardTitle>
@@ -409,117 +305,249 @@ export function DatasourceCreate() {
             </CardDescription>
           </CardHeader>
           
-          <form onSubmit={handleSubmit}>
-            <CardContent>
-              <div className="mb-6 space-y-4">
-                <div>
-                  <Label htmlFor="name" className="mb-1 block">
-                    Name <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="name"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    placeholder="Enter datasource name"
-                    className={errors.name ? 'border-red-500' : ''}
-                  />
-                  {errors.name && <p className="mt-1 text-sm text-red-500">{errors.name}</p>}
-                </div>
-                
-                <div>
-                  <Label htmlFor="description" className="mb-1 block">
-                    Description <span className="text-red-500">*</span>
-                  </Label>
-                  <Textarea
-                    id="description"
-                    name="description"
-                    value={formData.description}
-                    onChange={handleInputChange}
-                    placeholder="Enter datasource description"
-                    className={errors.description ? 'border-red-500' : ''}
-                    rows={3}
-                  />
-                  {errors.description && <p className="mt-1 text-sm text-red-500">{errors.description}</p>}
-                </div>
-                
-                <div>
-                  <Label htmlFor="type" className="mb-1 block">
-                    Datasource Type <span className="text-red-500">*</span>
-                  </Label>
-                  <Select
-                    value={formData.type}
-                    onValueChange={handleTypeChange}
-                  >
-                    <SelectTrigger className={errors.type ? 'border-red-500' : ''}>
-                      <SelectValue placeholder="Select datasource type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {datasourceTypes.map((type) => (
-                        <SelectItem key={type.id} value={type.id}>
-                          {type.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {errors.type && <p className="mt-1 text-sm text-red-500">{errors.type}</p>}
-                </div>
-                
-                {selectedType && (
-                  <div>
-                    <div className="mb-2 mt-4">
-                      <div className="flex flex-wrap gap-2">
-                        {datasourceTypes
-                          .find(type => type.id === selectedType)
-                          ?.complianceStandards.map(standard => (
-                            <Badge key={standard} variant="secondary">{standard}</Badge>
-                          ))}
-                      </div>
-                    </div>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleSubmit)}>
+              <CardContent>
+                <div className="mb-6 space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Name <span className="text-red-500">*</span></FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Enter datasource name" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                     
-                    <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-6">
-                      <TabsList className="grid grid-cols-2 w-full">
-                        <TabsTrigger value="details">Authentication</TabsTrigger>
-                        <TabsTrigger value="config">Configuration</TabsTrigger>
-                      </TabsList>
-                      <TabsContent value="details" className="pt-4">
-                        {renderAuthFields()}
-                      </TabsContent>
-                      <TabsContent value="config" className="pt-4">
-                        {renderConfigFields()}
-                      </TabsContent>
-                    </Tabs>
+                    <FormField
+                      control={form.control}
+                      name="environment"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Environment</FormLabel>
+                          <Select value={field.value} onValueChange={field.onChange}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select environment" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="dev">Development</SelectItem>
+                              <SelectItem value="staging">Staging</SelectItem>
+                              <SelectItem value="production">Production</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </div>
-                )}
-              </div>
-            </CardContent>
-            
-            <CardFooter className="flex justify-between">
-              <Button 
-                variant="outline" 
-                type="button"
-                onClick={() => navigate('/app/datasources')}
-              >
-                Cancel
-              </Button>
-              <Button 
-                type="submit"
-                disabled={loading || (selectedType && connectionStatus !== 'success')}
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating...
-                  </>
-                ) : (
-                  <>
-                    <Save className="mr-2 h-4 w-4" />
-                    Save Data Source
-                  </>
-                )}
-              </Button>
-            </CardFooter>
-          </form>
+                  
+                  <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description</FormLabel>
+                        <FormControl>
+                          <Textarea {...field} placeholder="Enter datasource description" rows={3} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="definitionId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Datasource Type <span className="text-red-500">*</span></FormLabel>
+                        <Select value={field.value} onValueChange={handleTypeChange}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select datasource type" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {datasourceTypes.map((type) => (
+                              <SelectItem key={type.id} value={type.id}>
+                                {type.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  {selectedType && (
+                    <div>
+                      {datasourceTypes
+                        .find(type => type.id === selectedType)
+                        ?.complianceStandards?.length > 0 && (
+                        <div className="mb-2 mt-4">
+                          <div className="flex flex-wrap gap-2">
+                            {datasourceTypes
+                              .find(type => type.id === selectedType)
+                              ?.complianceStandards?.map(standard => (
+                                <Badge key={standard} variant="secondary">{standard}</Badge>
+                              ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      <div className="mt-6 space-y-4">
+                        <h3 className="text-lg font-medium">Connection Configuration</h3>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                          <FormField
+                            control={form.control}
+                            name="config.baseUrl"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Base URL <span className="text-red-500">*</span></FormLabel>
+                                <FormControl>
+                                  <Input {...field} type="text" placeholder="http://example.com:8080" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={form.control}
+                            name="config.timeout"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Timeout (ms)</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    {...field} 
+                                    type="number" 
+                                    placeholder="30000"
+                                    onChange={(e) => field.onChange(parseInt(e.target.value) || '')}
+                                  />
+                                </FormControl>
+                                <p className="text-xs text-gray-500">Request timeout in milliseconds</p>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                          <FormField
+                            control={form.control}
+                            name="config.username"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Username <span className="text-red-500">*</span></FormLabel>
+                                <FormControl>
+                                  <Input {...field} type="text" placeholder="Enter username" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={form.control}
+                            name="config.password"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Password <span className="text-red-500">*</span></FormLabel>
+                                <FormControl>
+                                  <Input {...field} type="password" placeholder="Enter password" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        
+                        <div className="mt-4 border border-blue-200 rounded-md bg-blue-50 p-3">
+                          <p className="text-sm text-blue-700">
+                            The connection will be tested automatically after creation.
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-6">
+                        <TabsList className="grid grid-cols-3 w-full">
+                          <TabsTrigger value="details">Custom Fields</TabsTrigger>
+                          <TabsTrigger value="config">Advanced</TabsTrigger>
+                          <TabsTrigger value="json">JSON Editor</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="details" className="pt-4">
+                          {renderAuthFields()}
+                        </TabsContent>
+                        <TabsContent value="config" className="pt-4">
+                          {renderConfigFields()}
+                        </TabsContent>
+                        <TabsContent value="json" className="pt-4">
+                          <div className="space-y-4">
+                            <h3 className="text-lg font-medium">Configuration (JSON)</h3>
+                            <p className="text-sm text-gray-500">
+                              Edit the complete configuration object for this datasource. Changes here will override the form fields above.
+                            </p>
+                            <Textarea
+                              value={JSON.stringify(form.watch('config'), null, 2)}
+                              onChange={(e) => {
+                                try {
+                                  const parsed = JSON.parse(e.target.value);
+                                  form.setValue('config', parsed);
+                                } catch (err) {
+                                  // Invalid JSON, don't update
+                                }
+                              }}
+                              placeholder='{\n  "baseUrl": "http://example.com",\n  "username": "admin",\n  "password": "secret"\n}'
+                              className="font-mono text-sm"
+                              rows={12}
+                            />
+                          </div>
+                        </TabsContent>
+                      </Tabs>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+              
+              <CardFooter className="flex justify-between">
+                <Button 
+                  variant="outline" 
+                  type="button"
+                  onClick={() => navigate('/app/datasources')}
+                  disabled={loading || testingConnection}
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit"
+                  disabled={loading || testingConnection}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {testingConnection ? 'Testing connection...' : 'Creating...'}
+                    </>
+                  ) : (
+                    <>
+                      <Save className="mr-2 h-4 w-4" />
+                      Save Data Source
+                    </>
+                  )}
+                </Button>
+              </CardFooter>
+            </form>
+          </Form>
         </Card>
       </div>
     </Page>
